@@ -216,6 +216,11 @@ export function getTopBattlefieldThisMonth(): { label: string; profit: number } 
   return best;
 }
 
+export function getMonthStoreRanking(year: number, month: number): RankingItem[] {
+  const prefix = `${year}-${String(month).padStart(2, '0')}`;
+  return buildRanking(getRecords().filter(r => r.date.startsWith(prefix)), r => r.storeName).slice(0, 5);
+}
+
 // ── CSV export / import ──────────────────────────────────────
 const CATEGORY_FROM_LABEL: Record<string, GamblingCategory> = {
   'パチンコ': 'pachinko', 'スロット': 'slot', 'バカラ': 'baccarat',
