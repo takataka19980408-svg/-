@@ -1,22 +1,24 @@
 :root {
-  --bg: #0a0a08;
-  --bg-card: #141410;
-  --bg-card2: #1c1c14;
+  --bg: #080810;
+  --bg-card: #0f0f18;
+  --bg-card2: #16161f;
   --gold: #FFD700;
-  --gold-bright: #FFE44D;
-  --gold-dim: rgba(255, 215, 0, 0.12);
-  --gold-border: rgba(255, 215, 0, 0.25);
-  --white: #FFFFFF;
-  --white-dim: rgba(255, 255, 255, 0.55);
-  --profit: #2ecc71;
-  --profit-dim: rgba(46, 204, 113, 0.15);
-  --loss: #e74c3c;
-  --loss-dim: rgba(231, 76, 60, 0.15);
-  --text-main: #F5F0E8;
-  --text-sub: rgba(245, 240, 232, 0.55);
-  --border: rgba(255, 215, 0, 0.18);
-  --btn-bg: #1e1e14;
-  --font: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  --gold-bright: #FFF5A0;
+  --gold-dim: rgba(255, 215, 0, 0.10);
+  --gold-border: rgba(255, 215, 0, 0.30);
+  --red: #CC2200;
+  --red-bright: #FF3311;
+  --red-dim: rgba(204, 34, 0, 0.15);
+  --profit: #00E87A;
+  --profit-dim: rgba(0, 232, 122, 0.12);
+  --loss: #FF3333;
+  --loss-dim: rgba(255, 51, 51, 0.12);
+  --text-main: #F5EED8;
+  --text-sub: rgba(245, 238, 216, 0.45);
+  --border: rgba(255, 215, 0, 0.20);
+  --border-red: rgba(204, 34, 0, 0.40);
+  --font: 'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif JP', 'Hiragino Kaku Gothic ProN', serif;
+  --font-sans: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', sans-serif;
 }
 
 * {
@@ -31,19 +33,30 @@ html, body {
   color: var(--text-main);
   font-family: var(--font);
   height: 100%;
+  height: 100dvh;
   overscroll-behavior: none;
   -webkit-font-smoothing: antialiased;
 }
 
+body {
+  background-image:
+    linear-gradient(45deg, rgba(255, 215, 0, 0.025) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(255, 215, 0, 0.025) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(255, 215, 0, 0.025) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(255, 215, 0, 0.025) 75%);
+  background-size: 24px 24px;
+}
+
 #root {
   height: 100%;
+  height: 100dvh;
   max-width: 480px;
   margin: 0 auto;
   position: relative;
 }
 
 input, select, textarea, button {
-  font-family: inherit;
+  font-family: var(--font-sans);
 }
 
 button {
@@ -57,13 +70,6 @@ input:focus, select:focus, textarea:focus {
   outline: none;
 }
 
-::-webkit-scrollbar {
-  width: 4px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: var(--gold-border);
-  border-radius: 2px;
-}
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--gold-border); border-radius: 2px; }
