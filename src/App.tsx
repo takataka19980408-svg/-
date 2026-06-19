@@ -1,33 +1,36 @@
 import { useState } from 'react';
 import './index.css';
+import type { MainScreen } from './types';
+import { BottomNav } from './components/BottomNav';
 import { HomeScreen } from './screens/HomeScreen';
 import { RecordScreen } from './screens/RecordScreen';
-
-type Screen = 'home' | 'record';
+import { HistoryScreen } from './screens/HistoryScreen';
+import { AnalysisScreen } from './screens/AnalysisScreen';
+import { RankingScreen } from './screens/RankingScreen';
+import { SettingsScreen } from './screens/SettingsScreen';
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>('home');
+  const [screen, setScreen] = useState<MainScreen>('home');
+  const [showRecord, setShowRecord] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const handleSaved = () => {
     setRefreshKey(k => k + 1);
-    setScreen('home');
+    setShowRecord(false);
   };
+
+  if (showRecord) {
+    return <RecordScreen onBack={() => setShowRecord(false)} onSaved={handleSaved} />;
+  }
 
   return (
     <>
-      {screen === 'home' && (
-        <HomeScreen
-          onRecord={() => setScreen('record')}
-          refreshKey={refreshKey}
-        />
-      )}
-      {screen === 'record' && (
-        <RecordScreen
-          onBack={() => setScreen('home')}
-          onSaved={handleSaved}
-        />
-      )}
+      {screen === 'home'     && <HomeScreen onRecord={() => setShowRecord(true)} refreshKey={refreshKey} />}
+      {screen === 'history'  && <HistoryScreen refreshKey={refreshKey} />}
+      {screen === 'analysis' && <AnalysisScreen refreshKey={refreshKey} />}
+      {screen === 'ranking'  && <RankingScreen refreshKey={refreshKey} />}
+      {screen === 'settings' && <SettingsScreen onDataChange={() => setRefreshKey(k => k + 1)} />}
+      <BottomNav active={screen} onChange={setScreen} />
     </>
   );
 }

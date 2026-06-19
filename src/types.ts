@@ -5,6 +5,7 @@ export type GamblingCategory =
   | 'horse'
   | 'boat'
   | 'cycle'
+  | 'mahjong'
   | 'other';
 
 export interface Store {
@@ -27,6 +28,14 @@ export interface GamblingRecord {
   createdAt: string;
 }
 
+export interface AppSettings {
+  dayBoundaryHour: number;
+}
+
+export const DEFAULT_SETTINGS: AppSettings = {
+  dayBoundaryHour: 6,
+};
+
 export const CATEGORY_LABELS: Record<GamblingCategory, string> = {
   pachinko: 'パチンコ',
   slot: 'スロット',
@@ -34,17 +43,10 @@ export const CATEGORY_LABELS: Record<GamblingCategory, string> = {
   horse: '競馬',
   boat: '競艇',
   cycle: '競輪',
+  mahjong: '麻雀',
   other: 'その他',
 };
 
-export type RankingTab = 'store' | 'category' | 'weekday' | 'month' | 'year';
-
-export const RANKING_TAB_LABELS: Record<RankingTab, string> = {
-  store: '店舗別',
-  category: '種目別',
-  weekday: '曜日別',
-  month: '月別',
-  year: '年別',
-};
-
 export const WEEKDAY_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
+
+export type MainScreen = 'home' | 'history' | 'analysis' | 'ranking' | 'settings';
