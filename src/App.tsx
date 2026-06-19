@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import './index.css';
 import type { MainScreen } from './types';
 import { getRecords } from './storage';
+import seedData from './data/seed_data.json';
 import { BottomNav } from './components/BottomNav';
 import { HomeScreen } from './screens/HomeScreen';
 import { RecordScreen } from './screens/RecordScreen';
@@ -17,14 +18,9 @@ export default function App() {
 
   useEffect(() => {
     if (getRecords().length > 0) return;
-    fetch('./seed_data.json')
-      .then(r => r.json())
-      .then(data => {
-        localStorage.setItem('zenicho_records', JSON.stringify(data.records));
-        localStorage.setItem('zenicho_stores',  JSON.stringify(data.stores ?? []));
-        setRefreshKey(k => k + 1);
-      })
-      .catch(() => {});
+    localStorage.setItem('zenicho_records', JSON.stringify(seedData.records));
+    localStorage.setItem('zenicho_stores',  JSON.stringify(seedData.stores ?? []));
+    setRefreshKey(k => k + 1);
   }, []);
 
   const handleSaved = () => {
