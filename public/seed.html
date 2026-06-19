@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ゼニ帳 — サンプルデータ読み込み</title>
+  <style>
+    body { margin: 0; background: #080810; color: #FFD700; font-family: sans-serif;
+           display: flex; align-items: center; justify-content: center; height: 100vh; text-align: center; }
+    .msg { font-size: 16px; line-height: 2; }
+    .sub { font-size: 12px; color: rgba(255,215,0,0.5); margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div>
+    <div style="font-size:36px;margin-bottom:16px;">ゼニ帳</div>
+    <div class="msg" id="msg">サンプルデータを読み込み中...</div>
+    <div class="sub" id="sub"></div>
+  </div>
+  <script>
+    const msg = document.getElementById('msg');
+    const sub = document.getElementById('sub');
+
+    fetch('./seed_data.json')
+      .then(r => r.json())
+      .then(data => {
+        localStorage.setItem('zenicho_records',  JSON.stringify(data.records));
+        localStorage.setItem('zenicho_stores',   JSON.stringify(data.stores ?? []));
+        if (data.settings) localStorage.setItem('zenicho_settings', JSON.stringify(data.settings));
+
+        const wins   = data.records.filter(r => r.profit > 0).length;
+        const losses = data.records.filter(r => r.profit < 0).length;
+        const total  = data.records.reduce((s, r) => s + r.profit, 0);
+        const sign   = total >= 0 ? '+' : '';
+
+        msg.textContent = `✅ ${data.records.length}件のデータを読み込みました`;
+        sub.innerHTML   = `勝ち ${wins}件 / 負け ${losses}件 ／ 生涯収支 ${sign}¥${total.toLocaleString()}<br>3秒後にアプリへ移動します…`;
+
+        setTimeout(() => { location.href = './'; }, 3000);
+      })
+      .catch(err => {
+        msg.textContent = '❌ 読み込みに失敗しました';
+        sub.textContent = String(err);
+      });
+  </script>
+</body>
+</html>
