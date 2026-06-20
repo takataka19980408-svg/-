@@ -23,6 +23,15 @@ const MEDAL = ['#C9A227', '#9AA0A6', '#9C6E3C'];
 
 function profitColor(v: number) { return v > 0 ? GOLDB : v < 0 ? RED : SUB; }
 
+function totalFontSize(value: number): number {
+  const len = formatAmount(Math.abs(value)).length;
+  if (len <= 5)  return 54;
+  if (len <= 7)  return 46;
+  if (len <= 9)  return 38;
+  if (len <= 11) return 32;
+  return 26;
+}
+
 function ZeniAmt({ value, size }: { value: number; size: number }) {
   const c = profitColor(value);
   return (
@@ -293,7 +302,7 @@ export function HomeScreen({ refreshKey }: Props) {
 
         {/* ① 生涯収支 */}
         <div style={{
-          textAlign: 'center', padding: '28px 20px 20px',
+          textAlign: 'center', padding: '28px 16px 20px',
           background: 'radial-gradient(ellipse at 50% 50%,rgba(201,162,39,0.07) 0%,transparent 70%)',
         }}>
           <div style={{
@@ -302,7 +311,9 @@ export function HomeScreen({ refreshKey }: Props) {
           }}>
             生 涯 収 支
           </div>
-          <ZeniAmt value={total} size={Math.abs(total) >= 10000000 ? 42 : 54} />
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'baseline', flexWrap: 'wrap', gap: 4 }}>
+            <ZeniAmt value={total} size={totalFontSize(total)} />
+          </div>
         </div>
 
         <Divider />
