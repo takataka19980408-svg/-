@@ -175,9 +175,12 @@ export function HistoryScreen({ refreshKey }: Props) {
                           <button
                             onClick={() => setAction({ type: 'menu', id: record.id })}
                             style={{
-                              fontSize: 10, color: `${TEXT}33`, fontFamily: BRUSH,
-                              padding: '2px 4px', marginTop: 4,
-                              background: 'none', border: 'none', cursor: 'pointer',
+                              fontSize: 11, color: `${GOLD}99`, fontFamily: BRUSH,
+                              padding: '4px 10px', marginTop: 6,
+                              background: `${GOLD}0D`,
+                              border: `1px solid ${GOLD}33`,
+                              borderRadius: 4, cursor: 'pointer',
+                              letterSpacing: '0.15em',
                             }}
                           >
                             ⋯

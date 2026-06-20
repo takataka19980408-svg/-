@@ -20,6 +20,8 @@ const TEXT  = '#EDE3C0';
 const SUB   = '#524938';
 const BRUSH = '"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif';
 
+const CATEGORIES: GamblingCategory[] = ['slot', 'pachinko', 'baccarat', 'horse', 'boat', 'cycle', 'mahjong', 'other'];
+
 function fmt(n: number): string {
   if (n === 0) return '0';
   if (n >= 10000) {
@@ -42,17 +44,12 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 function AmountInput({
-  label, amount, onAdd, onReset,
-  accent,
+  label, amount, onAdd, onReset, accent,
 }: {
-  label: string;
-  amount: number;
-  onAdd: (n: number) => void;
-  onReset: () => void;
-  accent: string;
+  label: string; amount: number; onAdd: (n: number) => void; onReset: () => void; accent: string;
 }) {
   const [showCustom, setShowCustom] = useState(false);
-  const [customRaw, setCustomRaw] = useState('');
+  const [customRaw, setCustomRaw]   = useState('');
 
   const applyCustom = () => {
     const n = parseInt(customRaw.replace(/[^0-9]/g, ''), 10) || 0;
@@ -89,7 +86,7 @@ function AmountInput({
               padding: '10px 0', borderRadius: 5,
               fontSize: 14, fontWeight: 800, fontFamily: BRUSH,
               background: `${accent}0D`, border: `1px solid ${accent}30`,
-              color: accent, letterSpacing: '0.02em', cursor: 'pointer',
+              color: accent, cursor: 'pointer',
             }}
             onTouchStart={e => { e.currentTarget.style.background = `${accent}22`; }}
             onTouchEnd={e => { e.currentTarget.style.background = `${accent}0D`; }}
@@ -158,24 +155,26 @@ function AmountInput({
 }
 
 export function RecordScreen({ onBack, onSaved }: Props) {
-  const settings = getSettings();
+  const settings       = getSettings();
   const effectiveToday = getEffectiveToday(settings.dayBoundaryHour);
-  const nowTime = new Date().toTimeString().slice(0, 5);
 
   const [inAmount,  setInAmount]  = useState(0);
   const [outAmount, setOutAmount] = useState(0);
-  const [time, setTime] = useState(nowTime);
 
-  const [stores, setStores] = useState(getStores());
-  const [storeId, setStoreId] = useState(getStores()[0]?.id ?? '');
-  const [newStoreName, setNewStoreName] = useState('');
+  const [stores,       setStores]       = useState(getStores);
+  const [storeId,      setStoreId]      = useState(() => getStores()[0]?.id ?? '');
   const [showNewStore, setShowNewStore] = useState(false);
+  const [newStoreName, setNewStoreName] = useState('');
+  const [newStoreCat,  setNewStoreCat]  = useState<GamblingCategory>('slot');
 
-  const [category, setCategory] = useState<GamblingCategory>('slot');
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
+  const [error,  setError]  = useState('');
 
   const profit = outAmount - inAmount;
+
+  // Category is derived from the selected store
+  const selectedStore  = stores.find(s => s.id === storeId);
+  const recordCategory = selectedStore?.category ?? 'slot';
 
   const addIn  = useCallback((n: number) => setInAmount(v => v + n), []);
   const addOut = useCallback((n: number) => setOutAmount(v => v + n), []);
@@ -183,7 +182,10 @@ export function RecordScreen({ onBack, onSaved }: Props) {
   const handleAddStore = () => {
     const name = newStoreName.trim();
     if (!name) return;
-    const store = { id: generateId(), name, createdAt: new Date().toISOString() };
+    const store = {
+      id: generateId(), name, category: newStoreCat,
+      createdAt: new Date().toISOString(),
+    };
     saveStore(store);
     const updated = getStores();
     setStores(updated);
@@ -195,19 +197,16 @@ export function RecordScreen({ onBack, onSaved }: Props) {
   const handleSave = () => {
     setError('');
     if (inAmount === 0 && outAmount === 0) { setError('INまたはOUTの金額を入力してください'); return; }
-    if (!storeId) { setError('店舗を選択または登録してください'); return; }
-    const store = stores.find(s => s.id === storeId);
-    if (!store) { setError('店舗を選択または登録してください'); return; }
+    if (!storeId || !selectedStore) { setError('店舗を選択または登録してください'); return; }
     setSaving(true);
     saveRecord({
-      id: generateId(), date: effectiveToday, time, storeId, storeName: store.name,
-      category, inAmount, outAmount, profit,
+      id: generateId(), date: effectiveToday, storeId,
+      storeName: selectedStore.name, category: recordCategory,
+      inAmount, outAmount, profit,
       createdAt: new Date().toISOString(),
     });
     setTimeout(() => { setSaving(false); onSaved(); }, 300);
   };
-
-  const categories: GamblingCategory[] = ['slot', 'pachinko', 'baccarat', 'horse', 'boat', 'cycle', 'mahjong', 'other'];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#0A0905' }}>
@@ -253,7 +252,7 @@ export function RecordScreen({ onBack, onSaved }: Props) {
           accent="#00C896"
         />
 
-        {/* 差引 */}
+        {/* 収支サマリ */}
         <div style={{
           padding: '13px 16px', borderRadius: 8, marginBottom: 20, textAlign: 'center',
           background: profit > 0 ? `${GOLD}0A` : profit < 0 ? `${RED}14` : CARD,
@@ -268,32 +267,58 @@ export function RecordScreen({ onBack, onSaved }: Props) {
           </span>
         </div>
 
-        <div style={{ height: 1, background: `linear-gradient(90deg,transparent,${GOLD}22,transparent)`, margin: '0 0 20px' }} />
+        <div style={{ height: 1, background: `linear-gradient(90deg,transparent,${GOLD}22,transparent)`, marginBottom: 20 }} />
 
         {/* 店舗 */}
-        <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 20 }}>
           <SectionLabel>店 舗</SectionLabel>
+
           {stores.length > 0 ? (
-            <select
-              value={storeId}
-              onChange={e => setStoreId(e.target.value)}
-              style={{
-                width: '100%', padding: '12px 14px', background: CARD,
-                border: `1px solid ${BDR}`, borderRadius: 6,
-                fontSize: 15, fontWeight: 600, color: TEXT,
-                fontFamily: BRUSH, appearance: 'none', WebkitAppearance: 'none', colorScheme: 'dark',
-              }}
-            >
-              {stores.map(s => <option key={s.id} value={s.id} style={{ background: '#0a0905' }}>{s.name}</option>)}
-            </select>
+            <>
+              <select
+                value={storeId}
+                onChange={e => setStoreId(e.target.value)}
+                style={{
+                  width: '100%', padding: '12px 14px', background: CARD,
+                  border: `1px solid ${BDR}`, borderRadius: 6,
+                  fontSize: 15, fontWeight: 600, color: TEXT,
+                  fontFamily: BRUSH, appearance: 'none', WebkitAppearance: 'none', colorScheme: 'dark',
+                  marginBottom: 8,
+                }}
+              >
+                {stores.map(s => (
+                  <option key={s.id} value={s.id} style={{ background: '#0a0905' }}>
+                    {s.name}　{CATEGORY_LABELS[s.category ?? 'slot']}
+                  </option>
+                ))}
+              </select>
+
+              {/* Selected store's category badge */}
+              {selectedStore && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 10, color: SUB, fontFamily: BRUSH }}>種目：</span>
+                  <span style={{
+                    fontSize: 11, fontWeight: 700, padding: '2px 10px',
+                    borderRadius: 10, fontFamily: BRUSH,
+                    background: `${GOLD}14`, border: `1px solid ${GOLD}33`, color: GOLD,
+                  }}>
+                    {CATEGORY_LABELS[selectedStore.category ?? 'slot']}
+                  </span>
+                </div>
+              )}
+            </>
           ) : (
-            <div style={{ fontSize: 12, color: SUB, padding: '6px 0', fontFamily: BRUSH }}>店舗が登録されていません</div>
+            <div style={{ fontSize: 12, color: SUB, padding: '6px 0', fontFamily: BRUSH }}>
+              店舗が登録されていません
+            </div>
           )}
+
+          {/* New store registration */}
           {!showNewStore ? (
             <button
               onClick={() => setShowNewStore(true)}
               style={{
-                marginTop: 8, fontSize: 12, color: GOLD, fontWeight: 700,
+                marginTop: 10, fontSize: 12, color: GOLD, fontWeight: 700,
                 fontFamily: BRUSH, letterSpacing: '0.05em',
                 background: 'none', border: 'none', cursor: 'pointer',
               }}
@@ -301,67 +326,75 @@ export function RecordScreen({ onBack, onSaved }: Props) {
               ＋ 新しい店舗を登録
             </button>
           ) : (
-            <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+            <div style={{
+              marginTop: 12, padding: '14px', background: CARD,
+              border: `1px solid ${GOLD}33`, borderRadius: 8,
+            }}>
+              {/* Store name */}
+              <div style={{ fontSize: 10, color: SUB, fontFamily: BRUSH, marginBottom: 6 }}>店舗名</div>
               <input
-                type="text" value={newStoreName} onChange={e => setNewStoreName(e.target.value)}
+                type="text" value={newStoreName}
+                onChange={e => setNewStoreName(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleAddStore()}
-                placeholder="店舗名" autoFocus
+                placeholder="例：マルハン渋谷店" autoFocus
                 style={{
-                  flex: 1, padding: '10px 12px', background: CARD,
-                  border: `1px solid ${GOLD}`, borderRadius: 6,
+                  width: '100%', padding: '10px 12px', background: '#0A0905',
+                  border: `1px solid ${GOLD}55`, borderRadius: 6,
                   fontSize: 14, color: TEXT, fontFamily: BRUSH, outline: 'none',
+                  boxSizing: 'border-box', marginBottom: 12,
                 }}
               />
-              <button onClick={handleAddStore} style={{
-                padding: '10px 14px', borderRadius: 6,
-                background: `linear-gradient(135deg,${RED},${REDB})`,
-                color: GOLDB, fontSize: 13, fontWeight: 700,
-                fontFamily: BRUSH, border: `1px solid ${RED}66`, cursor: 'pointer',
-              }}>登録</button>
-              <button onClick={() => { setShowNewStore(false); setNewStoreName(''); }} style={{
-                padding: '10px 12px', borderRadius: 6, background: CARD,
-                border: `1px solid ${BDR}`, color: SUB, fontSize: 13,
-                fontFamily: BRUSH, cursor: 'pointer',
-              }}>×</button>
+
+              {/* Category for this store */}
+              <div style={{ fontSize: 10, color: SUB, fontFamily: BRUSH, marginBottom: 8 }}>種目</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+                {CATEGORIES.map(cat => (
+                  <button
+                    key={cat}
+                    onClick={() => setNewStoreCat(cat)}
+                    style={{
+                      padding: '6px 12px', borderRadius: 4,
+                      fontSize: 12, fontWeight: 700, fontFamily: BRUSH,
+                      background: newStoreCat === cat
+                        ? `linear-gradient(135deg,${RED},${REDB})`
+                        : '#0A0905',
+                      color: newStoreCat === cat ? GOLDB : SUB,
+                      border: newStoreCat === cat ? `1px solid ${RED}66` : `1px solid ${BDR}`,
+                      boxShadow: newStoreCat === cat ? `0 0 8px ${RED}44` : 'none',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {CATEGORY_LABELS[cat]}
+                  </button>
+                ))}
+              </div>
+
+              {/* Actions */}
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button
+                  onClick={handleAddStore}
+                  style={{
+                    flex: 1, padding: '10px', borderRadius: 6,
+                    background: `linear-gradient(135deg,${RED},${REDB})`,
+                    color: GOLDB, fontSize: 13, fontWeight: 700,
+                    fontFamily: BRUSH, border: `1px solid ${RED}66`, cursor: 'pointer',
+                  }}
+                >
+                  登録する
+                </button>
+                <button
+                  onClick={() => { setShowNewStore(false); setNewStoreName(''); }}
+                  style={{
+                    padding: '10px 16px', borderRadius: 6, background: '#0A0905',
+                    border: `1px solid ${BDR}`, color: SUB, fontSize: 13,
+                    fontFamily: BRUSH, cursor: 'pointer',
+                  }}
+                >
+                  取消
+                </button>
+              </div>
             </div>
           )}
-        </div>
-
-        {/* 種目 */}
-        <div style={{ marginBottom: 16 }}>
-          <SectionLabel>種 目</SectionLabel>
-          <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
-            {categories.map(cat => (
-              <button
-                key={cat}
-                onClick={() => setCategory(cat)}
-                style={{
-                  flexShrink: 0, padding: '8px 14px', borderRadius: 4,
-                  fontSize: 13, fontWeight: 700, fontFamily: BRUSH, letterSpacing: '0.05em',
-                  background: category === cat ? `linear-gradient(135deg,${RED},${REDB})` : CARD,
-                  color: category === cat ? GOLDB : SUB,
-                  border: category === cat ? `1px solid ${RED}66` : `1px solid ${GOLD}1F`,
-                  boxShadow: category === cat ? `0 0 10px ${RED}55` : 'none',
-                  cursor: 'pointer',
-                }}
-              >
-                {CATEGORY_LABELS[cat]}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* 時刻 */}
-        <div style={{ marginBottom: 16 }}>
-          <SectionLabel>時 刻</SectionLabel>
-          <input
-            type="time" value={time} onChange={e => setTime(e.target.value)}
-            style={{
-              width: '100%', padding: '11px 12px', background: CARD,
-              border: `1px solid ${BDR}`, borderRadius: 6,
-              fontSize: 14, color: TEXT, colorScheme: 'dark', fontFamily: BRUSH, outline: 'none',
-            }}
-          />
         </div>
 
         {error && (
@@ -392,8 +425,7 @@ export function RecordScreen({ onBack, onSaved }: Props) {
             color: saving ? GOLD : '#0A0900',
             boxShadow: saving ? 'none' : `0 4px 24px ${RED}88`,
             border: `1px solid ${GOLD}44`,
-            pointerEvents: 'all', fontFamily: BRUSH,
-            textShadow: 'none', cursor: 'pointer',
+            pointerEvents: 'all', fontFamily: BRUSH, cursor: 'pointer',
           }}
         >
           {saving ? '記録中...' : '◆ 保存する ◆'}

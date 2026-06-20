@@ -11,6 +11,7 @@ export type GamblingCategory =
 export interface Store {
   id: string;
   name: string;
+  category?: GamblingCategory;
   createdAt: string;
 }
 
