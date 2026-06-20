@@ -98,10 +98,11 @@ function RankRow({ item, rank }: { item: RankingItem; rank: number }) {
       background: top ? `linear-gradient(90deg,${GOLD}06,transparent 60%)` : 'transparent',
     }}>
       <div style={{
-        width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-        border: `1.5px solid ${medal}`, background: `${medal}14`,
+        width: top ? 42 : 32, height: top ? 42 : 32, borderRadius: '50%', flexShrink: 0,
+        border: `${top ? 2 : 1.5}px solid ${medal}`, background: `${medal}${top ? '22' : '14'}`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 10, fontWeight: 800, color: medal, fontFamily: BRUSH,
+        fontSize: top ? 12 : 10, fontWeight: 800, color: medal, fontFamily: BRUSH,
+        boxShadow: top ? `0 0 12px ${medal}55` : 'none',
       }}>
         {rank}位
       </div>
@@ -202,13 +203,15 @@ function AllTimeRanking({ refreshKey }: { refreshKey: number }) {
               }}>
                 {/* Badge */}
                 <div style={{
-                  width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
-                  border: `1.5px solid ${idx < 3 ? medal : SUB}`,
-                  background: idx < 3 ? `${medal}14` : 'transparent',
+                  width: idx === 0 ? 44 : 34, height: idx === 0 ? 44 : 34,
+                  borderRadius: '50%', flexShrink: 0,
+                  border: `${idx === 0 ? 2 : 1.5}px solid ${idx < 3 ? medal : SUB}`,
+                  background: idx === 0 ? `${medal}22` : idx < 3 ? `${medal}14` : 'transparent',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 9, fontWeight: 800,
+                  fontSize: idx === 0 ? 11 : 9, fontWeight: 800,
                   color: idx < 3 ? medal : `${TEXT}44`,
                   fontFamily: BRUSH,
+                  boxShadow: idx === 0 ? `0 0 14px ${medal}55` : 'none',
                 }}>
                   {idx + 1}位
                 </div>
