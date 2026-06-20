@@ -417,34 +417,61 @@ export default class WorldScene extends Phaser.Scene {
   // ─── UI ──────────────────────────────────────────────────────
 
   _buildUI() {
-    // 下部ステータスバー（MAP_Hより下）
-    const uiBg = this.add.rectangle(GAME_W / 2, MAP_H + 16, GAME_W, 32, COLOR.UI_BG, 0.95)
-      .setScrollFactor(0).setDepth(100);
-    this.add.line(0, MAP_H, 0, 0, GAME_W, 0, COLOR.WIN_BORDER, 0.5)
-      .setScrollFactor(0).setDepth(100).setOrigin(0,0);
+    const g = this.add.graphics().setScrollFactor(0).setDepth(99);
 
-    // HP表示
+    // 仕切り線
+    g.lineStyle(1, 0x2a3a5a); g.lineBetween(0, MAP_H, GAME_W, MAP_H);
+
+    // ステータスバー背景
+    g.fillStyle(0x080818, 0.97);
+    g.fillRect(0, MAP_H, GAME_W, 32);
+
+    // 上端の光沢ライン
+    g.lineStyle(1, 0x334477, 0.8);
+    g.lineBetween(0, MAP_H, GAME_W, MAP_H);
+
+    this._uiGraphics = g;
     this.statusTexts = {};
+    this.hpBarGraphics = this.add.graphics().setScrollFactor(0).setDepth(100);
     this._updateStatusUI();
   }
 
   _updateStatusUI() {
-    // 既存テキストを消す
     Object.values(this.statusTexts).forEach(t => t.destroy());
     this.statusTexts = {};
+    this.hpBarGraphics.clear();
 
     const party = this.gameState.party;
     party.forEach((m, i) => {
-      const x = 10 + i * 120;
-      const y = MAP_H + 8;
-      const t = this.add.text(x, y,
-        `${m.name}  HP:${m.hp}/${m.maxHp}`,
-        { fontFamily: 'monospace', fontSize: '11px', color: '#aaccff' }
-      ).setScrollFactor(0).setDepth(101);
-      this.statusTexts[m.id] = t;
+      const bx = 10 + i * 170;
+      const by = MAP_H + 6;
+
+      // 名前
+      const t = this.add.text(bx, by, m.name, {
+        fontFamily: 'monospace', fontSize: '11px', color: '#88aadd',
+      }).setScrollFactor(0).setDepth(101);
+      this.statusTexts[m.id + '_name'] = t;
+
+      // HP数値
+      const hpTxt = this.add.text(bx + 36, by, `HP ${m.hp}/${m.maxHp}`, {
+        fontFamily: 'monospace', fontSize: '10px', color: '#66cc88',
+      }).setScrollFactor(0).setDepth(101);
+      this.statusTexts[m.id + '_hp'] = hpTxt;
+
+      // HPバー
+      const pct = m.hp / m.maxHp;
+      const barW = 100, barH = 5;
+      const barX = bx, barY = by + 16;
+      this.hpBarGraphics.fillStyle(0x0a1a0a);
+      this.hpBarGraphics.fillRect(barX, barY, barW, barH);
+      const barColor = pct > 0.5 ? 0x22cc44 : pct > 0.25 ? 0xddaa00 : 0xcc2222;
+      this.hpBarGraphics.fillStyle(barColor);
+      this.hpBarGraphics.fillRect(barX + 1, barY + 1, Math.floor((barW - 2) * pct), barH - 2);
+      this.hpBarGraphics.lineStyle(1, 0x1a2a1a);
+      this.hpBarGraphics.strokeRect(barX, barY, barW, barH);
     });
 
-    // 地名
+    // 地名（右端）
     const mapName = this.mapData?.name ?? '';
     if (this._mapNameText) this._mapNameText.destroy();
     this._mapNameText = this.add.text(GAME_W - 10, MAP_H + 8, mapName, {

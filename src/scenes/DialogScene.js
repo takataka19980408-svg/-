@@ -16,47 +16,64 @@ export default class DialogScene extends Phaser.Scene {
   }
 
   create() {
-    // 半透明オーバーレイ（会話ウィンドウ背景）
-    const BOX_H = 160;
-    const BOX_Y = GAME_H - 170;
-    const PAD = 12;
+    const BOX_H = 148;
+    const BOX_Y = GAME_H - 158;
+    const PAD   = 14;
 
-    this.bg = this.add.rectangle(GAME_W / 2, BOX_Y + BOX_H / 2, GAME_W - 16, BOX_H)
-      .setStrokeStyle(2, COLOR.WIN_BORDER)
-      .setFillStyle(COLOR.WIN_BG, 0.93)
-      .setVisible(false);
+    // ウィンドウ背景（グラフィクスで手書き → より細かい角丸・光沢）
+    this.bgGfx = this.add.graphics().setDepth(200);
 
-    this.speakerBg = this.add.rectangle(PAD + 56, BOX_Y - 10, 108, 22)
-      .setStrokeStyle(1, COLOR.WIN_BORDER)
-      .setFillStyle(COLOR.WIN_BG, 0.9)
-      .setVisible(false);
+    this.bg = this.add.rectangle(GAME_W / 2, BOX_Y + BOX_H / 2, GAME_W - 12, BOX_H)
+      .setFillStyle(0x04041a, 0.96)
+      .setVisible(false)
+      .setDepth(200);
 
-    this.speakerText = this.add.text(PAD + 8, BOX_Y - 20, '', {
-      fontFamily: '"Courier New", monospace',
-      fontSize: '13px',
-      color: '#aaccff',
-    }).setVisible(false);
+    // 外枠（グラデーション風 2層）
+    this.borderOuter = this.add.rectangle(GAME_W / 2, BOX_Y + BOX_H / 2, GAME_W - 10, BOX_H + 2)
+      .setStrokeStyle(2, 0x2a4a88)
+      .setFillStyle(0x000000, 0)
+      .setVisible(false).setDepth(200);
 
-    this.bodyText = this.add.text(PAD + 8, BOX_Y + 14, '', {
-      fontFamily: '"Courier New", monospace',
+    this.borderInner = this.add.rectangle(GAME_W / 2, BOX_Y + BOX_H / 2, GAME_W - 14, BOX_H - 2)
+      .setStrokeStyle(1, 0x4466cc, 0.5)
+      .setFillStyle(0x000000, 0)
+      .setVisible(false).setDepth(200);
+
+    // 上端の光沢ライン
+    this.glowLine = this.add.rectangle(GAME_W / 2, BOX_Y + 1, GAME_W - 20, 1)
+      .setFillStyle(0x6688ff, 0.3).setVisible(false).setDepth(201);
+
+    // 話者名ウィンドウ
+    this.speakerBg = this.add.rectangle(PAD + 52, BOX_Y - 11, 100, 20)
+      .setFillStyle(0x0a0a2a, 0.98)
+      .setStrokeStyle(1, 0x3355aa)
+      .setVisible(false).setDepth(200);
+
+    this.speakerText = this.add.text(PAD + 6, BOX_Y - 21, '', {
+      fontFamily: 'monospace',
+      fontSize: '12px',
+      color: '#88aaff',
+      fontStyle: 'bold',
+    }).setVisible(false).setDepth(201);
+
+    this.bodyText = this.add.text(PAD + 6, BOX_Y + 12, '', {
+      fontFamily: 'monospace',
       fontSize: '14px',
-      color: '#ddeeff',
-      wordWrap: { width: GAME_W - 40 },
-      lineSpacing: 4,
-    }).setVisible(false);
+      color: '#ccddf8',
+      wordWrap: { width: GAME_W - 34 },
+      lineSpacing: 6,
+    }).setVisible(false).setDepth(201);
 
-    this.cursor = this.add.text(GAME_W - 28, BOX_Y + BOX_H - 22, '▼', {
-      fontFamily: '"Courier New", monospace',
-      fontSize: '13px',
-      color: '#ffffff',
-    }).setVisible(false);
+    // 続きカーソル（点滅三角）
+    this.cursor = this.add.triangle(
+      GAME_W - 22, BOX_Y + BOX_H - 18,
+      0, 0, 10, 0, 5, 8,
+      0xaaccff
+    ).setVisible(false).setDepth(202);
 
     this.tweens.add({
-      targets: this.cursor,
-      alpha: 0,
-      duration: 500,
-      yoyo: true,
-      repeat: -1,
+      targets: this.cursor, alpha: { from: 1, to: 0.1 },
+      duration: 600, yoyo: true, repeat: -1,
     });
 
     // 選択肢UI
@@ -95,6 +112,9 @@ export default class DialogScene extends Phaser.Scene {
     }
 
     this.bg.setVisible(true);
+    this.borderOuter.setVisible(true);
+    this.borderInner.setVisible(true);
+    this.glowLine.setVisible(true);
     this.bodyText.setVisible(true);
     this.cursor.setVisible(false);
 
@@ -107,13 +127,13 @@ export default class DialogScene extends Phaser.Scene {
       this.speakerText.setVisible(false);
     }
 
-    // voice styleなら色を変える
     const isVoice = line.style === 'voice';
-    this.bodyText.setColor(isVoice ? '#aaddff' : '#ddeeff');
     if (isVoice) {
       this.bodyText.setStyle({ fontStyle: 'italic', color: '#aaddff' });
+      this.borderOuter.setStrokeStyle(2, 0x3366cc);
     } else {
-      this.bodyText.setStyle({ fontStyle: 'normal', color: '#ddeeff' });
+      this.bodyText.setStyle({ fontStyle: 'normal', color: '#ccddf8' });
+      this.borderOuter.setStrokeStyle(2, 0x2a4a88);
     }
 
     this._typeText(line.text);
@@ -211,6 +231,9 @@ export default class DialogScene extends Phaser.Scene {
 
   _close() {
     this.bg.setVisible(false);
+    this.borderOuter.setVisible(false);
+    this.borderInner.setVisible(false);
+    this.glowLine.setVisible(false);
     this.speakerBg.setVisible(false);
     this.speakerText.setVisible(false);
     this.bodyText.setVisible(false);
