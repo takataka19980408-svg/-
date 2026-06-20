@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import type { RankingItem } from '../storage';
 import {
   getTotalProfit, getMonthProfit, getMonthSummary,
-  getMonthStoreRanking, formatAmountFull, formatAmount,
+  getMonthStoreRanking, formatAmount,
 } from '../storage';
 
 interface Props { refreshKey: number; }
@@ -11,94 +11,112 @@ const NAV_H = 60;
 const GOLD  = '#C9A227';
 const GOLDB = '#F5D060';
 const RED   = '#9B1C10';
-const CARD  = '#100F0A';
-const BDR   = '#1E1C10';
-const GBRD  = 'rgba(201,162,39,0.25)';
+const CARD  = '#0F0E0A';
+const BDR   = '#222018';
+const GBRD  = 'rgba(201,162,39,0.22)';
 const TEXT  = '#EDE3C0';
 const SUB   = '#524938';
+const DIM   = '#2E2A1E';
 const BRUSH = '"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif';
 const MEDAL = ['#C9A227', '#9AA0A6', '#9C6E3C'];
 
-/** 数字 + ゼニ suffix */
-function ZeniNum({
-  value, size = 50, suffix = true,
-}: { value: number; size?: number; suffix?: boolean }) {
-  const color = value > 0 ? GOLDB : value < 0 ? RED : SUB;
+function profitColor(v: number) { return v > 0 ? GOLDB : v < 0 ? RED : SUB; }
+
+function ZeniAmt({ value, size }: { value: number; size: number }) {
+  const c = profitColor(value);
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 4 }}>
-      <span style={{
-        fontSize: size, fontWeight: 800, fontFamily: BRUSH,
-        color, letterSpacing: '0.02em', lineHeight: 1,
-        textShadow: value !== 0 ? `0 0 32px ${color}55` : 'none',
-      }}>
-        {formatAmountFull(value)}
+    <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 4, whiteSpace: 'nowrap' }}>
+      <span style={{ fontSize: size, fontWeight: 800, fontFamily: BRUSH, color: c, lineHeight: 1 }}>
+        {formatAmount(value)}
       </span>
-      {suffix && (
-        <span style={{ fontSize: size * 0.22, fontWeight: 700, color: `${color}BB`, fontFamily: BRUSH, letterSpacing: '0.05em', paddingBottom: 2 }}>
-          ゼニ
-        </span>
-      )}
+      <span style={{ fontSize: Math.max(size * 0.28, 11), fontWeight: 700, fontFamily: BRUSH, color: `${c}88`, letterSpacing: '0.05em' }}>
+        ゼニ
+      </span>
     </span>
   );
 }
 
-function OrnLine() {
+function Divider() {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 20px' }}>
-      <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg,transparent,${GOLD}20)` }} />
-      <span style={{ color: `${GOLD}40`, fontSize: 8 }}>◆</span>
-      <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg,${GOLD}20,transparent)` }} />
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '0 20px' }}>
+      <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg,transparent,${GOLD}22)` }} />
+      <span style={{ color: `${GOLD}35`, fontSize: 8 }}>◆</span>
+      <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg,${GOLD}22,transparent)` }} />
     </div>
   );
 }
 
-function SecHead({ children }: { children: React.ReactNode }) {
+function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-      <div style={{ width: 3, height: 16, background: GOLD, borderRadius: 2, flexShrink: 0 }} />
-      <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: '0.18em', color: TEXT, fontFamily: BRUSH }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+      <div style={{ width: 2, height: 14, background: GOLD, borderRadius: 1 }} />
+      <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.2em', color: TEXT, fontFamily: BRUSH }}>
         {children}
       </span>
     </div>
   );
 }
 
+function StatCard({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <div style={{
+      flex: 1, background: CARD, border: `1px solid ${BDR}`, borderRadius: 8,
+      padding: '10px 4px', textAlign: 'center',
+    }}>
+      <div style={{ fontSize: 9, color: SUB, fontFamily: BRUSH, letterSpacing: '0.1em', marginBottom: 5 }}>
+        {label}
+      </div>
+      <div style={{ fontSize: 17, fontWeight: 800, fontFamily: BRUSH, color, lineHeight: 1 }}>
+        {value}
+      </div>
+    </div>
+  );
+}
+
 function RankRow({ item, rank }: { item: RankingItem; rank: number }) {
-  const medal = MEDAL[rank - 1] ?? SUB;
+  const medal = MEDAL[rank - 1] ?? DIM;
   const isPos = item.profit >= 0;
   const top   = rank === 1;
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0',
+      display: 'flex', alignItems: 'center', gap: 12,
+      padding: '11px 16px',
       borderBottom: rank < 3 ? `1px solid ${BDR}` : 'none',
-      background: top ? `radial-gradient(ellipse at 0% 50%,${GOLD}07,transparent 70%)` : 'transparent',
+      background: top ? `linear-gradient(90deg,${GOLD}06,transparent 60%)` : 'transparent',
     }}>
+      {/* Medal badge */}
       <div style={{
-        width: 30, height: 30, borderRadius: '50%', flexShrink: 0,
-        border: `1.5px solid ${medal}`, background: `${medal}12`,
+        width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
+        border: `1.5px solid ${medal}`, background: `${medal}14`,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: 10, fontWeight: 800, color: medal, fontFamily: BRUSH,
       }}>
         {rank}位
       </div>
+      {/* Name & battle count */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
-          fontSize: 13, fontWeight: 700, color: top ? TEXT : `${TEXT}BB`, fontFamily: BRUSH,
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          fontSize: 13, fontWeight: 700, color: top ? TEXT : `${TEXT}AA`,
+          fontFamily: BRUSH, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          marginBottom: 2,
         }}>
           {item.label}
         </div>
         <div style={{ fontSize: 10, color: SUB, fontFamily: BRUSH }}>{item.count}戦</div>
       </div>
-      <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, flexShrink: 0 }}>
-        <span style={{
-          fontSize: top ? 18 : 15, fontWeight: 800, fontFamily: BRUSH,
-          color: isPos ? (top ? GOLDB : GOLD) : RED,
-          textShadow: top && isPos ? `0 0 12px ${GOLD}66` : 'none',
-        }}>
-          {formatAmount(item.profit)}
-        </span>
-        <span style={{ fontSize: top ? 8 : 7, color: `${isPos ? GOLD : RED}88`, fontFamily: BRUSH }}>ゼニ</span>
+      {/* Amount */}
+      <div style={{ flexShrink: 0, textAlign: 'right' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
+          <span style={{
+            fontSize: top ? 17 : 15, fontWeight: 800, fontFamily: BRUSH,
+            color: isPos ? (top ? GOLDB : GOLD) : RED,
+          }}>
+            {formatAmount(item.profit)}
+          </span>
+          <span style={{ fontSize: top ? 8 : 7, fontFamily: BRUSH, color: `${isPos ? GOLD : RED}77` }}>
+            ゼニ
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -106,8 +124,8 @@ function RankRow({ item, rank }: { item: RankingItem; rank: number }) {
 
 export function HomeScreen({ refreshKey }: Props) {
   const now = new Date();
-  const [total, setTotal]     = useState(0);
-  const [month, setMonth]     = useState(0);
+  const [total,   setTotal]   = useState(0);
+  const [month,   setMonth]   = useState(0);
   const [summary, setSummary] = useState({ winDays: 0, lossDays: 0, evenDays: 0, recoveryRate: null as number | null });
   const [ranking, setRanking] = useState<RankingItem[]>([]);
 
@@ -129,97 +147,90 @@ export function HomeScreen({ refreshKey }: Props) {
       height: '100dvh', display: 'flex', flexDirection: 'column',
       overflow: 'hidden', background: '#0A0905',
     }}>
-      {/* ── Header ── */}
+
+      {/* ── ヘッダー ── */}
       <div style={{
         flexShrink: 0,
-        background: 'linear-gradient(180deg,#0E0D08,#0A0905)',
         borderBottom: `1px solid ${BDR}`,
+        background: 'linear-gradient(180deg,#0E0D08 0%,#0A0905 100%)',
       }}>
         <div style={{ height: 4, background: `linear-gradient(90deg,${RED},${GOLD} 30%,${GOLDB} 50%,${GOLD} 70%,${RED})` }} />
-        <div style={{ padding: '12px 20px 10px', textAlign: 'center' }}>
+        <div style={{ padding: '14px 0 12px', textAlign: 'center' }}>
           <div style={{
-            fontSize: 44, fontWeight: 800, letterSpacing: '0.2em', lineHeight: 1,
-            color: GOLD, fontFamily: BRUSH,
-            textShadow: `0 2px 16px ${GOLD}55, 0 0 48px ${GOLD}1A`,
+            fontSize: 42, fontWeight: 800, letterSpacing: '0.22em',
+            color: GOLD, fontFamily: BRUSH, lineHeight: 1,
+            textShadow: `0 2px 14px ${GOLD}55`,
           }}>
             ゼニ帳
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 6 }}>
-            <div style={{ width: 30, height: 1, background: `${GOLD}40` }} />
-            <span style={{ fontSize: 9, letterSpacing: '0.45em', color: `${GOLD}70`, fontFamily: BRUSH }}>戦績管理</span>
-            <div style={{ width: 30, height: 1, background: `${GOLD}40` }} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 6 }}>
+            <div style={{ width: 32, height: 1, background: `${GOLD}35` }} />
+            <span style={{ fontSize: 9, letterSpacing: '0.5em', color: `${GOLD}65`, fontFamily: BRUSH }}>戦績管理</span>
+            <div style={{ width: 32, height: 1, background: `${GOLD}35` }} />
           </div>
         </div>
       </div>
 
-      {/* ── Contents ── */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* ── コンテンツ ── */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', padding: '4px 0' }}>
 
-        {/* 生涯収支 — 1行 */}
+        {/* ① 生涯収支 */}
         <div style={{
-          flexShrink: 0, padding: '18px 20px 14px',
-          background: 'radial-gradient(ellipse at 50% 0%,rgba(201,162,39,0.08),transparent 70%)',
+          textAlign: 'center', padding: '0 20px',
+          background: 'radial-gradient(ellipse at 50% 50%,rgba(201,162,39,0.07) 0%,transparent 70%)',
         }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 14 }}>
-            <span style={{
-              fontSize: 13, fontWeight: 800, letterSpacing: '0.45em', color: `${GOLDB}CC`,
-              fontFamily: BRUSH, flexShrink: 0,
-              borderBottom: `1px solid ${GOLD}60`, paddingBottom: 1,
-            }}>
-              生涯収支
-            </span>
-            <ZeniNum value={total} size={Math.abs(total) >= 10000000 ? 38 : 48} />
+          <div style={{
+            fontSize: 11, letterSpacing: '0.6em', color: `${GOLDB}BB`,
+            fontFamily: BRUSH, fontWeight: 700, marginBottom: 8,
+          }}>
+            生 涯 収 支
+          </div>
+          <ZeniAmt value={total} size={Math.abs(total) >= 10000000 ? 42 : 54} />
+        </div>
+
+        <Divider />
+
+        {/* ② 今月の収支 */}
+        <div style={{ padding: '0 16px' }}>
+          <SectionTitle>{now.getMonth() + 1}月の収支</SectionTitle>
+
+          {/* 月間合計 */}
+          <div style={{ textAlign: 'center', marginBottom: 12 }}>
+            <ZeniAmt value={month} size={38} />
+          </div>
+
+          {/* ステータス 3カード */}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <StatCard
+              label="勝ち日"
+              value={`${summary.winDays}日`}
+              color={GOLD}
+            />
+            <StatCard
+              label="負け日"
+              value={`${summary.lossDays}日`}
+              color={RED}
+            />
+            <StatCard
+              label="回収率"
+              value={recRate !== null ? `${recRate}%` : '—'}
+              color={recRate !== null ? (recRate >= 100 ? GOLD : RED) : SUB}
+            />
           </div>
         </div>
 
-        <OrnLine />
+        <Divider />
 
-        {/* 今月の収支 */}
-        <div style={{ flexShrink: 0, padding: '12px 16px 10px' }}>
-          <SecHead>{now.getMonth() + 1}月の収支</SecHead>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <ZeniNum value={month} size={34} />
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
-              <div style={{ display: 'flex', gap: 6 }}>
-                {[
-                  { label: '勝ち', value: `${summary.winDays}日`, color: GOLD },
-                  { label: '負け', value: `${summary.lossDays}日`, color: RED  },
-                ].map(({ label, value, color }) => (
-                  <div key={label} style={{
-                    flex: 1, background: CARD, border: `1px solid ${BDR}`,
-                    borderRadius: 6, padding: '5px 0', textAlign: 'center',
-                  }}>
-                    <div style={{ fontSize: 9, color: SUB, fontFamily: BRUSH, letterSpacing: '0.1em' }}>{label}</div>
-                    <div style={{ fontSize: 16, fontWeight: 800, fontFamily: BRUSH, color }}>{value}</div>
-                  </div>
-                ))}
-              </div>
-              <div style={{
-                background: CARD, border: `1px solid ${BDR}`,
-                borderRadius: 6, padding: '5px 0', textAlign: 'center',
-              }}>
-                <span style={{ fontSize: 9, color: SUB, fontFamily: BRUSH, letterSpacing: '0.1em', marginRight: 6 }}>回収率</span>
-                <span style={{
-                  fontSize: 16, fontWeight: 800, fontFamily: BRUSH,
-                  color: recRate !== null ? (recRate >= 100 ? GOLD : RED) : SUB,
-                }}>
-                  {recRate !== null ? `${recRate}%` : '—'}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <OrnLine />
-
-        {/* 今月の戦場ランキング */}
-        <div style={{ flex: 1, padding: '12px 16px 0', minHeight: 0 }}>
-          <SecHead>今月の戦場ランキング</SecHead>
+        {/* ③ 今月の戦場ランキング */}
+        <div style={{ padding: '0 16px' }}>
+          <SectionTitle>今月の戦場ランキング</SectionTitle>
           {ranking.length > 0 ? (
             <div style={{
-              background: CARD, border: `1px solid ${GBRD}`,
-              borderRadius: 10, padding: '2px 14px',
-              boxShadow: `0 0 20px ${GOLD}0A`,
+              background: CARD,
+              border: `1px solid ${GBRD}`,
+              borderRadius: 10,
+              overflow: 'hidden',
+              boxShadow: `0 0 24px ${GOLD}09`,
             }}>
               {ranking.slice(0, 3).map((item, i) => (
                 <RankRow key={item.label} item={item} rank={i + 1} />
@@ -228,15 +239,17 @@ export function HomeScreen({ refreshKey }: Props) {
           ) : (
             <div style={{
               background: CARD, border: `1px solid ${BDR}`, borderRadius: 10,
-              padding: '18px', textAlign: 'center', fontSize: 13, color: SUB, fontFamily: BRUSH,
+              padding: '20px', textAlign: 'center', fontSize: 13, color: SUB, fontFamily: BRUSH,
             }}>
               今月のデータがありません
             </div>
           )}
         </div>
 
-        <div style={{ height: NAV_H + 8, flexShrink: 0 }} />
       </div>
+
+      {/* nav 分のスペーサー */}
+      <div style={{ height: NAV_H, flexShrink: 0 }} />
     </div>
   );
 }
