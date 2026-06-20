@@ -23,6 +23,14 @@ export function deleteRecord(id: string): void {
   localStorage.setItem(RECORDS_KEY, JSON.stringify(getRecords().filter(r => r.id !== id)));
 }
 
+export function updateRecordMemo(id: string, memo: string): void {
+  const records = getRecords();
+  const idx = records.findIndex(r => r.id === id);
+  if (idx === -1) return;
+  records[idx] = { ...records[idx], memo: memo.trim() || undefined };
+  localStorage.setItem(RECORDS_KEY, JSON.stringify(records));
+}
+
 // ── Stores ───────────────────────────────────────────────────
 export function getStores(): Store[] {
   try {
