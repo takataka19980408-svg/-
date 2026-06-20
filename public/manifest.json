@@ -1,0 +1,29 @@
+{
+  "name": "ゼニ帳",
+  "short_name": "ゼニ帳",
+  "description": "賭け事の戦績管理アプリ",
+  "start_url": "/-/",
+  "scope": "/-/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0A0905",
+  "theme_color": "#0A0905",
+  "icons": [
+    {
+      "src": "/-/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/-/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/-/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
