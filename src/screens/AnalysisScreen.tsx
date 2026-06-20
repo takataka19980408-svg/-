@@ -357,6 +357,7 @@ export function AnalysisScreen({ refreshKey }: Props) {
   const [catItems, setCatItems] = useState<RankingItem[]>([]);
   const [wdItems,  setWdItems]  = useState<RankingItem[]>([]);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const dayDetailRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setDailyData(getDailyDataForMonth(year, month));
@@ -382,9 +383,15 @@ export function AnalysisScreen({ refreshKey }: Props) {
   };
 
   const handleDayClick = (day: number) => {
-    // day === -1 means "deselect" (tapped selected bar again)
     setSelectedDay(day === -1 ? null : day);
   };
+
+  // Scroll day detail into view after it renders
+  useEffect(() => {
+    if (selectedDay !== null && dayDetailRef.current) {
+      dayDetailRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [selectedDay]);
 
   const tabs: { id: AnalysisTab; label: string }[] = [
     { id: 'monthly',  label: '月別'  },
@@ -470,12 +477,14 @@ export function AnalysisScreen({ refreshKey }: Props) {
 
             {/* Day detail panel */}
             {selectedDay !== null && (
-              <DayDetail
-                records={dayRecords}
-                month={month}
-                day={selectedDay}
-                onClose={() => setSelectedDay(null)}
-              />
+              <div ref={dayDetailRef}>
+                <DayDetail
+                  records={dayRecords}
+                  month={month}
+                  day={selectedDay}
+                  onClose={() => setSelectedDay(null)}
+                />
+              </div>
             )}
 
             {/* Stats */}
