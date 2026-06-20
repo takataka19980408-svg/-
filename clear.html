@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ゼニ帳 — データリセット</title>
+  <style>
+    body { margin: 0; background: #0a0905; color: #C9A227;
+           font-family: "Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;
+           display: flex; align-items: center; justify-content: center; height: 100vh; text-align: center; }
+    .title { font-size: 32px; margin-bottom: 20px; }
+    .msg { font-size: 15px; line-height: 2; color: #EDE3C0; }
+    .sub { font-size: 12px; color: #524938; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div>
+    <div class="title">ゼニ帳</div>
+    <div class="msg" id="msg">データを消去中…</div>
+    <div class="sub" id="sub"></div>
+  </div>
+  <script>
+    localStorage.removeItem('zenicho_records');
+    localStorage.removeItem('zenicho_stores');
+    localStorage.removeItem('zenicho_settings');
+    document.getElementById('msg').textContent = '✅ データを消去しました';
+    document.getElementById('sub').textContent = '3秒後にアプリへ移動します…';
+    setTimeout(() => { location.href = './'; }, 3000);
+  </script>
+</body>
+</html>
