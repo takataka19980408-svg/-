@@ -1,8 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import './index.css';
 import type { MainScreen } from './types';
-import { getRecords } from './storage';
-import seedData from './data/seed_data.json';
 import { BottomNav } from './components/BottomNav';
 import { HomeScreen } from './screens/HomeScreen';
 import { RecordScreen } from './screens/RecordScreen';
@@ -14,13 +12,6 @@ export default function App() {
   const [screen, setScreen] = useState<MainScreen>('home');
   const [showRecord, setShowRecord] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
-
-  useEffect(() => {
-    if (getRecords().length > 0) return;
-    localStorage.setItem('zenicho_records', JSON.stringify(seedData.records));
-    localStorage.setItem('zenicho_stores',  JSON.stringify(seedData.stores ?? []));
-    setRefreshKey(k => k + 1);
-  }, []);
 
   const handleSaved = () => {
     setRefreshKey(k => k + 1);
