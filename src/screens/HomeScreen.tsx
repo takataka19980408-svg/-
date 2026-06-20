@@ -25,18 +25,21 @@ function profitColor(v: number) { return v > 0 ? GOLDB : v < 0 ? RED : SUB; }
 
 function totalFontSize(value: number): number {
   const len = formatAmount(Math.abs(value)).length;
-  if (len <= 5)  return 54;
-  if (len <= 7)  return 46;
-  if (len <= 9)  return 38;
-  if (len <= 11) return 32;
-  return 26;
+  if (len <= 4)  return 72;
+  if (len <= 6)  return 60;
+  if (len <= 8)  return 50;
+  if (len <= 10) return 42;
+  return 34;
 }
 
-function ZeniAmt({ value, size }: { value: number; size: number }) {
+function ZeniAmt({ value, size, glow }: { value: number; size: number; glow?: boolean }) {
   const c = profitColor(value);
   return (
     <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 4, whiteSpace: 'nowrap' }}>
-      <span style={{ fontSize: size, fontWeight: 800, fontFamily: BRUSH, color: c, lineHeight: 1 }}>
+      <span style={{
+        fontSize: size, fontWeight: 800, fontFamily: BRUSH, color: c, lineHeight: 1,
+        textShadow: glow && value !== 0 ? `0 0 40px ${c}77, 0 0 12px ${c}55` : undefined,
+      }}>
         {formatAmount(value)}
       </span>
       <span style={{ fontSize: Math.max(size * 0.28, 11), fontWeight: 700, fontFamily: BRUSH, color: `${c}88`, letterSpacing: '0.05em' }}>
@@ -302,17 +305,23 @@ export function HomeScreen({ refreshKey }: Props) {
 
         {/* ① 生涯収支 */}
         <div style={{
-          textAlign: 'center', padding: '28px 16px 20px',
-          background: 'radial-gradient(ellipse at 50% 50%,rgba(201,162,39,0.07) 0%,transparent 70%)',
+          textAlign: 'center', padding: '40px 16px 36px',
+          background: 'radial-gradient(ellipse at 50% 30%,rgba(201,162,39,0.13) 0%,transparent 68%)',
         }}>
-          <div style={{
-            fontSize: 11, letterSpacing: '0.6em', color: `${GOLDB}BB`,
-            fontFamily: BRUSH, fontWeight: 700, marginBottom: 10,
-          }}>
-            生 涯 収 支
+          {/* 装飾ライン + ラベル */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, padding: '0 8px' }}>
+            <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg,transparent,${GOLD}50)` }} />
+            <span style={{
+              fontSize: 12, letterSpacing: '0.65em', color: `${GOLDB}CC`,
+              fontFamily: BRUSH, fontWeight: 700,
+            }}>
+              生 涯 収 支
+            </span>
+            <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg,${GOLD}50,transparent)` }} />
           </div>
+          {/* 金額 */}
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'baseline', flexWrap: 'wrap', gap: 4 }}>
-            <ZeniAmt value={total} size={totalFontSize(total)} />
+            <ZeniAmt value={total} size={totalFontSize(total)} glow />
           </div>
         </div>
 
