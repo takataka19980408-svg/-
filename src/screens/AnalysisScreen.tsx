@@ -226,7 +226,7 @@ function HBarChart({ items }: { items: RankingItem[] }) {
         return (
           <div key={item.label} style={{ marginBottom: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: idx < 3 ? 'var(--text-main)' : 'var(--text-sub)' }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: idx < 3 ? 'var(--text-main)' : 'var(--text-sub)', fontFamily: BRUSH }}>
                 {item.label}
               </span>
               <div style={{ textAlign: 'right' }}>
@@ -518,7 +518,7 @@ export function AnalysisScreen({ refreshKey }: Props) {
         {/* ── Category tab ── */}
         {tab === 'category' && (
           <div>
-            <div style={{ fontSize: 11, letterSpacing: '0.2em', color: 'var(--gold)', marginBottom: 12, borderLeft: '3px solid var(--red)', paddingLeft: 8 }}>
+            <div style={{ fontSize: 11, letterSpacing: '0.2em', color: 'var(--gold)', marginBottom: 12, borderLeft: '3px solid var(--red)', paddingLeft: 8, fontFamily: BRUSH }}>
               種目別 収支ランキング（全期間）
             </div>
             <HBarChart items={catItems} />
@@ -528,7 +528,7 @@ export function AnalysisScreen({ refreshKey }: Props) {
         {/* ── Weekday tab ── */}
         {tab === 'weekday' && (
           <div>
-            <div style={{ fontSize: 11, letterSpacing: '0.2em', color: 'var(--gold)', marginBottom: 12, borderLeft: '3px solid var(--red)', paddingLeft: 8 }}>
+            <div style={{ fontSize: 11, letterSpacing: '0.2em', color: 'var(--gold)', marginBottom: 12, borderLeft: '3px solid var(--red)', paddingLeft: 8, fontFamily: BRUSH }}>
               曜日別 収支ランキング（全期間）
             </div>
             <HBarChart items={wdItems} />
