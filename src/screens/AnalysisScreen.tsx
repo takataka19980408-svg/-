@@ -357,7 +357,8 @@ export function AnalysisScreen({ refreshKey }: Props) {
   const [catItems, setCatItems] = useState<RankingItem[]>([]);
   const [wdItems,  setWdItems]  = useState<RankingItem[]>([]);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
-  const dayDetailRef = useRef<HTMLDivElement>(null);
+  const dayDetailRef    = useRef<HTMLDivElement>(null);
+  const scrollAreaRef   = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setDailyData(getDailyDataForMonth(year, month));
@@ -386,11 +387,19 @@ export function AnalysisScreen({ refreshKey }: Props) {
     setSelectedDay(day === -1 ? null : day);
   };
 
-  // Scroll day detail into view after it renders
+  // Scroll day detail into view, accounting for the fixed nav bar
   useEffect(() => {
-    if (selectedDay !== null && dayDetailRef.current) {
-      dayDetailRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
+    if (selectedDay === null || !dayDetailRef.current || !scrollAreaRef.current) return;
+    requestAnimationFrame(() => {
+      const el        = dayDetailRef.current!;
+      const container = scrollAreaRef.current!;
+      // Visible bottom = container bottom edge minus the fixed nav height
+      const visibleBottom = container.getBoundingClientRect().bottom - NAV_H - 8;
+      const elBottom      = el.getBoundingClientRect().bottom;
+      if (elBottom > visibleBottom) {
+        container.scrollBy({ top: elBottom - visibleBottom, behavior: 'smooth' });
+      }
+    });
   }, [selectedDay]);
 
   const tabs: { id: AnalysisTab; label: string }[] = [
@@ -437,7 +446,7 @@ export function AnalysisScreen({ refreshKey }: Props) {
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: NAV_H + 16 }}>
+      <div ref={scrollAreaRef} style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: NAV_H + 16 }}>
 
         {/* ── Monthly tab ── */}
         {tab === 'monthly' && (
