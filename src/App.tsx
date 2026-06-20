@@ -34,12 +34,12 @@ export default function App() {
 
   return (
     <>
-      {screen === 'home'     && <HomeScreen onRecord={() => setShowRecord(true)} refreshKey={refreshKey} />}
+      {screen === 'home'     && <HomeScreen refreshKey={refreshKey} />}
       {screen === 'history'  && <HistoryScreen refreshKey={refreshKey} />}
       {screen === 'analysis' && <AnalysisScreen refreshKey={refreshKey} />}
       {screen === 'ranking'  && <RankingScreen refreshKey={refreshKey} />}
       {screen === 'settings' && <SettingsScreen onDataChange={() => setRefreshKey(k => k + 1)} />}
-      <BottomNav active={screen} onChange={setScreen} />
+      <BottomNav active={screen} onChange={setScreen} onRecord={() => setShowRecord(true)} />
     </>
   );
 }
