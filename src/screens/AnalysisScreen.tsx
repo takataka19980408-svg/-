@@ -11,6 +11,7 @@ interface Props { refreshKey: number; }
 
 type AnalysisTab = 'monthly' | 'category' | 'weekday';
 const NAV_H = 60;
+const BRUSH = '"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif';
 
 // ── Daily bar chart ───────────────────────────────────────────
 function DailyBarChart({
@@ -94,7 +95,7 @@ function DailyBarChart({
                 color: isSel
                   ? 'rgba(201,162,39,0.9)'
                   : hasData ? 'var(--text-sub)' : 'rgba(245,238,216,0.2)',
-                fontFamily: 'sans-serif',
+                fontFamily: BRUSH,
                 fontWeight: isSel ? 700 : 400,
               }}>
                 {day}
@@ -135,7 +136,7 @@ function DayDetail({
       }}>
         <span style={{
           fontSize: 13, fontWeight: 700,
-          color: 'var(--gold)', fontFamily: 'var(--font-brush, sans-serif)',
+          color: 'var(--gold)', fontFamily: BRUSH,
           letterSpacing: '0.05em',
         }}>
           {month}月{day}日
@@ -143,7 +144,7 @@ function DayDetail({
         <span style={{
           fontSize: 14, fontWeight: 800,
           color: dayProfit > 0 ? 'var(--gold)' : dayProfit < 0 ? 'var(--loss)' : 'var(--text-sub)',
-          fontFamily: 'sans-serif',
+          fontFamily: BRUSH,
         }}>
           {formatAmount(dayProfit)}
         </span>
@@ -161,7 +162,7 @@ function DayDetail({
 
       {/* Records */}
       {records.length === 0 ? (
-        <div style={{ padding: '18px', textAlign: 'center', color: 'var(--text-sub)', fontSize: 13, fontFamily: 'sans-serif' }}>
+        <div style={{ padding: '18px', textAlign: 'center', color: 'var(--text-sub)', fontSize: 13, fontFamily: BRUSH }}>
           記録なし
         </div>
       ) : (
@@ -176,7 +177,7 @@ function DayDetail({
                 <span style={{
                   fontSize: 13, fontWeight: 700, color: 'var(--text-main)',
                   overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                  fontFamily: 'sans-serif',
+                  fontFamily: BRUSH,
                 }}>
                   {r.storeName}
                 </span>
@@ -184,22 +185,22 @@ function DayDetail({
                   fontSize: 10, padding: '1px 6px', borderRadius: 8, flexShrink: 0,
                   background: 'rgba(201,162,39,0.12)',
                   border: '1px solid rgba(201,162,39,0.25)',
-                  color: 'var(--gold)', fontFamily: 'sans-serif',
+                  color: 'var(--gold)', fontFamily: BRUSH,
                 }}>
                   {CATEGORY_LABELS[r.category] ?? r.category}
                 </span>
               </div>
-              <div style={{ fontSize: 11, color: 'var(--text-sub)', fontFamily: 'sans-serif' }}>
+              <div style={{ fontSize: 11, color: 'var(--text-sub)', fontFamily: BRUSH }}>
                 IN ¥{r.inAmount.toLocaleString()}　→　OUT ¥{r.outAmount.toLocaleString()}
               </div>
               {r.memo && (
-                <div style={{ fontSize: 11, color: 'rgba(245,238,216,0.5)', marginTop: 2, fontFamily: 'sans-serif', fontStyle: 'italic' }}>
+                <div style={{ fontSize: 11, color: 'rgba(245,238,216,0.5)', marginTop: 2, fontFamily: BRUSH, fontStyle: 'italic' }}>
                   {r.memo}
                 </div>
               )}
             </div>
             <div style={{
-              fontSize: 16, fontWeight: 900, fontFamily: 'sans-serif', flexShrink: 0,
+              fontSize: 16, fontWeight: 900, fontFamily: BRUSH, flexShrink: 0,
               color: r.profit > 0 ? 'var(--gold)' : r.profit < 0 ? 'var(--loss)' : 'var(--text-sub)',
             }}>
               {formatAmount(r.profit)}
@@ -214,7 +215,7 @@ function DayDetail({
 // ── Horizontal bar chart ──────────────────────────────────────
 function HBarChart({ items }: { items: RankingItem[] }) {
   if (items.length === 0) {
-    return <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--text-sub)', fontSize: 13, fontFamily: 'sans-serif' }}>データなし</div>;
+    return <div style={{ padding: '20px 0', textAlign: 'center', color: 'var(--text-sub)', fontSize: 13, fontFamily: BRUSH }}>データなし</div>;
   }
   const maxAbs = Math.max(...items.map(i => Math.abs(i.profit)), 1);
   return (
@@ -229,10 +230,10 @@ function HBarChart({ items }: { items: RankingItem[] }) {
                 {item.label}
               </span>
               <div style={{ textAlign: 'right' }}>
-                <span style={{ fontSize: 14, fontWeight: 900, fontFamily: 'sans-serif', color: isPos ? 'var(--profit)' : 'var(--loss)' }}>
+                <span style={{ fontSize: 14, fontWeight: 900, fontFamily: BRUSH, color: isPos ? 'var(--profit)' : 'var(--loss)' }}>
                   {formatAmount(item.profit)}
                 </span>
-                <span style={{ fontSize: 10, color: 'var(--text-sub)', marginLeft: 4, fontFamily: 'sans-serif' }}>
+                <span style={{ fontSize: 10, color: 'var(--text-sub)', marginLeft: 4, fontFamily: BRUSH }}>
                   {item.count}回
                 </span>
               </div>
@@ -260,8 +261,8 @@ function StatRow({ label, value, color }: { label: string; value: string; color?
       flex: 1, background: 'var(--bg-card)', border: '1px solid var(--border)',
       borderRadius: 8, padding: '10px 12px', textAlign: 'center',
     }}>
-      <div style={{ fontSize: 10, color: 'var(--text-sub)', marginBottom: 4, fontFamily: 'sans-serif', letterSpacing: '0.08em' }}>{label}</div>
-      <div style={{ fontSize: 18, fontWeight: 900, fontFamily: 'sans-serif', color: color ?? 'var(--text-main)' }}>{value}</div>
+      <div style={{ fontSize: 10, color: 'var(--text-sub)', marginBottom: 4, fontFamily: BRUSH, letterSpacing: '0.08em' }}>{label}</div>
+      <div style={{ fontSize: 18, fontWeight: 900, fontFamily: BRUSH, color: color ?? 'var(--text-main)' }}>{value}</div>
     </div>
   );
 }
@@ -315,7 +316,7 @@ function MonthScroller({
         return (
           <div key={`${item.year}-${item.month}`} style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
             {/* Year label above first month of each year */}
-            <div style={{ fontSize: 8, color: item.showYear ? 'rgba(201,162,39,0.5)' : 'transparent', fontFamily: 'sans-serif', height: 12, lineHeight: '12px' }}>
+            <div style={{ fontSize: 8, color: item.showYear ? 'rgba(201,162,39,0.5)' : 'transparent', fontFamily: BRUSH, height: 12, lineHeight: '12px' }}>
               {item.year}
             </div>
             <button
@@ -325,7 +326,7 @@ function MonthScroller({
                 minWidth: 44, padding: '6px 10px',
                 borderRadius: 6,
                 fontSize: 13, fontWeight: isSel ? 800 : 400,
-                fontFamily: 'sans-serif',
+                fontFamily: BRUSH,
                 background: isSel ? 'rgba(201,162,39,0.15)' : 'transparent',
                 border: isSel ? '1px solid rgba(201,162,39,0.55)' : '1px solid rgba(255,255,255,0.07)',
                 color: isSel ? '#F5D060' : 'rgba(245,238,216,0.45)',
@@ -420,7 +421,7 @@ export function AnalysisScreen({ refreshKey }: Props) {
           <div style={{
             fontSize: 17, fontWeight: 900, letterSpacing: '0.25em', color: 'var(--gold)',
             textShadow: '0 0 16px rgba(255,215,0,0.4)',
-            fontFamily: '"Hiragino Mincho ProN",serif', marginBottom: 10,
+            fontFamily: BRUSH, marginBottom: 10,
           }}>
             戦績分析
           </div>
@@ -432,7 +433,7 @@ export function AnalysisScreen({ refreshKey }: Props) {
                 onClick={() => setTab(id)}
                 style={{
                   flex: 1, padding: '10px 0', fontSize: 13, fontWeight: 700,
-                  fontFamily: 'sans-serif', letterSpacing: '0.05em',
+                  fontFamily: BRUSH, letterSpacing: '0.05em',
                   background: 'transparent', border: 'none',
                   color: tab === id ? 'var(--gold)' : 'var(--text-sub)',
                   borderBottom: tab === id ? '2px solid var(--gold)' : '2px solid transparent',
@@ -446,7 +447,7 @@ export function AnalysisScreen({ refreshKey }: Props) {
         </div>
       </div>
 
-      <div ref={scrollAreaRef} style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: NAV_H + 16 }}>
+      <div ref={scrollAreaRef} style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: NAV_H + 56 }}>
 
         {/* ── Monthly tab ── */}
         {tab === 'monthly' && (
@@ -458,11 +459,11 @@ export function AnalysisScreen({ refreshKey }: Props) {
 
             {/* Monthly total */}
             <div style={{ textAlign: 'center', marginBottom: 12 }}>
-              <span style={{ fontSize: 10, color: 'var(--text-sub)', letterSpacing: '0.2em', fontFamily: 'sans-serif' }}>
+              <span style={{ fontSize: 10, color: 'var(--text-sub)', letterSpacing: '0.2em', fontFamily: BRUSH }}>
                 {year}年{month}月　月間収支
               </span>
               <span style={{
-                fontSize: 24, fontWeight: 900, fontFamily: 'sans-serif',
+                fontSize: 24, fontWeight: 900, fontFamily: BRUSH,
                 color: monthlyProfit > 0 ? 'var(--gold)' : monthlyProfit < 0 ? 'var(--loss)' : 'var(--text-sub)',
               }}>
                 {formatAmount(monthlyProfit)}
@@ -480,7 +481,7 @@ export function AnalysisScreen({ refreshKey }: Props) {
                 onDayClick={handleDayClick}
               />
             </div>
-            <div style={{ fontSize: 10, color: 'rgba(245,238,216,0.25)', textAlign: 'center', marginBottom: 10, fontFamily: 'sans-serif' }}>
+            <div style={{ fontSize: 10, color: 'rgba(245,238,216,0.25)', textAlign: 'center', marginBottom: 10, fontFamily: BRUSH }}>
               棒グラフをタップするとその日の記録を表示
             </div>
 
