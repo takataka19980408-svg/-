@@ -1,0 +1,43 @@
+{
+  "mofu_encounter": [
+    { "speaker": null, "text": "草むらが揺れた……" },
+    { "speaker": null, "text": "小さな、毛のふわふわした生き物が\nこちらを見ている。" },
+    { "speaker": "???", "text": "……くぅ。" },
+    { "speaker": "サトシ", "text": "……逃げないのか。" },
+    { "speaker": null, "text": "生き物はしばらくサトシを見つめた後、\nとてとてと近づいてきた。" },
+    { "speaker": "サトシ", "text": "（モフ、と呼ぼう）" }
+  ],
+  "mofu_join": [
+    { "speaker": null, "text": "モフが仲間になった！" }
+  ],
+  "stone_found": [
+    { "speaker": null, "text": "地面に、青白く光る石が\n半分埋まっている。" },
+    { "speaker": "サトシ", "text": "……なんだ、これ。" },
+    { "speaker": null, "text": "手を伸ばすと、石は吸い込まれるように\n手のひらに収まった。" },
+    { "speaker": null, "text": "その瞬間——" },
+    { "speaker": "???", "text": "……返して。", "style": "voice" },
+    { "speaker": "サトシ", "text": "……！" },
+    { "speaker": null, "text": "頭の中に声が響いた。\nどこからとも知れない、小さな声。" },
+    { "speaker": "サトシ", "text": "（気のせい……ではないな）" },
+    { "speaker": null, "text": "「奇妙な石」を手に入れた。" }
+  ],
+  "puni_king_before": [
+    { "speaker": null, "text": "地鳴りのような音がした。" },
+    { "speaker": null, "text": "木々が揺れ、鳥が一斉に空へ逃げていく。" },
+    { "speaker": null, "text": "森の奥から、巨大な青い塊が\nゆっくりと現れた。" },
+    { "speaker": "サトシ", "text": "……プニキング。\n暴走している。" },
+    { "speaker": "モフ", "text": "くぅっ……！" }
+  ],
+  "puni_king_after": [
+    { "speaker": null, "text": "プニキングは静かに萎んでいった。" },
+    { "speaker": null, "text": "森が静寂を取り戻す。" },
+    { "speaker": "サトシ", "text": "……終わった。" },
+    { "speaker": null, "text": "手の中の石が、一瞬強く光った。" },
+    { "speaker": "???", "text": "……ありがとう。", "style": "voice" },
+    { "speaker": "サトシ", "text": "（また……声が）" }
+  ],
+  "return_to_village": [
+    { "speaker": null, "text": "サトシとモフは村への道を歩いた。" },
+    { "speaker": null, "text": "夕暮れ空に、星が一つ瞬いている。" }
+  ]
+}
