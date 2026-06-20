@@ -63,17 +63,30 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <path d="M46 412 L46 460 L94 460" fill="none" stroke="#C9A227" stroke-width="2" opacity="0.5" stroke-linecap="round"/>
   <path d="M466 412 L466 460 L418 460" fill="none" stroke="#C9A227" stroke-width="2" opacity="0.5" stroke-linecap="round"/>
 
-  <!-- ── 帳 character ── -->
-  <!-- Glow pass -->
-  <text x="256" y="328"
+  <!-- ── ゼニ (top) ── -->
+  <text x="256" y="148"
     font-family="'Hiragino Mincho ProN','Yu Mincho','MS Mincho',serif"
-    font-size="265" font-weight="700"
+    font-size="100" font-weight="700" letter-spacing="16"
+    fill="#C9A227" text-anchor="middle"
+    filter="url(#textglow)" opacity="0.35">ゼニ</text>
+  <text x="256" y="148"
+    font-family="'Hiragino Mincho ProN','Yu Mincho','MS Mincho',serif"
+    font-size="100" font-weight="700" letter-spacing="16"
+    fill="#C9A227" text-anchor="middle" opacity="0.88">ゼニ</text>
+
+  <!-- Thin separator line -->
+  <line x1="80" y1="168" x2="432" y2="168"
+    stroke="#C9A227" stroke-width="1" opacity="0.28"/>
+
+  <!-- ── 帳 (bottom) ── -->
+  <text x="256" y="378"
+    font-family="'Hiragino Mincho ProN','Yu Mincho','MS Mincho',serif"
+    font-size="196" font-weight="700"
     fill="#C9A227" text-anchor="middle"
     filter="url(#textglow)" opacity="0.4">帳</text>
-  <!-- Solid pass -->
-  <text x="256" y="328"
+  <text x="256" y="378"
     font-family="'Hiragino Mincho ProN','Yu Mincho','MS Mincho',serif"
-    font-size="265" font-weight="700"
+    font-size="196" font-weight="700"
     fill="#C9A227" text-anchor="middle" opacity="0.93">帳</text>
 
   <!-- ── SLASH ── -->
