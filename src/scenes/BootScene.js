@@ -170,7 +170,7 @@ export default class BootScene extends Phaser.Scene {
     this._genEnemy('mori_oni', (g) => {
       g.fillStyle(0x774422); g.fillEllipse(32, 36, 36, 40);
       g.fillStyle(0x442211); g.fillEllipse(32, 22, 28, 24);
-      g.fillStyle(0xffaa00); g.fillTriangle(20,14,24,6,28,14); g.fillTriangle(36,14,40,6,44,14);
+      g.fillStyle(0xffaa00); g.fillTriangle(20,14,24,6,28,14); g.fillStyle(0xffaa00); g.fillTriangle(36,14,40,6,44,14);
       g.fillStyle(0xffffff); g.fillCircle(25, 24, 4); g.fillCircle(39, 24, 4);
       g.fillStyle(0xff2200); g.fillCircle(25, 24, 2); g.fillCircle(39, 24, 2);
     }, 64, 64);
@@ -179,7 +179,7 @@ export default class BootScene extends Phaser.Scene {
     this._genEnemy('puni_king', (g) => {
       g.fillStyle(0x3344cc); g.fillEllipse(64, 80, 90, 76);
       g.fillStyle(0x4455dd); g.fillEllipse(50, 64, 40, 30);
-      g.fillStyle(0xffdd00); g.fillPolygon([56,24, 64,10, 72,24]);
+      g.fillStyle(0xffdd00); g.fillTriangle(56,24, 64,10, 72,24);
       g.fillStyle(0x111133); g.fillCircle(48, 68, 7); g.fillCircle(80, 68, 7);
       g.fillStyle(0xaabbff); g.fillCircle(47, 67, 3); g.fillCircle(79, 67, 3);
       // 光るオーラ

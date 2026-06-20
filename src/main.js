@@ -8,7 +8,7 @@ import DialogScene  from './scenes/DialogScene.js';
 import ChapterEndScene from './scenes/ChapterEndScene.js';
 
 const config = {
-  type: Phaser.AUTO,
+  type: Phaser.CANVAS,
   width: GAME_W,
   height: GAME_H,
   backgroundColor: '#0a0a18',
