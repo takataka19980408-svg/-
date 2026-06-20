@@ -1,0 +1,22 @@
+{
+  "herb": {
+    "id": "herb",
+    "name": "薬草",
+    "type": "heal",
+    "value": 30,
+    "description": "HPを30回復する。"
+  },
+  "mp_herb": {
+    "id": "mp_herb",
+    "name": "精気草",
+    "type": "mp_heal",
+    "value": 10,
+    "description": "MPを10回復する。"
+  },
+  "kimyou_stone": {
+    "id": "kimyou_stone",
+    "name": "奇妙な石",
+    "type": "key",
+    "description": "青白く光る、不思議な石。持っているだけで、何かが語りかけてくるような気がする。"
+  }
+}

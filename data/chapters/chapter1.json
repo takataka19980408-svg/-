@@ -1,0 +1,24 @@
+{
+  "id": "chapter1",
+  "title": "第一章　星の落ちた森",
+  "startMap": "midori_village",
+  "endCondition": { "flag": "boss_defeated", "afterEvent": "chapter1_end" },
+  "endSequence": [
+    { "cmd": "fade", "color": "black", "duration": 1000 },
+    { "cmd": "message", "speaker": null, "text": "サトシとモフは村へ帰った。" },
+    { "cmd": "sceneChange", "to": "midori_village" },
+    { "cmd": "eventChain", "script": "return_to_elder" }
+  ],
+  "scripts": {
+    "return_to_elder": [
+      { "cmd": "message", "speaker": "村長", "text": "戻ったか……\n森はどうだった。" },
+      { "cmd": "message", "speaker": "サトシ", "text": "プニキングが暴走していました。\n倒しました。" },
+      { "cmd": "message", "speaker": "村長", "text": "そうか……\nその石が原因だとしたら。" },
+      { "cmd": "message", "speaker": "村長", "text": "王都には賢者エルドがいる。\nその石について知っているかもしれない。" },
+      { "cmd": "message", "speaker": "村長", "text": "危険かもしれないが……\n頼めるか、サトシ。" },
+      { "cmd": "message", "speaker": "サトシ", "text": "……行きます。" },
+      { "cmd": "setFlag", "flag": "chapter1_complete", "value": true },
+      { "cmd": "chapterEnd" }
+    ]
+  }
+}

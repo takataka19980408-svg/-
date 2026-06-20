@@ -1,0 +1,29 @@
+{
+  "normal_attack": {
+    "id": "normal_attack",
+    "name": "たたかう",
+    "type": "physical",
+    "power": 1.0,
+    "mpCost": 0,
+    "target": "single_enemy",
+    "message": "{user}の攻撃！"
+  },
+  "bite": {
+    "id": "bite",
+    "name": "かみつく",
+    "type": "physical",
+    "power": 1.3,
+    "mpCost": 3,
+    "target": "single_enemy",
+    "message": "モフはかみついた！"
+  },
+  "starlight": {
+    "id": "starlight",
+    "name": "ほしのひかり",
+    "type": "magic",
+    "power": 1.5,
+    "mpCost": 5,
+    "target": "single_enemy",
+    "message": "サトシは星の光を放った！"
+  }
+}
