@@ -450,7 +450,7 @@ export function AnalysisScreen({ refreshKey }: Props) {
 
         {/* ── Monthly tab ── */}
         {tab === 'monthly' && (
-          <div>
+          <div style={{ paddingBottom: 24 }}>
             {/* Month scroller */}
             <div style={{ marginBottom: 14 }}>
               <MonthScroller year={year} month={month} onChange={handleMonthChange} />
