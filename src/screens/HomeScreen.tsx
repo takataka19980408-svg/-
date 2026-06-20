@@ -3,6 +3,7 @@ import type { RankingItem } from '../storage';
 import {
   getTotalProfit, getMonthProfit, getMonthSummary,
   getMonthStoreRanking, formatAmount,
+  getStoreRanking, getCategoryRanking, getStoreCategoryRanking,
 } from '../storage';
 
 interface Props { refreshKey: number; }
@@ -84,7 +85,6 @@ function RankRow({ item, rank }: { item: RankingItem; rank: number }) {
       borderBottom: rank < 3 ? `1px solid ${BDR}` : 'none',
       background: top ? `linear-gradient(90deg,${GOLD}06,transparent 60%)` : 'transparent',
     }}>
-      {/* Medal badge */}
       <div style={{
         width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
         border: `1.5px solid ${medal}`, background: `${medal}14`,
@@ -93,7 +93,6 @@ function RankRow({ item, rank }: { item: RankingItem; rank: number }) {
       }}>
         {rank}位
       </div>
-      {/* Name & battle count */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
           fontSize: 13, fontWeight: 700, color: top ? TEXT : `${TEXT}AA`,
@@ -104,7 +103,6 @@ function RankRow({ item, rank }: { item: RankingItem; rank: number }) {
         </div>
         <div style={{ fontSize: 10, color: SUB, fontFamily: BRUSH }}>{item.count}戦</div>
       </div>
-      {/* Amount */}
       <div style={{ flexShrink: 0, textAlign: 'right' }}>
         <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2 }}>
           <span style={{
@@ -119,6 +117,128 @@ function RankRow({ item, rank }: { item: RankingItem; rank: number }) {
         </div>
       </div>
     </div>
+  );
+}
+
+type RankTab = 'store' | 'category' | 'storecat';
+const RANK_TABS: { id: RankTab; label: string }[] = [
+  { id: 'store',    label: '店舗別'   },
+  { id: 'category', label: '種目別'   },
+  { id: 'storecat', label: '店舗×種目' },
+];
+
+function AllTimeRanking({ refreshKey }: { refreshKey: number }) {
+  const [tab, setTab]           = useState<RankTab>('store');
+  const [storeItems,    setStoreItems]    = useState<RankingItem[]>([]);
+  const [catItems,      setCatItems]      = useState<RankingItem[]>([]);
+  const [storeCatItems, setStoreCatItems] = useState<RankingItem[]>([]);
+
+  useEffect(() => {
+    setStoreItems(getStoreRanking());
+    setCatItems(getCategoryRanking());
+    setStoreCatItems(getStoreCategoryRanking());
+  }, [refreshKey]);
+
+  const items = tab === 'store' ? storeItems : tab === 'category' ? catItems : storeCatItems;
+  const maxAbs = Math.max(...items.map(i => Math.abs(i.profit)), 1);
+
+  return (
+    <>
+      {/* Tab row */}
+      <div style={{ display: 'flex', marginBottom: 14, background: CARD, borderRadius: 8, padding: 3, border: `1px solid ${BDR}` }}>
+        {RANK_TABS.map(t => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            style={{
+              flex: 1, padding: '7px 0', fontSize: 11, fontWeight: tab === t.id ? 800 : 400,
+              fontFamily: BRUSH, letterSpacing: '0.05em',
+              background: tab === t.id ? `${GOLD}18` : 'transparent',
+              border: tab === t.id ? `1px solid ${GOLD}44` : '1px solid transparent',
+              borderRadius: 6,
+              color: tab === t.id ? GOLDB : SUB,
+              cursor: 'pointer',
+            }}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* List */}
+      {items.length === 0 ? (
+        <div style={{
+          background: CARD, border: `1px solid ${BDR}`, borderRadius: 10,
+          padding: '28px', textAlign: 'center', fontSize: 13, color: SUB, fontFamily: BRUSH,
+        }}>
+          データがありません
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {items.slice(0, 10).map((item, idx) => {
+            const medal = MEDAL[idx] ?? DIM;
+            const isPos = item.profit >= 0;
+            const pct   = (Math.abs(item.profit) / maxAbs) * 100;
+            return (
+              <div key={item.label} style={{
+                background: idx < 3
+                  ? `linear-gradient(90deg,${medal}0A,${CARD} 55%)`
+                  : CARD,
+                border: `1px solid ${idx < 3 ? `${medal}33` : BDR}`,
+                borderRadius: 10, padding: '12px 14px',
+                display: 'flex', alignItems: 'center', gap: 12,
+              }}>
+                {/* Badge */}
+                <div style={{
+                  width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
+                  border: `1.5px solid ${idx < 3 ? medal : SUB}`,
+                  background: idx < 3 ? `${medal}14` : 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 9, fontWeight: 800,
+                  color: idx < 3 ? medal : `${TEXT}44`,
+                  fontFamily: BRUSH,
+                }}>
+                  {idx + 1}位
+                </div>
+                {/* Body */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{
+                    fontSize: 13, fontWeight: 700,
+                    color: idx < 3 ? TEXT : `${TEXT}99`,
+                    fontFamily: BRUSH,
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    marginBottom: 5,
+                  }}>
+                    {item.label}
+                  </div>
+                  {/* Bar */}
+                  <div style={{ height: 3, background: `${GOLD}15`, borderRadius: 2, overflow: 'hidden', marginBottom: 4 }}>
+                    <div style={{
+                      height: '100%', width: `${pct}%`, borderRadius: 2,
+                      background: isPos
+                        ? `linear-gradient(90deg,${GOLD},${GOLDB}88)`
+                        : `linear-gradient(90deg,${RED},#FF333388)`,
+                      transition: 'width 0.4s ease',
+                    }} />
+                  </div>
+                  <span style={{ fontSize: 10, color: SUB, fontFamily: BRUSH }}>{item.count}戦</span>
+                </div>
+                {/* Amount */}
+                <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: 2, flexShrink: 0 }}>
+                  <span style={{
+                    fontSize: idx === 0 ? 17 : 15, fontWeight: 800, fontFamily: BRUSH,
+                    color: isPos ? (idx === 0 ? GOLDB : GOLD) : RED,
+                  }}>
+                    {formatAmount(item.profit)}
+                  </span>
+                  <span style={{ fontSize: 7, fontFamily: BRUSH, color: `${isPos ? GOLD : RED}66` }}>ゼニ</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </>
   );
 }
 
@@ -143,10 +263,7 @@ export function HomeScreen({ refreshKey }: Props) {
   const recRate = summary.recoveryRate;
 
   return (
-    <div style={{
-      height: '100dvh', display: 'flex', flexDirection: 'column',
-      overflow: 'hidden', background: '#0A0905',
-    }}>
+    <div style={{ background: '#0A0905', minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
 
       {/* ── ヘッダー ── */}
       <div style={{
@@ -171,17 +288,17 @@ export function HomeScreen({ refreshKey }: Props) {
         </div>
       </div>
 
-      {/* ── コンテンツ ── */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-evenly', padding: '4px 0' }}>
+      {/* ── スクロールコンテンツ ── */}
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: NAV_H + 16 }}>
 
         {/* ① 生涯収支 */}
         <div style={{
-          textAlign: 'center', padding: '0 20px',
+          textAlign: 'center', padding: '28px 20px 20px',
           background: 'radial-gradient(ellipse at 50% 50%,rgba(201,162,39,0.07) 0%,transparent 70%)',
         }}>
           <div style={{
             fontSize: 11, letterSpacing: '0.6em', color: `${GOLDB}BB`,
-            fontFamily: BRUSH, fontWeight: 700, marginBottom: 8,
+            fontFamily: BRUSH, fontWeight: 700, marginBottom: 10,
           }}>
             生 涯 収 支
           </div>
@@ -191,26 +308,16 @@ export function HomeScreen({ refreshKey }: Props) {
         <Divider />
 
         {/* ② 今月の収支 */}
-        <div style={{ padding: '0 16px' }}>
+        <div style={{ padding: '20px 16px' }}>
           <SectionTitle>{now.getMonth() + 1}月の収支</SectionTitle>
 
-          {/* 月間合計 */}
-          <div style={{ textAlign: 'center', marginBottom: 12 }}>
+          <div style={{ textAlign: 'center', marginBottom: 14 }}>
             <ZeniAmt value={month} size={38} />
           </div>
 
-          {/* ステータス 3カード */}
           <div style={{ display: 'flex', gap: 8 }}>
-            <StatCard
-              label="勝ち日"
-              value={`${summary.winDays}日`}
-              color={GOLD}
-            />
-            <StatCard
-              label="負け日"
-              value={`${summary.lossDays}日`}
-              color={RED}
-            />
+            <StatCard label="勝ち日" value={`${summary.winDays}日`} color={GOLD} />
+            <StatCard label="負け日" value={`${summary.lossDays}日`} color={RED} />
             <StatCard
               label="回収率"
               value={recRate !== null ? `${recRate}%` : '—'}
@@ -221,8 +328,8 @@ export function HomeScreen({ refreshKey }: Props) {
 
         <Divider />
 
-        {/* ③ 今月の戦場ランキング */}
-        <div style={{ padding: '0 16px' }}>
+        {/* ③ 今月の戦場ランキング（TOP3） */}
+        <div style={{ padding: '20px 16px' }}>
           <SectionTitle>今月の戦場ランキング</SectionTitle>
           {ranking.length > 0 ? (
             <div style={{
@@ -246,10 +353,15 @@ export function HomeScreen({ refreshKey }: Props) {
           )}
         </div>
 
-      </div>
+        <Divider />
 
-      {/* nav 分のスペーサー */}
-      <div style={{ height: NAV_H, flexShrink: 0 }} />
+        {/* ④ 全期間ランキング */}
+        <div style={{ padding: '20px 16px' }}>
+          <SectionTitle>全期間ランキング</SectionTitle>
+          <AllTimeRanking refreshKey={refreshKey} />
+        </div>
+
+      </div>
     </div>
   );
 }

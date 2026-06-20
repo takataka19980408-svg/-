@@ -8,7 +8,6 @@ import { HomeScreen } from './screens/HomeScreen';
 import { RecordScreen } from './screens/RecordScreen';
 import { HistoryScreen } from './screens/HistoryScreen';
 import { AnalysisScreen } from './screens/AnalysisScreen';
-import { RankingScreen } from './screens/RankingScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 
 export default function App() {
@@ -37,8 +36,7 @@ export default function App() {
       {screen === 'home'     && <HomeScreen refreshKey={refreshKey} />}
       {screen === 'history'  && <HistoryScreen refreshKey={refreshKey} />}
       {screen === 'analysis' && <AnalysisScreen refreshKey={refreshKey} />}
-      {screen === 'ranking'  && <RankingScreen refreshKey={refreshKey} />}
-      {screen === 'settings' && <SettingsScreen onDataChange={() => setRefreshKey(k => k + 1)} />}
+{screen === 'settings' && <SettingsScreen onDataChange={() => setRefreshKey(k => k + 1)} />}
       <BottomNav active={screen} onChange={setScreen} onRecord={() => setShowRecord(true)} />
     </>
   );

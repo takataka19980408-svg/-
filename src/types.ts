@@ -49,4 +49,4 @@ export const CATEGORY_LABELS: Record<GamblingCategory, string> = {
 
 export const WEEKDAY_LABELS = ['日', '月', '火', '水', '木', '金', '土'];
 
-export type MainScreen = 'home' | 'history' | 'analysis' | 'ranking' | 'settings';
+export type MainScreen = 'home' | 'history' | 'analysis' | 'settings';
