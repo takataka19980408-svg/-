@@ -1,0 +1,29 @@
+{
+  "id": "satoshi_house",
+  "name": "サトシの家",
+  "bgm": "midori_village",
+  "width": 8,
+  "height": 10,
+  "encounters": { "enabled": false },
+  "tiles": [
+    [2,2,2,2,2,2,2,2],
+    [2,3,3,3,3,3,3,2],
+    [2,3,3,3,3,3,3,2],
+    [2,3,8,3,3,8,3,2],
+    [2,3,8,3,3,8,3,2],
+    [2,3,3,3,3,3,3,2],
+    [2,3,3,3,3,3,3,2],
+    [2,3,3,3,3,3,3,2],
+    [2,3,3,7,3,3,3,2],
+    [2,2,2,2,2,2,2,2]
+  ],
+  "playerStart": { "x": 3, "y": 6 },
+  "warps": [
+    { "x": 3, "y": 8, "to": "midori_village", "entryX": 6, "entryY": 5, "label": "外へ出る" }
+  ],
+  "npcs": [
+    { "id": "npc_mom_house", "npcKey": "mom", "x": 5, "y": 3, "dir": "down" }
+  ],
+  "events": [],
+  "scripts": {}
+}

@@ -1,0 +1,28 @@
+{
+  "village_elder": {
+    "id": "village_elder",
+    "name": "村長",
+    "dialogue": "elder_normal",
+    "postBoss": "elder_after_boss"
+  },
+  "mom": {
+    "id": "mom",
+    "name": "サトシの母",
+    "dialogue": "mom_normal"
+  },
+  "villager_a": {
+    "id": "villager_a",
+    "name": "村人",
+    "dialogue": "villager_a_normal"
+  },
+  "villager_b": {
+    "id": "villager_b",
+    "name": "老婆",
+    "dialogue": "villager_b_normal"
+  },
+  "villager_c": {
+    "id": "villager_c",
+    "name": "少年",
+    "dialogue": "villager_c_normal"
+  }
+}

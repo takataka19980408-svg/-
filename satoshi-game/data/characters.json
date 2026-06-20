@@ -1,0 +1,32 @@
+{
+  "satoshi": {
+    "id": "satoshi",
+    "name": "サトシ",
+    "level": 1,
+    "maxHp": 30,
+    "maxMp": 10,
+    "hp": 30,
+    "mp": 10,
+    "attack": 8,
+    "defense": 6,
+    "speed": 7,
+    "exp": 0,
+    "nextExp": 100,
+    "skills": ["normal_attack"]
+  },
+  "mofu": {
+    "id": "mofu",
+    "name": "モフ",
+    "level": 1,
+    "maxHp": 22,
+    "maxMp": 8,
+    "hp": 22,
+    "mp": 8,
+    "attack": 6,
+    "defense": 4,
+    "speed": 9,
+    "exp": 0,
+    "nextExp": 100,
+    "skills": ["normal_attack", "bite"]
+  }
+}
