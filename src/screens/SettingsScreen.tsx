@@ -1,14 +1,30 @@
 import { useEffect, useRef, useState } from 'react';
 import type { AppSettings } from '../types';
-import { getSettings, saveSettings, exportCSV, importCSV, exportBackup, restoreBackup } from '../storage';
+import {
+  getSettings, saveSettings, importCSV,
+  exportBackup, restoreBackup, getBackupJson,
+} from '../storage';
 
 interface Props { onDataChange: () => void; }
 
 const NAV_H = 60;
+const GOLD  = '#C9A227';
+const GOLDB = '#F5D060';
+const RED   = '#9B1C10';
+const REDB  = '#FF3300';
+const CARD  = '#0F0E0A';
+const BDR   = '#222018';
+const TEXT  = '#EDE3C0';
+const SUB   = '#524938';
+const BRUSH = '"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif';
 
 function SectionTitle({ label }: { label: string }) {
   return (
-    <div style={{ fontSize: 11, letterSpacing: '0.2em', color: 'var(--gold)', marginBottom: 10, borderLeft: '3px solid var(--red)', paddingLeft: 8 }}>
+    <div style={{
+      fontSize: 11, letterSpacing: '0.2em', color: GOLD,
+      marginBottom: 10, borderLeft: `3px solid ${RED}`, paddingLeft: 8,
+      fontFamily: BRUSH,
+    }}>
       {label}
     </div>
   );
@@ -16,8 +32,40 @@ function SectionTitle({ label }: { label: string }) {
 
 function SettingsCard({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, padding: '14px 16px', marginBottom: 16 }}>
+    <div style={{
+      background: CARD, border: `1px solid ${BDR}`,
+      borderRadius: 10, padding: '14px 16px', marginBottom: 16,
+    }}>
       {children}
+    </div>
+  );
+}
+
+function ActionBtn({
+  label, sub, color = GOLD, bg = `${GOLD}0D`, border: bd = `${GOLD}33`,
+  onClick,
+}: {
+  label: string; sub?: string; color?: string; bg?: string; border?: string;
+  onClick: () => void;
+}) {
+  return (
+    <div>
+      <button
+        onClick={onClick}
+        style={{
+          width: '100%', padding: '12px', borderRadius: 8,
+          fontSize: 14, fontWeight: 700, fontFamily: BRUSH,
+          background: bg, border: `1px solid ${bd}`, color,
+          cursor: 'pointer', letterSpacing: '0.05em',
+        }}
+      >
+        {label}
+      </button>
+      {sub && (
+        <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH, paddingLeft: 4, marginTop: 5 }}>
+          {sub}
+        </div>
+      )}
     </div>
   );
 }
@@ -26,12 +74,12 @@ export function SettingsScreen({ onDataChange }: Props) {
   const [settings, setSettings] = useState<AppSettings>(getSettings());
   const [toast, setToast] = useState<string | null>(null);
   const [restoreConfirm, setRestoreConfirm] = useState(false);
-  const csvImportRef = useRef<HTMLInputElement>(null);
+  const csvImportRef   = useRef<HTMLInputElement>(null);
   const backupImportRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    setSettings(getSettings());
-  }, []);
+  const canShare = typeof navigator !== 'undefined' && 'share' in navigator && 'canShare' in navigator;
+
+  useEffect(() => { setSettings(getSettings()); }, []);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -45,9 +93,43 @@ export function SettingsScreen({ onDataChange }: Props) {
     showToast(`日付切替時刻を ${hour}:00 に変更しました`);
   };
 
-  const handleExportCSV = () => {
-    exportCSV();
-    showToast('CSVをエクスポートしました');
+  const handleShareBackup = async () => {
+    const { json, filename } = getBackupJson();
+    const file = new File([json], filename, { type: 'application/json' });
+    try {
+      if (canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'ゼニ帳バックアップ' });
+      } else {
+        exportBackup();
+      }
+    } catch {
+      exportBackup();
+    }
+  };
+
+  const handleShareCSV = async () => {
+    const records = (await import('../storage')).getRecords();
+    const { CATEGORY_LABELS } = await import('../types');
+    const header = '日付,時刻,店舗名,種目,IN,OUT,収支,メモ';
+    const rows = records.map(r =>
+      [r.date, r.time ?? '', r.storeName,
+        CATEGORY_LABELS[r.category] ?? r.category,
+        r.inAmount, r.outAmount, r.profit, r.memo ?? '',
+      ].join(',')
+    );
+    const csv = '﻿' + [header, ...rows].join('\r\n');
+    const today = new Date().toISOString().split('T')[0];
+    const filename = `zenicho_${today}.csv`;
+    const file = new File([csv], filename, { type: 'text/csv;charset=utf-8;' });
+    try {
+      if (canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'ゼニ帳データ' });
+      } else {
+        (await import('../storage')).exportCSV();
+      }
+    } catch {
+      (await import('../storage')).exportCSV();
+    }
   };
 
   const handleImportCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -55,8 +137,7 @@ export function SettingsScreen({ onDataChange }: Props) {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
-      const text = ev.target?.result as string;
-      const result = importCSV(text);
+      const result = importCSV(ev.target?.result as string);
       onDataChange();
       showToast(`${result.added}件のレコードをインポートしました`);
     };
@@ -64,18 +145,12 @@ export function SettingsScreen({ onDataChange }: Props) {
     e.target.value = '';
   };
 
-  const handleExportBackup = () => {
-    exportBackup();
-    showToast('バックアップを作成しました');
-  };
-
-  const handleRestoreBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImportBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
-      const json = ev.target?.result as string;
-      restoreBackup(json);
+      restoreBackup(ev.target?.result as string);
       onDataChange();
       setRestoreConfirm(false);
       showToast('バックアップを復元しました');
@@ -87,12 +162,16 @@ export function SettingsScreen({ onDataChange }: Props) {
   const HOURS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
   return (
-    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#0A0905' }}>
+
       {/* Header */}
-      <div style={{ background: 'linear-gradient(180deg,#0a0020,#080810)', flexShrink: 0 }}>
-        <div style={{ height: 3, background: 'linear-gradient(90deg,var(--red),var(--gold),var(--red))' }} />
-        <div style={{ padding: '14px 20px 12px', textAlign: 'center', borderBottom: '1px solid rgba(255,215,0,0.12)' }}>
-          <span style={{ fontSize: 17, fontWeight: 900, letterSpacing: '0.25em', color: 'var(--gold)', textShadow: '0 0 16px rgba(255,215,0,0.4)', fontFamily: '"Hiragino Mincho ProN",serif' }}>
+      <div style={{ flexShrink: 0, background: 'linear-gradient(180deg,#0E0D08,#0A0905)', borderBottom: `1px solid ${BDR}` }}>
+        <div style={{ height: 4, background: `linear-gradient(90deg,${RED},${GOLD} 30%,${GOLDB} 50%,${GOLD} 70%,${RED})` }} />
+        <div style={{ padding: '14px 20px 12px', textAlign: 'center' }}>
+          <span style={{
+            fontSize: 17, fontWeight: 800, letterSpacing: '0.25em',
+            color: GOLD, fontFamily: BRUSH, textShadow: `0 0 16px ${GOLD}66`,
+          }}>
             設定
           </span>
         </div>
@@ -100,12 +179,99 @@ export function SettingsScreen({ onDataChange }: Props) {
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: NAV_H + 16 }}>
 
-        {/* Day boundary */}
+        {/* ── データを共有 ── */}
+        <SectionTitle label="データを共有" />
+        <SettingsCard>
+          <div style={{ fontSize: 12, color: SUB, fontFamily: BRUSH, lineHeight: 1.7, marginBottom: 12 }}>
+            バックアップやCSVを{canShare ? 'AirDrop・LINE・メール等で直接送信できます。' : 'ファイルとして保存できます。'}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={handleShareBackup}
+              style={{
+                flex: 1, padding: '14px 8px', borderRadius: 8,
+                fontSize: 13, fontWeight: 700, fontFamily: BRUSH,
+                background: `linear-gradient(135deg,${GOLD}18,${GOLD}0A)`,
+                border: `1px solid ${GOLD}55`, color: GOLDB,
+                cursor: 'pointer', letterSpacing: '0.05em',
+              }}
+            >
+              {canShare ? '📤 ' : '💾 '}バックアップ{canShare ? '\n送信' : '保存'}
+            </button>
+            <button
+              onClick={handleShareCSV}
+              style={{
+                flex: 1, padding: '14px 8px', borderRadius: 8,
+                fontSize: 13, fontWeight: 700, fontFamily: BRUSH,
+                background: `${GOLD}0A`,
+                border: `1px solid ${GOLD}33`, color: GOLD,
+                cursor: 'pointer', letterSpacing: '0.05em',
+              }}
+            >
+              {canShare ? '📤 ' : '💾 '}CSV{canShare ? '\n送信' : '保存'}
+            </button>
+          </div>
+        </SettingsCard>
+
+        {/* ── データを取り込む ── */}
+        <SectionTitle label="データを取り込む" />
+        <SettingsCard>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <ActionBtn
+              label="バックアップから復元"
+              sub="全データをJSONファイルから上書き復元します"
+              color={REDB} bg={`${RED}0D`} border={`${RED}33`}
+              onClick={() => setRestoreConfirm(true)}
+            />
+            {restoreConfirm && (
+              <div style={{
+                background: `${RED}0A`, border: `1px solid ${RED}44`,
+                borderRadius: 8, padding: 12,
+              }}>
+                <div style={{ fontSize: 12, color: REDB, fontFamily: BRUSH, marginBottom: 10, lineHeight: 1.7 }}>
+                  現在のデータは全て上書きされます。本当に復元しますか？
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={() => backupImportRef.current?.click()}
+                    style={{
+                      flex: 1, padding: '10px', borderRadius: 6,
+                      fontSize: 13, fontWeight: 700, fontFamily: BRUSH,
+                      background: REDB, color: '#fff', border: 'none', cursor: 'pointer',
+                    }}
+                  >
+                    ファイルを選択して復元
+                  </button>
+                  <button
+                    onClick={() => setRestoreConfirm(false)}
+                    style={{
+                      padding: '10px 16px', borderRadius: 6,
+                      fontSize: 13, fontFamily: BRUSH,
+                      background: CARD, color: SUB,
+                      border: `1px solid ${BDR}`, cursor: 'pointer',
+                    }}
+                  >
+                    取消
+                  </button>
+                </div>
+              </div>
+            )}
+            <ActionBtn
+              label="CSVをインポート"
+              sub="CSVファイルからレコードを追加します（既存データは保持）"
+              onClick={() => csvImportRef.current?.click()}
+            />
+            <input ref={csvImportRef}    type="file" accept=".csv"  style={{ display: 'none' }} onChange={handleImportCSV} />
+            <input ref={backupImportRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleImportBackup} />
+          </div>
+        </SettingsCard>
+
+        {/* ── 日付切替時刻 ── */}
         <SectionTitle label="日付切替時刻" />
         <SettingsCard>
-          <div style={{ fontSize: 12, color: 'var(--text-sub)', marginBottom: 12, fontFamily: 'sans-serif', lineHeight: 1.6 }}>
-            深夜営業など日をまたぐ場合に、何時を「1日の境目」にするかを設定します。
-            現在: <span style={{ color: 'var(--gold)', fontWeight: 700 }}>{settings.dayBoundaryHour}:00</span>
+          <div style={{ fontSize: 12, color: SUB, fontFamily: BRUSH, marginBottom: 12, lineHeight: 1.7 }}>
+            深夜営業など日をまたぐ場合の境目。現在:{' '}
+            <span style={{ color: GOLDB, fontWeight: 700 }}>{settings.dayBoundaryHour}:00</span>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {HOURS.map(h => (
@@ -113,10 +279,12 @@ export function SettingsScreen({ onDataChange }: Props) {
                 key={h}
                 onClick={() => handleBoundaryChange(h)}
                 style={{
-                  width: 48, height: 36, borderRadius: 6, fontFamily: 'sans-serif', fontSize: 13, fontWeight: 700,
-                  background: settings.dayBoundaryHour === h ? 'rgba(255,215,0,0.15)' : 'transparent',
-                  border: `1px solid ${settings.dayBoundaryHour === h ? 'var(--gold)' : 'rgba(255,215,0,0.2)'}`,
-                  color: settings.dayBoundaryHour === h ? 'var(--gold)' : 'var(--text-sub)',
+                  width: 48, height: 36, borderRadius: 6,
+                  fontFamily: BRUSH, fontSize: 13, fontWeight: 700,
+                  background: settings.dayBoundaryHour === h ? `${GOLD}18` : 'transparent',
+                  border: `1px solid ${settings.dayBoundaryHour === h ? GOLD : `${GOLD}22`}`,
+                  color: settings.dayBoundaryHour === h ? GOLDB : SUB,
+                  cursor: 'pointer',
                 }}
               >
                 {h}:00
@@ -125,117 +293,20 @@ export function SettingsScreen({ onDataChange }: Props) {
           </div>
         </SettingsCard>
 
-        {/* CSV */}
-        <SectionTitle label="データ管理（CSV）" />
-        <SettingsCard>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <button
-              onClick={handleExportCSV}
-              style={{
-                padding: '12px', borderRadius: 8, fontSize: 14, fontWeight: 700, fontFamily: 'sans-serif',
-                background: 'rgba(255,215,0,0.08)', border: '1px solid rgba(255,215,0,0.25)', color: 'var(--gold)',
-              }}
-            >
-              CSV エクスポート
-            </button>
-            <div style={{ fontSize: 11, color: 'var(--text-sub)', fontFamily: 'sans-serif', paddingLeft: 4 }}>
-              全レコードをCSVファイルとしてダウンロードします
-            </div>
-
-            <button
-              onClick={() => csvImportRef.current?.click()}
-              style={{
-                padding: '12px', borderRadius: 8, fontSize: 14, fontWeight: 700, fontFamily: 'sans-serif',
-                background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,215,0,0.2)', color: 'var(--text-sub)',
-              }}
-            >
-              CSV インポート
-            </button>
-            <div style={{ fontSize: 11, color: 'var(--text-sub)', fontFamily: 'sans-serif', paddingLeft: 4 }}>
-              CSVファイルからレコードを読み込みます（既存データに追加）
-            </div>
-            <input ref={csvImportRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={handleImportCSV} />
-          </div>
-        </SettingsCard>
-
-        {/* Backup */}
-        <SectionTitle label="バックアップ" />
-        <SettingsCard>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <button
-              onClick={handleExportBackup}
-              style={{
-                padding: '12px', borderRadius: 8, fontSize: 14, fontWeight: 700, fontFamily: 'sans-serif',
-                background: 'rgba(255,215,0,0.08)', border: '1px solid rgba(255,215,0,0.25)', color: 'var(--gold)',
-              }}
-            >
-              バックアップ作成
-            </button>
-            <div style={{ fontSize: 11, color: 'var(--text-sub)', fontFamily: 'sans-serif', paddingLeft: 4 }}>
-              全データをJSONファイルとして保存します
-            </div>
-
-            {!restoreConfirm ? (
-              <button
-                onClick={() => setRestoreConfirm(true)}
-                style={{
-                  padding: '12px', borderRadius: 8, fontSize: 14, fontWeight: 700, fontFamily: 'sans-serif',
-                  background: 'rgba(255,51,51,0.06)', border: '1px solid rgba(255,51,51,0.25)', color: 'var(--loss)',
-                }}
-              >
-                バックアップ復元
-              </button>
-            ) : (
-              <div style={{ background: 'rgba(255,51,51,0.08)', border: '1px solid rgba(255,51,51,0.3)', borderRadius: 8, padding: 12 }}>
-                <div style={{ fontSize: 12, color: 'var(--loss)', fontFamily: 'sans-serif', marginBottom: 10, lineHeight: 1.6 }}>
-                  ⚠️ 現在のデータは全て上書きされます。本当に復元しますか？
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button
-                    onClick={() => backupImportRef.current?.click()}
-                    style={{
-                      flex: 1, padding: '10px', borderRadius: 6, fontSize: 13, fontWeight: 700, fontFamily: 'sans-serif',
-                      background: 'var(--loss)', color: '#fff', border: 'none',
-                    }}
-                  >
-                    ファイルを選択して復元
-                  </button>
-                  <button
-                    onClick={() => setRestoreConfirm(false)}
-                    style={{
-                      padding: '10px 16px', borderRadius: 6, fontSize: 13, fontFamily: 'sans-serif',
-                      background: 'var(--bg-card)', color: 'var(--text-sub)', border: '1px solid var(--border)',
-                    }}
-                  >
-                    取消
-                  </button>
-                </div>
-              </div>
-            )}
-            <input ref={backupImportRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleRestoreBackup} />
-          </div>
-        </SettingsCard>
-
-        {/* Help */}
+        {/* ── 使い方ガイド ── */}
         <SectionTitle label="使い方ガイド" />
         <SettingsCard>
-          <div style={{ fontSize: 13, color: 'var(--text-sub)', fontFamily: 'sans-serif', lineHeight: 1.8 }}>
-            <div style={{ marginBottom: 8, color: 'var(--text-main)', fontWeight: 700 }}>ゼニ帳 の使い方</div>
-            <div>① ホーム画面の「記録する」から戦績を入力</div>
-            <div>② 店舗・種目・IN金額・OUT金額を入力して保存</div>
-            <div>③ 履歴画面で過去の記録を確認・削除</div>
-            <div>④ 分析画面で月別・種目別・曜日別の集計を確認</div>
-            <div>⑤ ランキング画面で勝率の高い戦場をチェック</div>
-          </div>
-          <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid rgba(255,215,0,0.1)' }}>
-            <div style={{ fontSize: 11, color: 'var(--text-sub)', fontFamily: 'sans-serif' }}>
-              ご意見・ご要望は開発者までお問い合わせください
-            </div>
+          <div style={{ fontSize: 13, color: SUB, fontFamily: BRUSH, lineHeight: 1.9 }}>
+            <div style={{ marginBottom: 8, color: TEXT, fontWeight: 700 }}>ゼニ帳 の使い方</div>
+            <div>① 下タブ中央「記録」ボタンから戦績を入力</div>
+            <div>② 店舗・IN金額・OUT金額を入力して保存</div>
+            <div>③ 履歴タブで過去の記録を確認・メモ・削除</div>
+            <div>④ 分析タブで月別・種目別・曜日別の集計を確認</div>
+            <div>⑤ 設定タブの「データを共有」で他端末へ転送</div>
           </div>
         </SettingsCard>
 
-        {/* App info */}
-        <div style={{ textAlign: 'center', fontSize: 11, color: 'rgba(245,238,216,0.2)', fontFamily: 'sans-serif', paddingTop: 8 }}>
+        <div style={{ textAlign: 'center', fontSize: 10, color: `${TEXT}22`, fontFamily: BRUSH, paddingTop: 4 }}>
           ゼニ帳 v1.0
         </div>
       </div>
@@ -244,10 +315,10 @@ export function SettingsScreen({ onDataChange }: Props) {
       {toast && (
         <div style={{
           position: 'fixed', bottom: NAV_H + 16, left: '50%', transform: 'translateX(-50%)',
-          background: 'rgba(15,15,24,0.95)', border: '1px solid rgba(255,215,0,0.3)',
+          background: 'rgba(15,14,10,0.96)', border: `1px solid ${GOLD}44`,
           borderRadius: 8, padding: '10px 20px',
-          fontSize: 13, fontFamily: 'sans-serif', color: 'var(--gold)',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+          fontSize: 13, fontFamily: BRUSH, color: GOLDB,
+          boxShadow: `0 4px 20px rgba(0,0,0,0.6)`,
           zIndex: 500, whiteSpace: 'nowrap',
         }}>
           {toast}

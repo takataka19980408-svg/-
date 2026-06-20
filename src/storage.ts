@@ -282,7 +282,7 @@ export function importCSV(text: string): { added: number; errors: number } {
 }
 
 // ── Backup / Restore ─────────────────────────────────────────
-export function exportBackup(): void {
+export function getBackupJson(): { json: string; filename: string } {
   const data = {
     version: 1,
     exportedAt: new Date().toISOString(),
@@ -290,7 +290,12 @@ export function exportBackup(): void {
     stores: getStores(),
     settings: getSettings(),
   };
-  triggerDownload(JSON.stringify(data, null, 2), `zenicho_backup_${today()}.json`, 'application/json');
+  return { json: JSON.stringify(data, null, 2), filename: `zenicho_backup_${today()}.json` };
+}
+
+export function exportBackup(): void {
+  const { json, filename } = getBackupJson();
+  triggerDownload(json, filename, 'application/json');
 }
 
 export function restoreBackup(json: string): void {
