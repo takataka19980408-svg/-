@@ -27,7 +27,7 @@ export default function App() {
       {screen === 'home'     && <HomeScreen refreshKey={refreshKey} />}
       {screen === 'history'  && <HistoryScreen refreshKey={refreshKey} />}
       {screen === 'analysis' && <AnalysisScreen refreshKey={refreshKey} />}
-{screen === 'settings' && <SettingsScreen onDataChange={() => setRefreshKey(k => k + 1)} />}
+      {screen === 'settings' && <SettingsScreen onDataChange={() => setRefreshKey(k => k + 1)} />}
       <BottomNav active={screen} onChange={setScreen} onRecord={() => setShowRecord(true)} />
     </>
   );

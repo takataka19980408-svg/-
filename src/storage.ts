@@ -1,34 +1,34 @@
-import type { GamblingRecord, Store, GamblingCategory, AppSettings } from './types';
-import { CATEGORY_LABELS, WEEKDAY_LABELS, DEFAULT_SETTINGS } from './types';
+import type { Expense, Store, ExpenseCategory, AppSettings } from './types';
+import { CATEGORY_LABELS, CATEGORY_ORDER, DEFAULT_SETTINGS } from './types';
 
-const RECORDS_KEY = 'zenicho_records';
-const STORES_KEY = 'zenicho_stores';
-const SETTINGS_KEY = 'zenicho_settings';
+const RECORDS_KEY  = 'kakeibo_expenses';
+const STORES_KEY   = 'kakeibo_stores';
+const SETTINGS_KEY = 'kakeibo_settings';
 
-// ── Records ──────────────────────────────────────────────────
-export function getRecords(): GamblingRecord[] {
+// ── Expenses ─────────────────────────────────────────────────
+export function getExpenses(): Expense[] {
   try {
     const d = localStorage.getItem(RECORDS_KEY);
     return d ? JSON.parse(d) : [];
   } catch { return []; }
 }
 
-export function saveRecord(record: GamblingRecord): void {
-  const records = getRecords();
-  records.push(record);
-  localStorage.setItem(RECORDS_KEY, JSON.stringify(records));
+export function saveExpense(expense: Expense): void {
+  const expenses = getExpenses();
+  expenses.push(expense);
+  localStorage.setItem(RECORDS_KEY, JSON.stringify(expenses));
 }
 
-export function deleteRecord(id: string): void {
-  localStorage.setItem(RECORDS_KEY, JSON.stringify(getRecords().filter(r => r.id !== id)));
-}
-
-export function updateRecordMemo(id: string, memo: string): void {
-  const records = getRecords();
-  const idx = records.findIndex(r => r.id === id);
+export function updateExpense(id: string, patch: Partial<Expense>): void {
+  const expenses = getExpenses();
+  const idx = expenses.findIndex(e => e.id === id);
   if (idx === -1) return;
-  records[idx] = { ...records[idx], memo: memo.trim() || undefined };
-  localStorage.setItem(RECORDS_KEY, JSON.stringify(records));
+  expenses[idx] = { ...expenses[idx], ...patch };
+  localStorage.setItem(RECORDS_KEY, JSON.stringify(expenses));
+}
+
+export function deleteExpense(id: string): void {
+  localStorage.setItem(RECORDS_KEY, JSON.stringify(getExpenses().filter(e => e.id !== id)));
 }
 
 // ── Stores ───────────────────────────────────────────────────
@@ -39,9 +39,15 @@ export function getStores(): Store[] {
   } catch { return []; }
 }
 
-export function saveStore(store: Store): void {
+export function findStoreByName(name: string): Store | undefined {
+  return getStores().find(s => s.name === name.trim());
+}
+
+export function upsertStore(store: Store): void {
   const stores = getStores();
-  stores.push(store);
+  const idx = stores.findIndex(s => s.id === store.id);
+  if (idx === -1) stores.push(store);
+  else stores[idx] = store;
   localStorage.setItem(STORES_KEY, JSON.stringify(stores));
 }
 
@@ -66,219 +72,136 @@ export function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
 
-// ── Effective date (respects day boundary) ───────────────────
-export function getEffectiveToday(boundaryHour: number): string {
+export function todayStr(): string {
   const now = new Date();
-  if (now.getHours() < boundaryHour) {
-    now.setDate(now.getDate() - 1);
-  }
-  return now.toISOString().split('T')[0];
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 // ── Basic aggregations ───────────────────────────────────────
-export function getTotalProfit(): number {
-  return getRecords().reduce((s, r) => s + r.profit, 0);
+export function getTotalSpending(): number {
+  return getExpenses().reduce((s, e) => s + e.amount, 0);
 }
 
-export function getTodayProfit(): number {
-  const today = new Date().toISOString().split('T')[0];
-  return getRecords().filter(r => r.date === today).reduce((s, r) => s + r.profit, 0);
-}
-
-export function getMonthProfit(year?: number, month?: number): number {
+export function getMonthSpending(year?: number, month?: number): number {
   const now = new Date();
   const y = year ?? now.getFullYear();
   const m = month ?? now.getMonth() + 1;
   const prefix = `${y}-${String(m).padStart(2, '0')}`;
-  return getRecords().filter(r => r.date.startsWith(prefix)).reduce((s, r) => s + r.profit, 0);
+  return getExpenses().filter(e => e.date.startsWith(prefix)).reduce((s, e) => s + e.amount, 0);
 }
 
-// ── Ranking items ────────────────────────────────────────────
+export function getExpensesForMonth(year: number, month: number): Expense[] {
+  const prefix = `${year}-${String(month).padStart(2, '0')}`;
+  return getExpenses().filter(e => e.date.startsWith(prefix));
+}
+
+// ── Ranking ──────────────────────────────────────────────────
 export interface RankingItem {
   label: string;
-  profit: number;
+  amount: number;
   count: number;
 }
 
-function buildRanking(
-  records: GamblingRecord[],
-  keyFn: (r: GamblingRecord) => string,
-): RankingItem[] {
-  const map = new Map<string, { profit: number; count: number }>();
-  for (const r of records) {
-    const k = keyFn(r);
-    const e = map.get(k) ?? { profit: 0, count: 0 };
-    map.set(k, { profit: e.profit + r.profit, count: e.count + 1 });
+function buildRanking(expenses: Expense[], keyFn: (e: Expense) => string): RankingItem[] {
+  const map = new Map<string, { amount: number; count: number }>();
+  for (const e of expenses) {
+    const k = keyFn(e);
+    const entry = map.get(k) ?? { amount: 0, count: 0 };
+    map.set(k, { amount: entry.amount + e.amount, count: entry.count + 1 });
   }
   return Array.from(map.entries())
     .map(([label, d]) => ({ label, ...d }))
-    .sort((a, b) => b.profit - a.profit);
+    .sort((a, b) => b.amount - a.amount);
 }
 
-export function getStoreRanking(): RankingItem[] {
-  return buildRanking(getRecords(), r => r.storeName);
+export function getStoreRanking(expenses: Expense[] = getExpenses()): RankingItem[] {
+  return buildRanking(expenses, e => e.storeName);
 }
 
-export function getCategoryRanking(): RankingItem[] {
-  return buildRanking(getRecords(), r => CATEGORY_LABELS[r.category as GamblingCategory] ?? r.category);
+export function getCompanyRanking(expenses: Expense[] = getExpenses()): RankingItem[] {
+  return buildRanking(expenses, e => e.company || e.storeName);
 }
 
-export function getWeekdayRanking(): RankingItem[] {
-  const records = getRecords();
-  const map = new Map<number, { profit: number; count: number }>();
-  for (const r of records) {
-    const day = new Date(r.date).getDay();
-    const e = map.get(day) ?? { profit: 0, count: 0 };
-    map.set(day, { profit: e.profit + r.profit, count: e.count + 1 });
+export function getCategoryRanking(expenses: Expense[] = getExpenses()): RankingItem[] {
+  return buildRanking(expenses, e => CATEGORY_LABELS[e.category] ?? e.category);
+}
+
+export interface CategoryBreakdownItem {
+  category: ExpenseCategory;
+  amount: number;
+  count: number;
+}
+
+export function getCategoryBreakdown(expenses: Expense[]): CategoryBreakdownItem[] {
+  const map = new Map<ExpenseCategory, { amount: number; count: number }>();
+  for (const e of expenses) {
+    const entry = map.get(e.category) ?? { amount: 0, count: 0 };
+    map.set(e.category, { amount: entry.amount + e.amount, count: entry.count + 1 });
   }
-  return WEEKDAY_LABELS.map((label, i) => ({
-    label: `${label}曜日`,
-    profit: map.get(i)?.profit ?? 0,
-    count: map.get(i)?.count ?? 0,
-  })).sort((a, b) => b.profit - a.profit);
+  return CATEGORY_ORDER
+    .map(category => ({ category, ...(map.get(category) ?? { amount: 0, count: 0 }) }))
+    .filter(item => item.count > 0)
+    .sort((a, b) => b.amount - a.amount);
 }
 
-export function getMonthRanking(): RankingItem[] {
-  return buildRanking(getRecords(), r => {
-    const [y, m] = r.date.split('-');
-    return `${y}年${parseInt(m)}月`;
-  });
+// ── Monthly trend (for line/bar chart) ──────────────────────
+export interface MonthPoint {
+  year: number;
+  month: number;
+  label: string;
+  amount: number;
 }
 
-export function getYearRanking(): RankingItem[] {
-  return buildRanking(getRecords(), r => `${r.date.split('-')[0]}年`);
+export function getMonthlyTrend(monthsBack: number): MonthPoint[] {
+  const now = new Date();
+  const points: MonthPoint[] = [];
+  for (let i = monthsBack - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const y = d.getFullYear();
+    const m = d.getMonth() + 1;
+    points.push({ year: y, month: m, label: `${m}月`, amount: getMonthSpending(y, m) });
+  }
+  return points;
 }
 
-export function getStoreCategoryRanking(): RankingItem[] {
-  return buildRanking(
-    getRecords(),
-    r => `${r.storeName}／${CATEGORY_LABELS[r.category as GamblingCategory] ?? r.category}`,
-  );
-}
-
-// ── Analysis ─────────────────────────────────────────────────
 export interface DayData {
   day: number;
-  profit: number;
-  inSum: number;
-  outSum: number;
+  amount: number;
   count: number;
 }
 
 export function getDailyDataForMonth(year: number, month: number): DayData[] {
   const daysInMonth = new Date(year, month, 0).getDate();
-  const prefix = `${year}-${String(month).padStart(2, '0')}`;
-  const records = getRecords().filter(r => r.date.startsWith(prefix));
+  const expenses = getExpensesForMonth(year, month);
   return Array.from({ length: daysInMonth }, (_, i) => {
     const day = i + 1;
-    const dateStr = `${prefix}-${String(day).padStart(2, '0')}`;
-    const recs = records.filter(r => r.date === dateStr);
+    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const recs = expenses.filter(e => e.date === dateStr);
     return {
       day,
-      profit: recs.reduce((s, r) => s + r.profit, 0),
-      inSum: recs.reduce((s, r) => s + r.inAmount, 0),
-      outSum: recs.reduce((s, r) => s + r.outAmount, 0),
+      amount: recs.reduce((s, e) => s + e.amount, 0),
       count: recs.length,
     };
   });
 }
 
-export interface MonthSummary {
-  winDays: number;
-  lossDays: number;
-  evenDays: number;
-  totalIn: number;
-  totalOut: number;
-  recoveryRate: number | null;
-}
-
-export function getMonthSummary(year: number, month: number): MonthSummary {
-  const daily = getDailyDataForMonth(year, month).filter(d => d.count > 0);
-  const totalIn = daily.reduce((s, d) => s + d.inSum, 0);
-  const totalOut = daily.reduce((s, d) => s + d.outSum, 0);
-  return {
-    winDays: daily.filter(d => d.profit > 0).length,
-    lossDays: daily.filter(d => d.profit < 0).length,
-    evenDays: daily.filter(d => d.profit === 0).length,
-    totalIn,
-    totalOut,
-    recoveryRate: totalIn > 0 ? Math.round((totalOut / totalIn) * 100) : null,
-  };
-}
-
-// ── Home helpers ─────────────────────────────────────────────
-export function getTopBattlefieldThisMonth(): { label: string; profit: number } | null {
-  const now = new Date();
-  const prefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const records = getRecords().filter(r => r.date.startsWith(prefix));
-  const map = new Map<string, number>();
-  for (const r of records) {
-    const key = `${r.storeName}×${CATEGORY_LABELS[r.category as GamblingCategory]}`;
-    map.set(key, (map.get(key) ?? 0) + r.profit);
-  }
-  if (map.size === 0) return null;
-  let best = { label: '', profit: -Infinity };
-  for (const [label, profit] of map.entries()) {
-    if (profit > best.profit) best = { label, profit };
-  }
-  return best;
-}
-
-export function getMonthStoreRanking(year: number, month: number): RankingItem[] {
-  const prefix = `${year}-${String(month).padStart(2, '0')}`;
-  return buildRanking(getRecords().filter(r => r.date.startsWith(prefix)), r => r.storeName).slice(0, 5);
-}
-
 // ── CSV export / import ──────────────────────────────────────
-const CATEGORY_FROM_LABEL: Record<string, GamblingCategory> = {
-  'パチンコ': 'pachinko', 'スロット': 'slot', 'バカラ': 'baccarat',
-  '競馬': 'horse', '競艇': 'boat', '競輪': 'cycle', '麻雀': 'mahjong', 'その他': 'other',
-};
-
 export function exportCSV(): void {
-  const records = getRecords();
-  const header = '日付,時刻,店舗名,種目,IN,OUT,収支,メモ';
-  const rows = records.map(r =>
-    [r.date, r.time ?? '', r.storeName,
-      CATEGORY_LABELS[r.category as GamblingCategory] ?? r.category,
-      r.inAmount, r.outAmount, r.profit, r.memo ?? '',
-    ].join(',')
+  const expenses = getExpenses().slice().sort((a, b) => a.date.localeCompare(b.date));
+  const header = '日付,店舗名,企業,カテゴリ,金額,メモ';
+  const rows = expenses.map(e =>
+    [e.date, e.storeName, e.company, CATEGORY_LABELS[e.category] ?? e.category, e.amount, e.memo ?? '']
+      .map(csvEscape).join(','),
   );
-  triggerDownload('﻿' + [header, ...rows].join('\r\n'), `zenicho_${today()}.csv`, 'text/csv;charset=utf-8;');
+  triggerDownload('﻿' + [header, ...rows].join('\r\n'), `kakeibo_${todayStr()}.csv`, 'text/csv;charset=utf-8;');
 }
 
-export function importCSV(text: string): { added: number; errors: number } {
-  const lines = text.split(/\r?\n/).filter(l => l.trim());
-  if (lines.length < 2) return { added: 0, errors: 0 };
-  const existing = getRecords();
-  const stores = getStores();
-  let added = 0, errors = 0;
-  for (const line of lines.slice(1)) {
-    try {
-      const cols = line.split(',');
-      const [date, time, storeName, catLabel, inStr, outStr, , memo] = cols;
-      const inAmount = parseInt(inStr) || 0;
-      const outAmount = parseInt(outStr) || 0;
-      const category: GamblingCategory = CATEGORY_FROM_LABEL[catLabel.trim()] ?? 'other';
-      let store = stores.find(s => s.name === storeName.trim());
-      if (!store) {
-        store = { id: generateId(), name: storeName.trim(), createdAt: new Date().toISOString() };
-        saveStore(store);
-        stores.push(store);
-      }
-      const record: GamblingRecord = {
-        id: generateId(), date: date.trim(), time: time?.trim() || undefined,
-        storeId: store.id, storeName: store.name, category,
-        inAmount, outAmount, profit: outAmount - inAmount,
-        memo: memo?.trim() || undefined,
-        createdAt: new Date().toISOString(),
-      };
-      existing.push(record);
-      added++;
-    } catch { errors++; }
-  }
-  localStorage.setItem(RECORDS_KEY, JSON.stringify(existing));
-  return { added, errors };
+function csvEscape(v: string | number): string {
+  const s = String(v);
+  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
 // ── Backup / Restore ─────────────────────────────────────────
@@ -286,11 +209,11 @@ export function getBackupJson(): { json: string; filename: string } {
   const data = {
     version: 1,
     exportedAt: new Date().toISOString(),
-    records: getRecords(),
+    expenses: getExpenses(),
     stores: getStores(),
     settings: getSettings(),
   };
-  return { json: JSON.stringify(data, null, 2), filename: `zenicho_backup_${today()}.json` };
+  return { json: JSON.stringify(data, null, 2), filename: `kakeibo_backup_${todayStr()}.json` };
 }
 
 export function exportBackup(): void {
@@ -300,17 +223,18 @@ export function exportBackup(): void {
 
 export function restoreBackup(json: string): void {
   const data = JSON.parse(json);
-  if (!Array.isArray(data.records)) throw new Error('invalid backup');
-  localStorage.setItem(RECORDS_KEY, JSON.stringify(data.records));
+  if (!Array.isArray(data.expenses)) throw new Error('invalid backup');
+  localStorage.setItem(RECORDS_KEY, JSON.stringify(data.expenses));
   localStorage.setItem(STORES_KEY, JSON.stringify(data.stores ?? []));
   if (data.settings) localStorage.setItem(SETTINGS_KEY, JSON.stringify(data.settings));
 }
 
-// ── Utilities ────────────────────────────────────────────────
-function today(): string {
-  return new Date().toISOString().split('T')[0];
+export function clearAllData(): void {
+  localStorage.removeItem(RECORDS_KEY);
+  localStorage.removeItem(STORES_KEY);
 }
 
+// ── Utilities ────────────────────────────────────────────────
 function triggerDownload(content: string, filename: string, mime: string): void {
   const blob = new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);
@@ -323,28 +247,16 @@ function triggerDownload(content: string, filename: string, mime: string): void 
   URL.revokeObjectURL(url);
 }
 
-export function formatAmount(amount: number): string {
-  const abs = Math.abs(amount);
-  const sign = amount > 0 ? '+' : amount < 0 ? '−' : '';
-  if (abs === 0) return '±0';
-  if (abs >= 10000) {
-    const man = Math.floor(abs / 10000);
-    const rem = abs % 10000;
-    if (rem === 0) return `${sign}${man}万`;
-    return `${sign}${man}万${rem.toLocaleString()}`;
-  }
-  return `${sign}${abs.toLocaleString()}`;
+export function formatYen(amount: number): string {
+  return `¥${Math.round(amount).toLocaleString()}`;
 }
 
-export function formatAmountFull(amount: number): string {
-  const abs = Math.abs(amount);
-  const sign = amount > 0 ? '+' : amount < 0 ? '−' : '';
-  if (abs === 0) return '±0円';
+export function formatYenCompact(amount: number): string {
+  const abs = Math.round(Math.abs(amount));
   if (abs >= 10000) {
     const man = Math.floor(abs / 10000);
     const rem = abs % 10000;
-    if (rem === 0) return `${sign}${man.toLocaleString()}万円`;
-    return `${sign}${man.toLocaleString()}万${rem.toLocaleString()}円`;
+    return rem === 0 ? `¥${man}万` : `¥${man}万${rem.toLocaleString()}`;
   }
-  return `${sign}${abs.toLocaleString()}円`;
+  return `¥${abs.toLocaleString()}`;
 }

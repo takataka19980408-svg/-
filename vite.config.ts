@@ -12,15 +12,15 @@ export default defineConfig({
       scope: '/-/',
       includeAssets: ['favicon.svg', 'icon-192.png', 'icon-512.png'],
       manifest: {
-        name: 'ゼニ帳',
-        short_name: 'ゼニ帳',
-        description: '賭け事の戦績管理アプリ',
+        name: 'レシート家計簿',
+        short_name: '家計簿',
+        description: 'レシートを読み取って記録する家計簿アプリ。店舗・企業別のランキングやグラフで支出を可視化。',
         start_url: '/-/',
         scope: '/-/',
         display: 'standalone',
         orientation: 'portrait',
-        background_color: '#0A0905',
-        theme_color: '#0A0905',
+        background_color: '#f9f9f7',
+        theme_color: '#2a78d6',
         icons: [
           { src: '/-/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: '/-/icon-512.png', sizes: '512x512', type: 'image/png' },
@@ -29,27 +29,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        runtimeCaching: [
-          {
-            // Google Fonts stylesheet
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-stylesheets',
-              expiration: { maxEntries: 5, maxAgeSeconds: 60 * 60 * 24 * 365 },
-            },
-          },
-          {
-            // Google Fonts webfont files
-            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-webfonts',
-              cacheableResponse: { statuses: [0, 200] },
-              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
-            },
-          },
-        ],
+        maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
       },
     }),
   ],

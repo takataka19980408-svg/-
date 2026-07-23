@@ -1,299 +1,214 @@
-import { useEffect, useState } from 'react';
-import type { GamblingRecord } from '../types';
-import { CATEGORY_LABELS, WEEKDAY_LABELS } from '../types';
-import { getRecords, deleteRecord, updateRecordMemo, formatAmount } from '../storage';
+import { useMemo, useState } from 'react';
+import type { Expense, ExpenseCategory } from '../types';
+import { CATEGORY_INFO, CATEGORY_ORDER } from '../types';
+import { getExpensesForMonth, deleteExpense, updateExpense, formatYen, getMonthSpending } from '../storage';
+import { C, NAV_H } from '../theme';
+import { Card, EmptyState } from '../components/ui';
 
 interface Props { refreshKey: number; }
 
-const NAV_H = 60;
-const GOLD  = '#C9A227';
-const GOLDB = '#F5D060';
-const RED   = '#9B1C10';
-const REDB  = '#FF3300';
-const CARD  = '#0F0E0A';
-const BDR   = '#222018';
-const TEXT  = '#EDE3C0';
-const SUB   = '#524938';
-const BRUSH = '"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif';
-
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr + 'T12:00:00');
-  const wd = WEEKDAY_LABELS[d.getDay()];
-  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日（${wd}）`;
-}
-
-interface Group {
-  date: string;
-  records: GamblingRecord[];
-  dayProfit: number;
-}
-
-type ActionState =
-  | { type: 'none' }
-  | { type: 'menu';   id: string }
-  | { type: 'memo';   id: string; draft: string }
-  | { type: 'delete'; id: string };
+function monthLabel(y: number, m: number) { return `${y}年${m}月`; }
 
 export function HistoryScreen({ refreshKey }: Props) {
-  const [groups, setGroups]   = useState<Group[]>([]);
-  const [action, setAction]   = useState<ActionState>({ type: 'none' });
+  const now = new Date();
+  const [year, setYear] = useState(now.getFullYear());
+  const [month, setMonth] = useState(now.getMonth() + 1);
+  const [categoryFilter, setCategoryFilter] = useState<ExpenseCategory | 'all'>('all');
+  const [localVersion, setLocalVersion] = useState(0);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Partial<Expense> | null>(null);
 
-  const load = () => {
-    const sorted = [...getRecords()].sort((a, b) => {
-      if (a.date !== b.date) return b.date.localeCompare(a.date);
-      return b.createdAt.localeCompare(a.createdAt);
-    });
-    const map = new Map<string, GamblingRecord[]>();
-    for (const r of sorted) {
-      if (!map.has(r.date)) map.set(r.date, []);
-      map.get(r.date)!.push(r);
-    }
-    setGroups(Array.from(map.entries()).map(([date, recs]) => ({
-      date,
-      records: recs,
-      dayProfit: recs.reduce((s, r) => s + r.profit, 0),
-    })));
+  const expenses = useMemo(
+    () => getExpensesForMonth(year, month),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [year, month, refreshKey, localVersion],
+  );
+
+  const shift = (delta: number) => {
+    let m = month + delta, y = year;
+    if (m < 1) { m = 12; y -= 1; }
+    if (m > 12) { m = 1; y += 1; }
+    setYear(y); setMonth(m);
   };
 
-  useEffect(load, [refreshKey]);
+  const filtered = useMemo(
+    () => expenses.filter(e => categoryFilter === 'all' || e.category === categoryFilter)
+      .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt)),
+    [expenses, categoryFilter],
+  );
 
-  const dismiss = () => setAction({ type: 'none' });
+  const groups = useMemo(() => {
+    const map = new Map<string, Expense[]>();
+    for (const e of filtered) {
+      const list = map.get(e.date) ?? [];
+      list.push(e);
+      map.set(e.date, list);
+    }
+    return Array.from(map.entries());
+  }, [filtered]);
+
+  const monthTotal = getMonthSpending(year, month);
+
+  const startEdit = (e: Expense) => { setEditing({ ...e }); setExpandedId(e.id); };
+
+  const saveEdit = () => {
+    if (!editing?.id) return;
+    updateExpense(editing.id, {
+      amount: editing.amount,
+      category: editing.category,
+      memo: editing.memo,
+    });
+    setLocalVersion(v => v + 1);
+    setEditing(null);
+    setExpandedId(null);
+  };
 
   const handleDelete = (id: string) => {
-    deleteRecord(id);
-    dismiss();
-    load();
-  };
-
-  const handleMemoSave = (id: string, draft: string) => {
-    updateRecordMemo(id, draft);
-    dismiss();
-    load();
+    deleteExpense(id);
+    setLocalVersion(v => v + 1);
+    setExpandedId(null);
+    setEditing(null);
   };
 
   return (
-    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#0A0905' }}>
-
-      {/* Header */}
-      <div style={{ flexShrink: 0, background: 'linear-gradient(180deg,#0E0D08,#0A0905)', borderBottom: `1px solid ${BDR}` }}>
-        <div style={{ height: 4, background: `linear-gradient(90deg,${RED},${GOLD} 30%,${GOLDB} 50%,${GOLD} 70%,${RED})` }} />
-        <div style={{ padding: '14px 20px 12px', textAlign: 'center' }}>
-          <span style={{
-            fontSize: 17, fontWeight: 800, letterSpacing: '0.25em',
-            color: GOLD, fontFamily: BRUSH,
-            textShadow: `0 0 16px ${GOLD}66`,
-          }}>
-            戦績履歴
-          </span>
+    <div style={{ background: C.page, minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flexShrink: 0, background: C.surface, borderBottom: `1px solid ${C.border}`, padding: '14px 16px' }}>
+        <div style={{ fontSize: 16, fontWeight: 800, color: C.text, textAlign: 'center', marginBottom: 10 }}>履歴</div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <button onClick={() => shift(-1)} style={{ fontSize: 16, padding: '4px 10px', color: C.brand }}>‹</button>
+          <span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{monthLabel(year, month)}</span>
+          <button onClick={() => shift(1)} style={{ fontSize: 16, padding: '4px 10px', color: C.brand }}>›</button>
+        </div>
+        <div style={{ textAlign: 'center', fontSize: 12, color: C.textMuted, marginTop: 2 }}>
+          合計 {formatYen(monthTotal)}
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: NAV_H + 16 }}>
-        {groups.length === 0 ? (
-          <div style={{ padding: 40, textAlign: 'center', color: SUB, fontFamily: BRUSH, fontSize: 14 }}>
-            <div style={{ fontSize: 32, color: `${GOLD}33`, marginBottom: 12 }}>無記録</div>
-            記録がありません
-          </div>
-        ) : (
-          groups.map(group => (
-            <div key={group.date} style={{ marginBottom: 4 }}>
-              {/* Date header */}
-              <div style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: '10px 16px 6px',
-                background: `linear-gradient(90deg,${GOLD}0A,transparent)`,
-                borderBottom: `1px solid ${GOLD}1A`,
-              }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: GOLD, letterSpacing: '0.05em', fontFamily: BRUSH }}>
-                  {formatDate(group.date)}
-                </span>
-                <span style={{
-                  fontSize: 14, fontWeight: 800, fontFamily: BRUSH,
-                  color: group.dayProfit > 0 ? GOLDB : group.dayProfit < 0 ? REDB : SUB,
-                }}>
-                  日計 {formatAmount(group.dayProfit)}
-                </span>
-              </div>
+      <div style={{ flexShrink: 0, display: 'flex', gap: 6, padding: '10px 16px', overflowX: 'auto', background: C.page }}>
+        <FilterChip active={categoryFilter === 'all'} onClick={() => setCategoryFilter('all')}>すべて</FilterChip>
+        {CATEGORY_ORDER.map(cat => (
+          <FilterChip key={cat} active={categoryFilter === cat} onClick={() => setCategoryFilter(cat)} colorVar={CATEGORY_INFO[cat].colorVar}>
+            {CATEGORY_INFO[cat].label}
+          </FilterChip>
+        ))}
+      </div>
 
-              {/* Records */}
-              {group.records.map(record => {
-                const act = action.type !== 'none' && action.id === record.id ? action : null;
-
+      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 16px', paddingBottom: NAV_H + 20 }}>
+        {groups.length === 0 && <EmptyState>この月の記録はありません</EmptyState>}
+        {groups.map(([date, list]) => (
+          <div key={date} style={{ marginBottom: 14 }}>
+            <div style={{ fontSize: 11, color: C.textMuted, fontWeight: 600, margin: '10px 2px 6px' }}>
+              {date.slice(5).replace('-', '/')}
+            </div>
+            <Card style={{ overflow: 'hidden' }}>
+              {list.map((e, idx) => {
+                const expanded = expandedId === e.id;
                 return (
-                  <div key={record.id} style={{
-                    padding: '10px 16px',
-                    borderBottom: `1px solid ${GOLD}0D`,
-                    background: act?.type === 'delete' ? `${RED}0A` : 'transparent',
-                  }}>
-                    {/* Main row */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div key={e.id} style={{ borderBottom: idx < list.length - 1 ? `1px solid ${C.border}` : 'none' }}>
+                    <button
+                      onClick={() => { setExpandedId(expanded ? null : e.id); setEditing(null); }}
+                      style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', textAlign: 'left' }}
+                    >
+                      <span style={{ width: 8, height: 8, borderRadius: 2.5, flexShrink: 0, background: CATEGORY_INFO[e.category].colorVar }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                          <span style={{
-                            fontSize: 14, fontWeight: 700, color: TEXT,
-                            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '55%',
-                            fontFamily: BRUSH,
-                          }}>
-                            {record.storeName}
-                          </span>
-                          <span style={{
-                            fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 10, fontFamily: BRUSH,
-                            background: `${GOLD}14`, border: `1px solid ${GOLD}33`, color: GOLD,
-                          }}>
-                            {CATEGORY_LABELS[record.category] ?? record.category}
-                          </span>
-                          {record.time && (
-                            <span style={{ fontSize: 10, color: SUB, fontFamily: BRUSH }}>{record.time}</span>
-                          )}
+                        <div style={{ fontSize: 13, fontWeight: 600, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {e.storeName}
                         </div>
-                        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                          <span style={{ fontSize: 11, color: SUB, fontFamily: BRUSH }}>
-                            IN ¥{record.inAmount.toLocaleString()}
-                          </span>
-                          <span style={{ fontSize: 11, color: `${SUB}88` }}>→</span>
-                          <span style={{ fontSize: 11, color: SUB, fontFamily: BRUSH }}>
-                            OUT ¥{record.outAmount.toLocaleString()}
-                          </span>
-                        </div>
-                        {record.memo && (
-                          <div style={{ fontSize: 11, color: `${TEXT}88`, marginTop: 3, fontFamily: BRUSH, fontStyle: 'italic' }}>
-                            {record.memo}
-                          </div>
+                        <div style={{ fontSize: 10, color: C.textMuted }}>{CATEGORY_INFO[e.category].label}</div>
+                      </div>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{formatYen(e.amount)}</span>
+                    </button>
+
+                    {expanded && (
+                      <div style={{ padding: '0 14px 14px' }}>
+                        {e.receiptImage && (
+                          <img src={e.receiptImage} alt="レシート" style={{
+                            width: '100%', maxHeight: 160, objectFit: 'contain', borderRadius: 8,
+                            border: `1px solid ${C.border}`, marginBottom: 10, background: C.card2,
+                          }} />
                         )}
-                      </div>
 
-                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <div style={{
-                          fontSize: 16, fontWeight: 800, fontFamily: BRUSH,
-                          color: record.profit > 0 ? GOLDB : record.profit < 0 ? REDB : SUB,
-                        }}>
-                          {formatAmount(record.profit)}
-                        </div>
-
-                        {/* Action button */}
-                        {!act ? (
-                          <button
-                            onClick={() => setAction({ type: 'menu', id: record.id })}
-                            style={{
-                              fontSize: 11, color: `${GOLD}99`, fontFamily: BRUSH,
-                              padding: '4px 10px', marginTop: 6,
-                              background: `${GOLD}0D`,
-                              border: `1px solid ${GOLD}33`,
-                              borderRadius: 4, cursor: 'pointer',
-                              letterSpacing: '0.15em',
-                            }}
-                          >
-                            ⋯
-                          </button>
-                        ) : act.type === 'menu' ? (
-                          <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
-                            <button
-                              onClick={() => setAction({ type: 'memo', id: record.id, draft: record.memo ?? '' })}
-                              style={{
-                                fontSize: 11, padding: '3px 8px', borderRadius: 4,
-                                background: `${GOLD}18`, color: GOLD,
-                                border: `1px solid ${GOLD}44`, fontFamily: BRUSH, cursor: 'pointer',
-                              }}
-                            >
-                              メモ
-                            </button>
-                            <button
-                              onClick={() => setAction({ type: 'delete', id: record.id })}
-                              style={{
-                                fontSize: 11, padding: '3px 8px', borderRadius: 4,
-                                background: `${RED}18`, color: REDB,
-                                border: `1px solid ${RED}44`, fontFamily: BRUSH, cursor: 'pointer',
-                              }}
-                            >
-                              削除
-                            </button>
-                            <button
-                              onClick={dismiss}
-                              style={{
-                                fontSize: 11, padding: '3px 8px', borderRadius: 4,
-                                background: CARD, color: SUB,
-                                border: `1px solid ${BDR}`, fontFamily: BRUSH, cursor: 'pointer',
-                              }}
-                            >
-                              ×
-                            </button>
+                        {editing?.id === e.id ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                            <input
+                              type="number" value={editing.amount ?? 0}
+                              onChange={ev => setEditing({ ...editing, amount: parseInt(ev.target.value, 10) || 0 })}
+                              style={editInputStyle}
+                            />
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+                              {CATEGORY_ORDER.map(cat => (
+                                <button
+                                  key={cat}
+                                  onClick={() => setEditing({ ...editing, category: cat })}
+                                  style={{
+                                    padding: '5px 10px', borderRadius: 12, fontSize: 11, fontWeight: 700,
+                                    background: editing.category === cat ? CATEGORY_INFO[cat].colorVar : C.card2,
+                                    color: editing.category === cat ? '#fff' : C.textSecondary,
+                                  }}
+                                >
+                                  {CATEGORY_INFO[cat].label}
+                                </button>
+                              ))}
+                            </div>
+                            <input
+                              type="text" value={editing.memo ?? ''} placeholder="メモ"
+                              onChange={ev => setEditing({ ...editing, memo: ev.target.value })}
+                              style={editInputStyle}
+                            />
+                            <div style={{ display: 'flex', gap: 8 }}>
+                              <button onClick={saveEdit} style={{ flex: 1, padding: '9px', borderRadius: 8, background: C.brand, color: '#fff', fontSize: 12, fontWeight: 700 }}>
+                                保存
+                              </button>
+                              <button onClick={() => setEditing(null)} style={{ padding: '9px 14px', borderRadius: 8, background: C.card2, color: C.textSecondary, fontSize: 12 }}>
+                                取消
+                              </button>
+                            </div>
                           </div>
-                        ) : act.type === 'delete' ? (
-                          <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
-                            <button
-                              onClick={() => handleDelete(record.id)}
-                              style={{
-                                fontSize: 11, padding: '3px 8px', borderRadius: 4,
-                                background: REDB, color: '#fff',
-                                border: 'none', fontFamily: BRUSH, cursor: 'pointer',
-                              }}
-                            >
-                              削除確定
-                            </button>
-                            <button
-                              onClick={dismiss}
-                              style={{
-                                fontSize: 11, padding: '3px 8px', borderRadius: 4,
-                                background: CARD, color: SUB,
-                                border: `1px solid ${BDR}`, fontFamily: BRUSH, cursor: 'pointer',
-                              }}
-                            >
-                              取消
-                            </button>
-                          </div>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    {/* Memo edit panel */}
-                    {act?.type === 'memo' && (
-                      <div style={{ marginTop: 10 }}>
-                        <textarea
-                          value={act.draft}
-                          onChange={e => setAction({ type: 'memo', id: record.id, draft: e.target.value })}
-                          placeholder="台の種類、状況など…"
-                          rows={2}
-                          autoFocus
-                          style={{
-                            width: '100%', padding: '10px 12px',
-                            background: CARD, border: `1px solid ${GOLD}55`,
-                            borderRadius: 6, fontSize: 13, color: TEXT,
-                            resize: 'none', fontFamily: BRUSH, outline: 'none',
-                            boxSizing: 'border-box',
-                          }}
-                        />
-                        <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-                          <button
-                            onClick={() => handleMemoSave(record.id, act.draft)}
-                            style={{
-                              flex: 1, padding: '8px', borderRadius: 5,
-                              background: `linear-gradient(135deg,${RED},${REDB})`,
-                              color: GOLDB, fontSize: 13, fontWeight: 700,
-                              fontFamily: BRUSH, border: `1px solid ${RED}66`, cursor: 'pointer',
-                            }}
-                          >
-                            保存
-                          </button>
-                          <button
-                            onClick={dismiss}
-                            style={{
-                              padding: '8px 16px', borderRadius: 5,
-                              background: CARD, color: SUB, fontSize: 13,
-                              fontFamily: BRUSH, border: `1px solid ${BDR}`, cursor: 'pointer',
-                            }}
-                          >
-                            取消
-                          </button>
-                        </div>
+                        ) : (
+                          <>
+                            {e.memo && <div style={{ fontSize: 12, color: C.textSecondary, marginBottom: 10 }}>{e.memo}</div>}
+                            <div style={{ display: 'flex', gap: 8 }}>
+                              <button onClick={() => startEdit(e)} style={{ flex: 1, padding: '9px', borderRadius: 8, background: C.card2, color: C.text, fontSize: 12, fontWeight: 700 }}>
+                                編集
+                              </button>
+                              <button onClick={() => handleDelete(e.id)} style={{ flex: 1, padding: '9px', borderRadius: 8, background: C.dangerDim, color: C.danger, fontSize: 12, fontWeight: 700 }}>
+                                削除
+                              </button>
+                            </div>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>
                 );
               })}
-            </div>
-          ))
-        )}
+            </Card>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
+
+function FilterChip({
+  active, onClick, children, colorVar,
+}: { active: boolean; onClick: () => void; children: React.ReactNode; colorVar?: string }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        flexShrink: 0, padding: '6px 12px', borderRadius: 14, fontSize: 12, fontWeight: 700,
+        background: active ? (colorVar ?? C.brand) : C.card2,
+        color: active ? '#fff' : C.textSecondary,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+const editInputStyle: React.CSSProperties = {
+  padding: '9px 12px', background: C.card2, border: `1px solid ${C.border}`, borderRadius: 8,
+  fontSize: 13, color: C.text,
+};

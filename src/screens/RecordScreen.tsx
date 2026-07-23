@@ -1,436 +1,294 @@
-import { useState, useCallback } from 'react';
-import type { GamblingCategory } from '../types';
-import { CATEGORY_LABELS } from '../types';
-import { getStores, saveStore, saveRecord, generateId, getSettings, getEffectiveToday } from '../storage';
+import { useRef, useState } from 'react';
+import type { ExpenseCategory } from '../types';
+import { CATEGORY_ORDER, CATEGORY_INFO } from '../types';
+import {
+  getStores, upsertStore, findStoreByName, saveExpense, generateId, todayStr, getSettings,
+} from '../storage';
+import { recognizeReceipt, fileToDataUrl, compressImage } from '../ocr';
+import { C } from '../theme';
+import { Card, PrimaryButton } from '../components/ui';
 
 interface Props {
   onBack: () => void;
   onSaved: () => void;
 }
 
-const QUICK = [1000, 5000, 10000, 30000, 50000, 100000];
+type Mode = 'choose' | 'scanning' | 'form';
 
-const GOLD  = '#C9A227';
-const GOLDB = '#F5D060';
-const RED   = '#9B1C10';
-const REDB  = '#FF3300';
-const CARD  = '#0F0E0A';
-const BDR   = '#222018';
-const TEXT  = '#EDE3C0';
-const SUB   = '#524938';
-const BRUSH = '"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif';
+export function RecordScreen({ onBack, onSaved }: Props) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const settings = getSettings();
 
-const CATEGORIES: GamblingCategory[] = ['slot', 'pachinko', 'baccarat', 'horse', 'boat', 'cycle', 'mahjong', 'other'];
+  const [mode, setMode] = useState<Mode>('choose');
+  const [scanError, setScanError] = useState('');
+  const [receiptImage, setReceiptImage] = useState<string | undefined>(undefined);
 
-function fmt(n: number): string {
-  if (n === 0) return '0';
-  if (n >= 10000) {
-    const man = Math.floor(n / 10000);
-    const rem = n % 10000;
-    return rem === 0 ? `${man}万` : `${man}万${rem.toLocaleString()}`;
-  }
-  return n.toLocaleString();
-}
+  const [date, setDate] = useState(todayStr());
+  const [storeName, setStoreName] = useState('');
+  const [company, setCompany] = useState('');
+  const [category, setCategory] = useState<ExpenseCategory>('food');
+  const [categoryTouched, setCategoryTouched] = useState(false);
+  const [amount, setAmount] = useState('');
+  const [memo, setMemo] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-      <span style={{ color: RED, fontSize: 9 }}>◆</span>
-      <span style={{ fontSize: 11, fontWeight: 700, color: GOLD, letterSpacing: '0.18em', fontFamily: BRUSH, opacity: 0.85 }}>
-        {children}
-      </span>
-    </div>
-  );
-}
+  const stores = getStores();
 
-function AmountInput({
-  label, amount, onAdd, onReset, accent,
-}: {
-  label: string; amount: number; onAdd: (n: number) => void; onReset: () => void; accent: string;
-}) {
-  const [showCustom, setShowCustom] = useState(false);
-  const [customRaw, setCustomRaw]   = useState('');
+  const applyStoreAutofill = (name: string) => {
+    const match = findStoreByName(name);
+    if (match) {
+      setCompany(match.company || match.name);
+      if (!categoryTouched) setCategory(match.category);
+    }
+  };
 
-  const applyCustom = () => {
-    const n = parseInt(customRaw.replace(/[^0-9]/g, ''), 10) || 0;
-    if (n > 0) onAdd(n);
-    setCustomRaw('');
-    setShowCustom(false);
+  const startManual = () => {
+    setReceiptImage(undefined);
+    setDate(todayStr());
+    setMode('form');
+  };
+
+  const handleFileChosen = async (file: File) => {
+    setScanError('');
+    setMode('scanning');
+    try {
+      const fullDataUrl = await fileToDataUrl(file);
+      const thumb = await compressImage(fullDataUrl);
+      setReceiptImage(settings.saveReceiptImages ? thumb : undefined);
+
+      const result = await recognizeReceipt(fullDataUrl);
+      if (result.date) setDate(result.date);
+      if (result.storeName) {
+        setStoreName(result.storeName);
+        applyStoreAutofill(result.storeName);
+      }
+      if (result.amount) setAmount(String(result.amount));
+    } catch {
+      setScanError('レシートの読み取りに失敗しました。内容を確認・修正してください。');
+    } finally {
+      setMode('form');
+    }
+  };
+
+  const handleSave = () => {
+    setError('');
+    const amountNum = parseInt(amount.replace(/[^0-9]/g, ''), 10) || 0;
+    const name = storeName.trim();
+    if (!name) { setError('店舗名を入力してください'); return; }
+    if (amountNum <= 0) { setError('金額を入力してください'); return; }
+
+    setSaving(true);
+    const existing = findStoreByName(name);
+    const store = {
+      id: existing?.id ?? generateId(),
+      name,
+      company: company.trim() || name,
+      category,
+      createdAt: existing?.createdAt ?? new Date().toISOString(),
+    };
+    upsertStore(store);
+
+    saveExpense({
+      id: generateId(),
+      date,
+      storeId: store.id,
+      storeName: name,
+      company: store.company ?? name,
+      category,
+      amount: amountNum,
+      memo: memo.trim() || undefined,
+      receiptImage,
+      createdAt: new Date().toISOString(),
+    });
+    setTimeout(() => { setSaving(false); onSaved(); }, 200);
   };
 
   return (
-    <div style={{ marginBottom: 16 }}>
-      <SectionLabel>{label}</SectionLabel>
-
-      {/* Amount display */}
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: C.page }}>
       <div style={{
-        background: CARD, border: `2px solid ${BDR}`, borderRadius: 8,
-        padding: '12px 14px', marginBottom: 8,
+        flexShrink: 0, background: C.surface, borderBottom: `1px solid ${C.border}`,
+        display: 'flex', alignItems: 'center', padding: '14px 16px',
       }}>
-        <div style={{ fontSize: 10, color: SUB, fontFamily: BRUSH, marginBottom: 4 }}>累計</div>
+        <button onClick={onBack} style={{ fontSize: 14, fontWeight: 600, color: C.brand }}>← 戻る</button>
+        <span style={{ flex: 1, textAlign: 'center', fontSize: 16, fontWeight: 700, color: C.text }}>記録</span>
+        <div style={{ width: 44 }} />
+      </div>
+
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 110px' }}>
+
+        {mode === 'choose' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 12 }}>
+            <input
+              ref={fileInputRef} type="file" accept="image/*" capture="environment"
+              style={{ display: 'none' }}
+              onChange={e => { const f = e.target.files?.[0]; if (f) handleFileChosen(f); e.target.value = ''; }}
+            />
+            <Card
+              style={{ padding: '22px 16px', textAlign: 'center', cursor: 'pointer' }}
+            >
+              <button onClick={() => fileInputRef.current?.click()} style={{ width: '100%' }}>
+                <div style={{ fontSize: 30, marginBottom: 8 }}>📷</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 4 }}>レシートを読み取る</div>
+                <div style={{ fontSize: 12, color: C.textMuted }}>撮影またはアップロードして自動入力</div>
+              </button>
+            </Card>
+            <Card style={{ padding: '22px 16px', textAlign: 'center' }}>
+              <button onClick={startManual} style={{ width: '100%' }}>
+                <div style={{ fontSize: 30, marginBottom: 8 }}>✏️</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 4 }}>手入力で記録</div>
+                <div style={{ fontSize: 12, color: C.textMuted }}>店舗名・金額を直接入力</div>
+              </button>
+            </Card>
+          </div>
+        )}
+
+        {mode === 'scanning' && (
+          <div style={{ textAlign: 'center', padding: '60px 16px' }}>
+            <div style={{
+              width: 36, height: 36, margin: '0 auto 16px', borderRadius: '50%',
+              border: `3px solid ${C.brandDim}`, borderTopColor: C.brand,
+              animation: 'spin 0.8s linear infinite',
+            }} />
+            <style>{'@keyframes spin { to { transform: rotate(360deg); } }'}</style>
+            <div style={{ fontSize: 14, color: C.textSecondary }}>レシートを読み取り中...</div>
+          </div>
+        )}
+
+        {mode === 'form' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+            {scanError && (
+              <div style={{
+                padding: '10px 14px', background: C.dangerDim, border: `1px solid ${C.danger}`,
+                borderRadius: 8, fontSize: 12, color: C.danger,
+              }}>
+                {scanError}
+              </div>
+            )}
+
+            {receiptImage && (
+              <img src={receiptImage} alt="レシート" style={{
+                width: '100%', maxHeight: 200, objectFit: 'contain',
+                borderRadius: 10, border: `1px solid ${C.border}`, background: C.card2,
+              }} />
+            )}
+
+            <Field label="内容を確認してください">
+              <div style={{ fontSize: 11, color: C.textMuted }}>
+                自動読み取りの結果です。必要に応じて修正してから保存してください。
+              </div>
+            </Field>
+
+            <Field label="日付">
+              <input
+                type="date" value={date} onChange={e => setDate(e.target.value)}
+                style={inputStyle}
+              />
+            </Field>
+
+            <Field label="店舗名">
+              <input
+                type="text" value={storeName} list="store-list"
+                placeholder="例：セブンイレブン渋谷店"
+                onChange={e => { setStoreName(e.target.value); applyStoreAutofill(e.target.value); }}
+                style={inputStyle}
+              />
+              <datalist id="store-list">
+                {stores.map(s => <option key={s.id} value={s.name} />)}
+              </datalist>
+            </Field>
+
+            <Field label="企業・チェーン名（任意）">
+              <input
+                type="text" value={company} onChange={e => setCompany(e.target.value)}
+                placeholder="例：セブン&アイ（未入力は店舗名と同じ）"
+                style={inputStyle}
+              />
+            </Field>
+
+            <Field label="カテゴリ">
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {CATEGORY_ORDER.map(cat => {
+                  const active = category === cat;
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => { setCategory(cat); setCategoryTouched(true); }}
+                      style={{
+                        padding: '7px 12px', borderRadius: 16, fontSize: 12, fontWeight: 700,
+                        background: active ? CATEGORY_INFO[cat].colorVar : C.card2,
+                        color: active ? '#fff' : C.textSecondary,
+                        border: `1px solid ${active ? CATEGORY_INFO[cat].colorVar : C.border}`,
+                      }}
+                    >
+                      {CATEGORY_INFO[cat].label}
+                    </button>
+                  );
+                })}
+              </div>
+            </Field>
+
+            <Field label="金額">
+              <div style={{ position: 'relative' }}>
+                <span style={{
+                  position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
+                  fontSize: 16, color: C.textMuted,
+                }}>¥</span>
+                <input
+                  type="number" inputMode="numeric" value={amount}
+                  onChange={e => setAmount(e.target.value)}
+                  placeholder="0"
+                  style={{ ...inputStyle, paddingLeft: 28, fontSize: 20, fontWeight: 700 }}
+                />
+              </div>
+            </Field>
+
+            <Field label="メモ（任意）">
+              <input
+                type="text" value={memo} onChange={e => setMemo(e.target.value)}
+                placeholder="例：週末の買い出し"
+                style={inputStyle}
+              />
+            </Field>
+
+            {error && (
+              <div style={{
+                padding: '10px 14px', background: C.dangerDim, border: `1px solid ${C.danger}`,
+                borderRadius: 8, fontSize: 12, color: C.danger,
+              }}>
+                {error}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {mode === 'form' && (
         <div style={{
-          fontSize: 30, fontWeight: 800, fontFamily: BRUSH,
-          color: amount > 0 ? TEXT : `${TEXT}33`,
+          position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+          width: '100%', maxWidth: 480, padding: '12px 16px 26px', background: C.page,
+          borderTop: `1px solid ${C.border}`,
         }}>
-          ¥{fmt(amount)}
-        </div>
-      </div>
-
-      {/* Quick buttons */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6, marginBottom: 6 }}>
-        {QUICK.map(a => (
-          <button
-            key={a}
-            onClick={() => onAdd(a)}
-            style={{
-              padding: '10px 0', borderRadius: 5,
-              fontSize: 14, fontWeight: 800, fontFamily: BRUSH,
-              background: `${accent}0D`, border: `1px solid ${accent}30`,
-              color: accent, cursor: 'pointer',
-            }}
-            onTouchStart={e => { e.currentTarget.style.background = `${accent}22`; }}
-            onTouchEnd={e => { e.currentTarget.style.background = `${accent}0D`; }}
-            onMouseDown={e => { e.currentTarget.style.background = `${accent}22`; }}
-            onMouseUp={e => { e.currentTarget.style.background = `${accent}0D`; }}
-          >
-            {a >= 10000 ? `${a / 10000}万` : a.toLocaleString()}
-          </button>
-        ))}
-      </div>
-
-      {/* Custom + Reset */}
-      <div style={{ display: 'flex', gap: 6 }}>
-        <button
-          onClick={() => setShowCustom(v => !v)}
-          style={{
-            flex: 1, padding: '9px', borderRadius: 5,
-            fontSize: 12, fontWeight: 700, fontFamily: BRUSH,
-            background: showCustom ? `${accent}18` : CARD,
-            border: `1px solid ${showCustom ? accent : BDR}`,
-            color: showCustom ? accent : SUB, cursor: 'pointer',
-          }}
-        >
-          その他の金額
-        </button>
-        <button
-          onClick={onReset}
-          style={{
-            padding: '9px 16px', borderRadius: 5,
-            fontSize: 12, fontWeight: 700, fontFamily: BRUSH,
-            background: `${RED}14`, border: `1px solid ${RED}44`, color: REDB, cursor: 'pointer',
-          }}
-        >
-          リセット
-        </button>
-      </div>
-
-      {showCustom && (
-        <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
-          <input
-            type="number" value={customRaw}
-            onChange={e => setCustomRaw(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && applyCustom()}
-            placeholder="金額を入力" autoFocus
-            style={{
-              flex: 1, padding: '10px 12px', background: CARD,
-              border: `1px solid ${accent}`, borderRadius: 6,
-              fontSize: 16, color: TEXT, fontFamily: BRUSH, outline: 'none',
-            }}
-          />
-          <button
-            onClick={applyCustom}
-            style={{
-              padding: '10px 16px', borderRadius: 6,
-              fontSize: 13, fontWeight: 700, fontFamily: BRUSH,
-              background: `linear-gradient(135deg,${RED},${REDB})`,
-              color: GOLDB, border: `1px solid ${RED}66`, cursor: 'pointer',
-            }}
-          >
-            追加
-          </button>
+          <PrimaryButton onClick={handleSave} disabled={saving}>
+            {saving ? '保存中...' : '保存する'}
+          </PrimaryButton>
         </div>
       )}
     </div>
   );
 }
 
-export function RecordScreen({ onBack, onSaved }: Props) {
-  const settings       = getSettings();
-  const effectiveToday = getEffectiveToday(settings.dayBoundaryHour);
-
-  const [inAmount,  setInAmount]  = useState(0);
-  const [outAmount, setOutAmount] = useState(0);
-
-  const [stores,       setStores]       = useState(getStores);
-  const [storeId,      setStoreId]      = useState(() => getStores()[0]?.id ?? '');
-  const [showNewStore, setShowNewStore] = useState(false);
-  const [newStoreName, setNewStoreName] = useState('');
-  const [newStoreCat,  setNewStoreCat]  = useState<GamblingCategory>('slot');
-
-  const [saving, setSaving] = useState(false);
-  const [error,  setError]  = useState('');
-
-  const profit = outAmount - inAmount;
-
-  // Category is derived from the selected store
-  const selectedStore  = stores.find(s => s.id === storeId);
-  const recordCategory = selectedStore?.category ?? 'slot';
-
-  const addIn  = useCallback((n: number) => setInAmount(v => v + n), []);
-  const addOut = useCallback((n: number) => setOutAmount(v => v + n), []);
-
-  const handleAddStore = () => {
-    const name = newStoreName.trim();
-    if (!name) return;
-    const store = {
-      id: generateId(), name, category: newStoreCat,
-      createdAt: new Date().toISOString(),
-    };
-    saveStore(store);
-    const updated = getStores();
-    setStores(updated);
-    setStoreId(store.id);
-    setNewStoreName('');
-    setShowNewStore(false);
-  };
-
-  const handleSave = () => {
-    setError('');
-    if (inAmount === 0 && outAmount === 0) { setError('INまたはOUTの金額を入力してください'); return; }
-    if (!storeId || !selectedStore) { setError('店舗を選択または登録してください'); return; }
-    setSaving(true);
-    saveRecord({
-      id: generateId(), date: effectiveToday, storeId,
-      storeName: selectedStore.name, category: recordCategory,
-      inAmount, outAmount, profit,
-      createdAt: new Date().toISOString(),
-    });
-    setTimeout(() => { setSaving(false); onSaved(); }, 300);
-  };
-
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#0A0905' }}>
-
-      {/* Header */}
-      <div style={{ flexShrink: 0, background: 'linear-gradient(180deg,#0E0D08,#0A0905)', borderBottom: `1px solid ${BDR}` }}>
-        <div style={{ height: 4, background: `linear-gradient(90deg,${RED},${GOLD} 30%,${GOLDB} 50%,${GOLD} 70%,${RED})` }} />
-        <div style={{ display: 'flex', alignItems: 'center', padding: '12px 16px' }}>
-          <button onClick={onBack} style={{
-            fontSize: 13, fontWeight: 700, color: GOLD, fontFamily: BRUSH,
-            letterSpacing: '0.05em', background: 'none', border: 'none', cursor: 'pointer',
-          }}>
-            ← 戻る
-          </button>
-          <span style={{
-            flex: 1, textAlign: 'center', fontSize: 17, fontWeight: 800,
-            letterSpacing: '0.25em', color: GOLD, fontFamily: BRUSH,
-            textShadow: `0 0 20px ${GOLD}55`,
-          }}>
-            戦績記録
-          </span>
-          <div style={{ width: 52 }} />
-        </div>
-      </div>
-
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 100px' }}>
-
-        {/* IN */}
-        <AmountInput
-          label="IN（投資額）"
-          amount={inAmount}
-          onAdd={addIn}
-          onReset={() => setInAmount(0)}
-          accent={GOLD}
-        />
-
-        {/* OUT */}
-        <AmountInput
-          label="OUT（回収額）"
-          amount={outAmount}
-          onAdd={addOut}
-          onReset={() => setOutAmount(0)}
-          accent="#00C896"
-        />
-
-        {/* 収支サマリ */}
-        <div style={{
-          padding: '13px 16px', borderRadius: 8, marginBottom: 20, textAlign: 'center',
-          background: profit > 0 ? `${GOLD}0A` : profit < 0 ? `${RED}14` : CARD,
-          border: `1px solid ${profit > 0 ? `${GOLD}44` : profit < 0 ? `${RED}44` : BDR}`,
-        }}>
-          <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH, letterSpacing: '0.1em' }}>収支　</span>
-          <span style={{
-            fontSize: 24, fontWeight: 800, fontFamily: BRUSH,
-            color: profit > 0 ? GOLDB : profit < 0 ? REDB : SUB,
-          }}>
-            {profit > 0 ? '+' : profit < 0 ? '−' : '±'}{fmt(Math.abs(profit))}円
-          </span>
-        </div>
-
-        <div style={{ height: 1, background: `linear-gradient(90deg,transparent,${GOLD}22,transparent)`, marginBottom: 20 }} />
-
-        {/* 店舗 */}
-        <div style={{ marginBottom: 20 }}>
-          <SectionLabel>店 舗</SectionLabel>
-
-          {stores.length > 0 ? (
-            <>
-              <select
-                value={storeId}
-                onChange={e => setStoreId(e.target.value)}
-                style={{
-                  width: '100%', padding: '12px 14px', background: CARD,
-                  border: `1px solid ${BDR}`, borderRadius: 6,
-                  fontSize: 15, fontWeight: 600, color: TEXT,
-                  fontFamily: BRUSH, appearance: 'none', WebkitAppearance: 'none', colorScheme: 'dark',
-                  marginBottom: 8,
-                }}
-              >
-                {stores.map(s => (
-                  <option key={s.id} value={s.id} style={{ background: '#0a0905' }}>
-                    {s.name}　{CATEGORY_LABELS[s.category ?? 'slot']}
-                  </option>
-                ))}
-              </select>
-
-              {/* Selected store's category badge */}
-              {selectedStore && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: 10, color: SUB, fontFamily: BRUSH }}>種目：</span>
-                  <span style={{
-                    fontSize: 11, fontWeight: 700, padding: '2px 10px',
-                    borderRadius: 10, fontFamily: BRUSH,
-                    background: `${GOLD}14`, border: `1px solid ${GOLD}33`, color: GOLD,
-                  }}>
-                    {CATEGORY_LABELS[selectedStore.category ?? 'slot']}
-                  </span>
-                </div>
-              )}
-            </>
-          ) : (
-            <div style={{ fontSize: 12, color: SUB, padding: '6px 0', fontFamily: BRUSH }}>
-              店舗が登録されていません
-            </div>
-          )}
-
-          {/* New store registration */}
-          {!showNewStore ? (
-            <button
-              onClick={() => setShowNewStore(true)}
-              style={{
-                marginTop: 10, fontSize: 12, color: GOLD, fontWeight: 700,
-                fontFamily: BRUSH, letterSpacing: '0.05em',
-                background: 'none', border: 'none', cursor: 'pointer',
-              }}
-            >
-              ＋ 新しい店舗を登録
-            </button>
-          ) : (
-            <div style={{
-              marginTop: 12, padding: '14px', background: CARD,
-              border: `1px solid ${GOLD}33`, borderRadius: 8,
-            }}>
-              {/* Store name */}
-              <div style={{ fontSize: 10, color: SUB, fontFamily: BRUSH, marginBottom: 6 }}>店舗名</div>
-              <input
-                type="text" value={newStoreName}
-                onChange={e => setNewStoreName(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleAddStore()}
-                placeholder="例：マルハン渋谷店" autoFocus
-                style={{
-                  width: '100%', padding: '10px 12px', background: '#0A0905',
-                  border: `1px solid ${GOLD}55`, borderRadius: 6,
-                  fontSize: 14, color: TEXT, fontFamily: BRUSH, outline: 'none',
-                  boxSizing: 'border-box', marginBottom: 12,
-                }}
-              />
-
-              {/* Category for this store */}
-              <div style={{ fontSize: 10, color: SUB, fontFamily: BRUSH, marginBottom: 8 }}>種目</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
-                {CATEGORIES.map(cat => (
-                  <button
-                    key={cat}
-                    onClick={() => setNewStoreCat(cat)}
-                    style={{
-                      padding: '6px 12px', borderRadius: 4,
-                      fontSize: 12, fontWeight: 700, fontFamily: BRUSH,
-                      background: newStoreCat === cat
-                        ? `linear-gradient(135deg,${RED},${REDB})`
-                        : '#0A0905',
-                      color: newStoreCat === cat ? GOLDB : SUB,
-                      border: newStoreCat === cat ? `1px solid ${RED}66` : `1px solid ${BDR}`,
-                      boxShadow: newStoreCat === cat ? `0 0 8px ${RED}44` : 'none',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {CATEGORY_LABELS[cat]}
-                  </button>
-                ))}
-              </div>
-
-              {/* Actions */}
-              <div style={{ display: 'flex', gap: 6 }}>
-                <button
-                  onClick={handleAddStore}
-                  style={{
-                    flex: 1, padding: '10px', borderRadius: 6,
-                    background: `linear-gradient(135deg,${RED},${REDB})`,
-                    color: GOLDB, fontSize: 13, fontWeight: 700,
-                    fontFamily: BRUSH, border: `1px solid ${RED}66`, cursor: 'pointer',
-                  }}
-                >
-                  登録する
-                </button>
-                <button
-                  onClick={() => { setShowNewStore(false); setNewStoreName(''); }}
-                  style={{
-                    padding: '10px 16px', borderRadius: 6, background: '#0A0905',
-                    border: `1px solid ${BDR}`, color: SUB, fontSize: 13,
-                    fontFamily: BRUSH, cursor: 'pointer',
-                  }}
-                >
-                  取消
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {error && (
-          <div style={{
-            padding: '10px 14px', background: `${RED}14`,
-            border: `1px solid ${RED}44`, borderRadius: 6,
-            fontSize: 13, color: REDB, marginBottom: 12, fontFamily: BRUSH,
-          }}>
-            {error}
-          </div>
-        )}
-      </div>
-
-      {/* Save button */}
-      <div style={{
-        position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
-        width: '100%', maxWidth: 480, padding: '14px 16px 28px',
-        background: `linear-gradient(transparent,#0A0905 40%)`, pointerEvents: 'none',
-      }}>
-        <button
-          onClick={handleSave} disabled={saving}
-          style={{
-            width: '100%', padding: '17px', borderRadius: 6,
-            fontSize: 18, fontWeight: 800, letterSpacing: '0.2em',
-            background: saving
-              ? `${GOLD}44`
-              : `linear-gradient(135deg,${RED} 0%,${REDB} 40%,${GOLDB} 100%)`,
-            color: saving ? GOLD : '#0A0900',
-            boxShadow: saving ? 'none' : `0 4px 24px ${RED}88`,
-            border: `1px solid ${GOLD}44`,
-            pointerEvents: 'all', fontFamily: BRUSH, cursor: 'pointer',
-          }}
-        >
-          {saving ? '記録中...' : '◆ 保存する ◆'}
-        </button>
-      </div>
+    <div>
+      <div style={{ fontSize: 11, fontWeight: 600, color: C.textMuted, marginBottom: 6 }}>{label}</div>
+      {children}
     </div>
   );
 }
+
+const inputStyle: React.CSSProperties = {
+  width: '100%', padding: '12px 14px', background: C.card2,
+  border: `1px solid ${C.border}`, borderRadius: 10,
+  fontSize: 15, color: C.text,
+};

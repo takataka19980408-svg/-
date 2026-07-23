@@ -1,24 +1,99 @@
 :root {
-  --bg: #080810;
-  --bg-card: #0f0f18;
-  --bg-card2: #16161f;
-  --gold: #FFD700;
-  --gold-bright: #FFF5A0;
-  --gold-dim: rgba(255, 215, 0, 0.10);
-  --gold-border: rgba(255, 215, 0, 0.30);
-  --red: #CC2200;
-  --red-bright: #FF3311;
-  --red-dim: rgba(204, 34, 0, 0.15);
-  --profit: #00E87A;
-  --profit-dim: rgba(0, 232, 122, 0.12);
-  --loss: #FF3333;
-  --loss-dim: rgba(255, 51, 51, 0.12);
-  --text-main: #F5EED8;
-  --text-sub: rgba(245, 238, 216, 0.45);
-  --border: rgba(255, 215, 0, 0.20);
-  --border-red: rgba(204, 34, 0, 0.40);
-  --font: 'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif JP', 'Hiragino Kaku Gothic ProN', serif;
-  --font-sans: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', sans-serif;
+  color-scheme: light;
+
+  /* Chart / chrome surfaces */
+  --surface-1:      #fcfcfb;
+  --page-plane:     #f9f9f7;
+  --card-2:         #f2f1ee;
+  --text-primary:   #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted:     #898781;
+  --gridline:       #e1e0d9;
+  --baseline:       #c3c2b7;
+  --border:         rgba(11,11,11,0.10);
+  --success-text:   #006300;
+
+  /* Brand */
+  --brand:          #2a78d6;
+  --brand-dim:      rgba(42,120,214,0.10);
+  --brand-border:   rgba(42,120,214,0.35);
+  --danger:         #d03b3b;
+  --danger-dim:     rgba(208,59,59,0.10);
+
+  /* Categorical (fixed identity order, per dataviz skill) */
+  --cat-food:          #2a78d6;
+  --cat-dining:        #eb6834;
+  --cat-daily:         #1baf7a;
+  --cat-transport:     #eda100;
+  --cat-entertainment: #e87ba4;
+  --cat-fashion:       #008300;
+  --cat-medical:       #4a3aa7;
+  --cat-housing:       #e34948;
+  --cat-other:         #898781;
+
+  --font: system-ui, -apple-system, "Segoe UI", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --surface-1:      #1a1a19;
+    --page-plane:     #0d0d0d;
+    --card-2:         #232322;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --gridline:       #2c2c2a;
+    --baseline:       #383835;
+    --border:         rgba(255,255,255,0.10);
+    --success-text:   #0ca30c;
+
+    --brand:          #3987e5;
+    --brand-dim:      rgba(57,135,229,0.16);
+    --brand-border:   rgba(57,135,229,0.45);
+    --danger:         #e66767;
+    --danger-dim:     rgba(230,103,103,0.16);
+
+    --cat-food:          #3987e5;
+    --cat-dining:        #d95926;
+    --cat-daily:         #199e70;
+    --cat-transport:     #c98500;
+    --cat-entertainment: #d55181;
+    --cat-fashion:       #008300;
+    --cat-medical:       #9085e9;
+    --cat-housing:       #e66767;
+    --cat-other:         #898781;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-1:      #1a1a19;
+  --page-plane:     #0d0d0d;
+  --card-2:         #232322;
+  --text-primary:   #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted:     #898781;
+  --gridline:       #2c2c2a;
+  --baseline:       #383835;
+  --border:         rgba(255,255,255,0.10);
+  --success-text:   #0ca30c;
+
+  --brand:          #3987e5;
+  --brand-dim:      rgba(57,135,229,0.16);
+  --brand-border:   rgba(57,135,229,0.45);
+  --danger:         #e66767;
+  --danger-dim:     rgba(230,103,103,0.16);
+
+  --cat-food:          #3987e5;
+  --cat-dining:        #d95926;
+  --cat-daily:         #199e70;
+  --cat-transport:     #c98500;
+  --cat-entertainment: #d55181;
+  --cat-fashion:       #008300;
+  --cat-medical:       #9085e9;
+  --cat-housing:       #e66767;
+  --cat-other:         #898781;
 }
 
 * {
@@ -29,22 +104,13 @@
 }
 
 html, body {
-  background: var(--bg);
-  color: var(--text-main);
+  background: var(--page-plane);
+  color: var(--text-primary);
   font-family: var(--font);
   height: 100%;
   height: 100dvh;
   overscroll-behavior: none;
   -webkit-font-smoothing: antialiased;
-}
-
-body {
-  background-image:
-    linear-gradient(45deg, rgba(255, 215, 0, 0.025) 25%, transparent 25%),
-    linear-gradient(-45deg, rgba(255, 215, 0, 0.025) 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, rgba(255, 215, 0, 0.025) 75%),
-    linear-gradient(-45deg, transparent 75%, rgba(255, 215, 0, 0.025) 75%);
-  background-size: 24px 24px;
 }
 
 #root {
@@ -53,17 +119,18 @@ body {
   max-width: 480px;
   margin: 0 auto;
   position: relative;
+  background: var(--page-plane);
 }
 
 input, select, textarea, button {
-  font-family: var(--font-sans);
+  font-family: var(--font);
+  color: inherit;
 }
 
 button {
   cursor: pointer;
   border: none;
   background: none;
-  color: inherit;
 }
 
 input:focus, select:focus, textarea:focus {
@@ -72,4 +139,4 @@ input:focus, select:focus, textarea:focus {
 
 ::-webkit-scrollbar { width: 3px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--gold-border); border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: var(--baseline); border-radius: 2px; }
