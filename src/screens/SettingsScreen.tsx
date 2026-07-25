@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { getSettings, saveSettings, exportCSV, exportBackup, restoreBackup, clearAllData, getExpenses } from '../storage';
-import { C, NAV_H } from '../theme';
+import { C, FONT, NAV_H } from '../theme';
 import { Card, SectionTitle } from '../components/ui';
 
 interface Props { onDataChange: () => void; }
@@ -50,14 +50,17 @@ export function SettingsScreen({ onDataChange }: Props) {
 
   return (
     <div style={{ background: C.page, minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ flexShrink: 0, background: C.surface, borderBottom: `1px solid ${C.border}`, padding: '18px 16px 14px', textAlign: 'center' }}>
-        <div style={{ fontSize: 16, fontWeight: 800, color: C.text }}>設定</div>
+      <div style={{ flexShrink: 0, background: C.surface, borderBottom: `1px solid ${C.border}` }}>
+        <div style={{ height: 3, background: `linear-gradient(90deg,transparent,${C.brand},${C.brandBright} 50%,${C.brand},transparent)` }} />
+        <div style={{ padding: '16px 16px 13px', textAlign: 'center' }}>
+          <div style={{ fontSize: 16, fontWeight: 800, color: C.brand, fontFamily: FONT, letterSpacing: '0.15em' }}>設 定</div>
+        </div>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: 16, paddingBottom: NAV_H + 20 }}>
 
         {message && (
-          <div style={{ padding: '10px 14px', background: C.brandDim, border: `1px solid ${C.brandBorder}`, borderRadius: 8, fontSize: 12, color: C.brand, marginBottom: 14 }}>
+          <div style={{ padding: '10px 14px', background: C.brandDim, border: `1px solid ${C.brandBorder}`, borderRadius: 8, fontSize: 12, color: C.brandBright, marginBottom: 14, fontFamily: FONT }}>
             {message}
           </div>
         )}
@@ -75,7 +78,7 @@ export function SettingsScreen({ onDataChange }: Props) {
                   style={{ width: '100%', padding: '10px 12px 10px 24px', background: C.card2, border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 14, color: C.text }}
                 />
               </div>
-              <button onClick={applyBudget} style={{ padding: '10px 18px', borderRadius: 8, background: C.brand, color: '#fff', fontSize: 13, fontWeight: 700 }}>
+              <button onClick={applyBudget} style={{ padding: '10px 18px', borderRadius: 8, background: `linear-gradient(135deg,${C.brand},${C.brandBright})`, color: '#1a1408', fontSize: 13, fontWeight: 700, fontFamily: FONT }}>
                 保存
               </button>
             </div>
@@ -116,8 +119,8 @@ function SettingsRow({ label, onClick, danger, last }: { label: string; onClick:
     <button
       onClick={onClick}
       style={{
-        padding: '13px 10px', textAlign: 'left', fontSize: 13, fontWeight: 600,
-        color: danger ? C.danger : C.text,
+        padding: '13px 10px', textAlign: 'left', fontSize: 13, fontWeight: 600, fontFamily: FONT,
+        color: danger ? C.dangerBright : C.text,
         borderBottom: last ? 'none' : `1px solid ${C.border}`,
       }}
     >
@@ -132,12 +135,12 @@ function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: () =>
       onClick={onChange}
       style={{
         width: 44, height: 26, borderRadius: 13, flexShrink: 0,
-        background: checked ? C.brand : C.baseline,
+        background: checked ? `linear-gradient(135deg,${C.brand},${C.brandBright})` : C.baseline,
         display: 'flex', alignItems: 'center', padding: 3, justifyContent: checked ? 'flex-end' : 'flex-start',
         transition: 'background 0.15s ease',
       }}
     >
-      <span style={{ width: 20, height: 20, borderRadius: '50%', background: '#fff', display: 'block' }} />
+      <span style={{ width: 20, height: 20, borderRadius: '50%', background: '#1a1408', display: 'block' }} />
     </button>
   );
 }

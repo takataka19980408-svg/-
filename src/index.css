@@ -1,90 +1,30 @@
 :root {
-  color-scheme: light;
-
-  /* Chart / chrome surfaces */
-  --surface-1:      #fcfcfb;
-  --page-plane:     #f9f9f7;
-  --card-2:         #f2f1ee;
-  --text-primary:   #0b0b0b;
-  --text-secondary: #52514e;
-  --text-muted:     #898781;
-  --gridline:       #e1e0d9;
-  --baseline:       #c3c2b7;
-  --border:         rgba(11,11,11,0.10);
-  --success-text:   #006300;
-
-  /* Brand */
-  --brand:          #2a78d6;
-  --brand-dim:      rgba(42,120,214,0.10);
-  --brand-border:   rgba(42,120,214,0.35);
-  --danger:         #d03b3b;
-  --danger-dim:     rgba(208,59,59,0.10);
-
-  /* Categorical (fixed identity order, per dataviz skill) */
-  --cat-food:          #2a78d6;
-  --cat-dining:        #eb6834;
-  --cat-daily:         #1baf7a;
-  --cat-transport:     #eda100;
-  --cat-entertainment: #e87ba4;
-  --cat-fashion:       #008300;
-  --cat-medical:       #4a3aa7;
-  --cat-housing:       #e34948;
-  --cat-other:         #898781;
-
-  --font: system-ui, -apple-system, "Segoe UI", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:where(:not([data-theme="light"])) {
-    color-scheme: dark;
-    --surface-1:      #1a1a19;
-    --page-plane:     #0d0d0d;
-    --card-2:         #232322;
-    --text-primary:   #ffffff;
-    --text-secondary: #c3c2b7;
-    --text-muted:     #898781;
-    --gridline:       #2c2c2a;
-    --baseline:       #383835;
-    --border:         rgba(255,255,255,0.10);
-    --success-text:   #0ca30c;
-
-    --brand:          #3987e5;
-    --brand-dim:      rgba(57,135,229,0.16);
-    --brand-border:   rgba(57,135,229,0.45);
-    --danger:         #e66767;
-    --danger-dim:     rgba(230,103,103,0.16);
-
-    --cat-food:          #3987e5;
-    --cat-dining:        #d95926;
-    --cat-daily:         #199e70;
-    --cat-transport:     #c98500;
-    --cat-entertainment: #d55181;
-    --cat-fashion:       #008300;
-    --cat-medical:       #9085e9;
-    --cat-housing:       #e66767;
-    --cat-other:         #898781;
-  }
-}
-
-:root[data-theme="dark"] {
   color-scheme: dark;
-  --surface-1:      #1a1a19;
-  --page-plane:     #0d0d0d;
-  --card-2:         #232322;
-  --text-primary:   #ffffff;
-  --text-secondary: #c3c2b7;
-  --text-muted:     #898781;
-  --gridline:       #2c2c2a;
-  --baseline:       #383835;
-  --border:         rgba(255,255,255,0.10);
-  --success-text:   #0ca30c;
 
-  --brand:          #3987e5;
-  --brand-dim:      rgba(57,135,229,0.16);
-  --brand-border:   rgba(57,135,229,0.45);
-  --danger:         #e66767;
-  --danger-dim:     rgba(230,103,103,0.16);
+  /* Chart / chrome surfaces — 黒 base */
+  --surface-1:      #120f09;
+  --page-plane:     #0a0805;
+  --card-2:         #1b160d;
+  --text-primary:   #EDE3C0;
+  --text-secondary: rgba(237,227,192,0.62);
+  --text-muted:     #6b6152;
+  --gridline:       rgba(201,162,39,0.14);
+  --baseline:       rgba(201,162,39,0.32);
+  --border:         rgba(201,162,39,0.16);
+  --success-text:   #F5D060;
 
+  /* 金 (gold) — brand */
+  --brand:          #C9A227;
+  --brand-bright:   #F5D060;
+  --brand-dim:      rgba(201,162,39,0.12);
+  --brand-border:   rgba(201,162,39,0.4);
+
+  /* 朱 (vermillion/red) — danger */
+  --danger:         #C7371F;
+  --danger-bright:  #FF4A24;
+  --danger-dim:     rgba(199,55,31,0.14);
+
+  /* Categorical (fixed identity order, per dataviz skill — validated against this surface) */
   --cat-food:          #3987e5;
   --cat-dining:        #d95926;
   --cat-daily:         #199e70;
@@ -93,7 +33,10 @@
   --cat-fashion:       #008300;
   --cat-medical:       #9085e9;
   --cat-housing:       #e66767;
-  --cat-other:         #898781;
+  --cat-other:         #6b6152;
+
+  --font:      '"Shippori Mincho B1"', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  --font-sans: 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', system-ui, -apple-system, sans-serif;
 }
 
 * {
@@ -106,11 +49,20 @@
 html, body {
   background: var(--page-plane);
   color: var(--text-primary);
-  font-family: var(--font);
+  font-family: var(--font-sans);
   height: 100%;
   height: 100dvh;
   overscroll-behavior: none;
   -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background-image:
+    linear-gradient(45deg, rgba(201,162,39,0.02) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(201,162,39,0.02) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(201,162,39,0.02) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(201,162,39,0.02) 75%);
+  background-size: 24px 24px;
 }
 
 #root {
@@ -123,7 +75,7 @@ html, body {
 }
 
 input, select, textarea, button {
-  font-family: var(--font);
+  font-family: var(--font-sans);
   color: inherit;
 }
 

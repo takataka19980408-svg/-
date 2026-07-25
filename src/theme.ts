@@ -10,10 +10,15 @@ export const C = {
   border: 'var(--border)',
   success: 'var(--success-text)',
   brand: 'var(--brand)',
+  brandBright: 'var(--brand-bright)',
   brandDim: 'var(--brand-dim)',
   brandBorder: 'var(--brand-border)',
   danger: 'var(--danger)',
+  dangerBright: 'var(--danger-bright)',
   dangerDim: 'var(--danger-dim)',
 };
+
+export const FONT = 'var(--font)';
+export const FONT_SANS = 'var(--font-sans)';
 
 export const NAV_H = 64;

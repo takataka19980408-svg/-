@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { C } from '../theme';
+import { C, FONT } from '../theme';
 
 export function Card({ children, style }: { children: ReactNode; style?: React.CSSProperties }) {
   return (
@@ -19,9 +19,12 @@ export function Card({ children, style }: { children: ReactNode; style?: React.C
 export function SectionTitle({ children, right }: { children: ReactNode; right?: ReactNode }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-      <span style={{ fontSize: 13, fontWeight: 700, color: C.text, letterSpacing: '0.02em' }}>
-        {children}
-      </span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ width: 3, height: 13, background: C.brand, borderRadius: 1 }} />
+        <span style={{ fontSize: 13, fontWeight: 700, color: C.text, letterSpacing: '0.08em', fontFamily: FONT }}>
+          {children}
+        </span>
+      </div>
       {right}
     </div>
   );
@@ -30,7 +33,7 @@ export function SectionTitle({ children, right }: { children: ReactNode; right?:
 export function EmptyState({ children }: { children: ReactNode }) {
   return (
     <Card style={{ padding: '28px 16px', textAlign: 'center' }}>
-      <span style={{ fontSize: 13, color: C.textMuted }}>{children}</span>
+      <span style={{ fontSize: 13, color: C.textMuted, fontFamily: FONT }}>{children}</span>
     </Card>
   );
 }
@@ -44,10 +47,11 @@ export function PrimaryButton({
       disabled={disabled}
       style={{
         width: '100%', padding: '14px', borderRadius: 12,
-        fontSize: 15, fontWeight: 700,
-        background: disabled ? C.baseline : C.brand,
-        color: '#ffffff',
-        opacity: disabled ? 0.6 : 1,
+        fontSize: 16, fontWeight: 800, letterSpacing: '0.15em', fontFamily: FONT,
+        background: disabled ? C.baseline : `linear-gradient(135deg,${C.brand} 0%,${C.brandBright} 100%)`,
+        color: disabled ? C.textMuted : '#1a1408',
+        boxShadow: disabled ? 'none' : '0 4px 18px rgba(201,162,39,0.35)',
+        border: `1px solid ${C.brandBorder}`,
         ...style,
       }}
     >

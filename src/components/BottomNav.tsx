@@ -1,5 +1,5 @@
 import type { MainScreen } from '../types';
-import { C, NAV_H } from '../theme';
+import { C, FONT, NAV_H } from '../theme';
 
 const HomeIcon = ({ active }: { active: boolean }) => (
   <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke={active ? C.brand : C.textMuted} strokeWidth={2}>
@@ -51,7 +51,10 @@ function Tab({ item, active, onChange }: { item: NavItem; active: boolean; onCha
       }}
     >
       <item.Icon active={active} />
-      <span style={{ fontSize: 10, fontWeight: active ? 700 : 500, color: active ? C.brand : C.textMuted }}>
+      <span style={{
+        fontSize: 10, fontWeight: active ? 700 : 500, color: active ? C.brand : C.textMuted,
+        fontFamily: FONT, letterSpacing: '0.05em',
+      }}>
         {item.label}
       </span>
     </button>
@@ -83,16 +86,17 @@ export function BottomNav({ active, onChange, onRecord }: Props) {
       >
         <span style={{
           width: 54, height: 54, borderRadius: '50%',
-          background: C.brand, color: '#fff',
+          background: `linear-gradient(135deg,${C.brand} 0%,${C.brandBright} 100%)`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 4px 14px rgba(42,120,214,0.45)',
+          boxShadow: '0 0 18px rgba(201,162,39,0.5), 0 4px 14px rgba(0,0,0,0.5)',
+          border: `1px solid ${C.brandBorder}`,
           marginTop: -14,
         }}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.4}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1a1408" strokeWidth={2.6}>
             <path d="M12 5v14M5 12h14" strokeLinecap="round" />
           </svg>
         </span>
-        <span style={{ fontSize: 10, fontWeight: 700, color: C.brand, marginTop: 3 }}>記録</span>
+        <span style={{ fontSize: 10, fontWeight: 700, color: C.brand, marginTop: 3, fontFamily: FONT, letterSpacing: '0.05em' }}>記録</span>
       </button>
 
       {RIGHT.map(item => (

@@ -1,4 +1,4 @@
-import { C } from '../theme';
+import { C, FONT } from '../theme';
 import { formatYenCompact } from '../storage';
 
 export interface VBarItem {
@@ -36,7 +36,7 @@ export function VerticalBarChart({
           }}>
             {thresholdLabel && (
               <span style={{
-                position: 'absolute', right: 0, top: -14, fontSize: 9, color: C.danger, fontWeight: 700,
+                position: 'absolute', right: 0, top: -14, fontSize: 9, color: C.danger, fontWeight: 700, fontFamily: FONT,
               }}>
                 {thresholdLabel}
               </span>
@@ -52,8 +52,9 @@ export function VerticalBarChart({
             }}>
               <div style={{
                 width: '100%', maxWidth: 26, height: `${pct}%`, borderRadius: '4px 4px 0 0',
-                background: item.highlight ? C.brand : C.brandDim,
+                background: item.highlight ? `linear-gradient(180deg,${C.brandBright},${C.brand})` : C.brandDim,
                 border: item.highlight ? 'none' : `1px solid ${C.brandBorder}`,
+                boxShadow: item.highlight ? '0 0 8px rgba(201,162,39,0.45)' : 'none',
                 transition: 'height 0.25s ease',
               }} />
             </div>
@@ -64,12 +65,12 @@ export function VerticalBarChart({
         {items.map((item, idx) => (
           <div key={idx} style={{ flex: 1, textAlign: 'center', minWidth: 0 }}>
             {idx % labelEvery === 0 && (
-              <span style={{ fontSize: 9, color: C.textMuted }}>{item.label}</span>
+              <span style={{ fontSize: 9, color: C.textMuted, fontFamily: FONT }}>{item.label}</span>
             )}
           </div>
         ))}
       </div>
-      <div style={{ fontSize: 9, color: C.textMuted, marginTop: 2 }}>
+      <div style={{ fontSize: 9, color: C.textMuted, marginTop: 2, fontFamily: FONT }}>
         最大 {formatYenCompact(max)}
       </div>
     </div>

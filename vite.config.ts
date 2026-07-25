@@ -19,8 +19,8 @@ export default defineConfig({
         scope: '/-/',
         display: 'standalone',
         orientation: 'portrait',
-        background_color: '#f9f9f7',
-        theme_color: '#2a78d6',
+        background_color: '#0a0805',
+        theme_color: '#0a0805',
         icons: [
           { src: '/-/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: '/-/icon-512.png', sizes: '512x512', type: 'image/png' },
@@ -29,7 +29,39 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // OCR model/wasm assets are large and only needed once the user scans a
+        // receipt — fetched and cached lazily via runtimeCaching below instead of
+        // bloating the initial install precache.
+        globIgnores: ['**/tesseract-assets/**'],
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-stylesheets',
+              expiration: { maxEntries: 5, maxAgeSeconds: 60 * 60 * 24 * 365 },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-webfonts',
+              cacheableResponse: { statuses: [0, 200] },
+              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
+            },
+          },
+          {
+            urlPattern: /\/tesseract-assets\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'tesseract-ocr-assets',
+              cacheableResponse: { statuses: [0, 200] },
+              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
+            },
+          },
+        ],
       },
     }),
   ],

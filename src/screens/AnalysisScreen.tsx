@@ -4,7 +4,7 @@ import {
   getExpenses, getExpensesForMonth, getMonthlyTrend, getDailyDataForMonth, getCategoryBreakdown,
   getStoreRanking, getCompanyRanking, getCategoryRanking, getSettings,
 } from '../storage';
-import { C, NAV_H } from '../theme';
+import { C, FONT, NAV_H } from '../theme';
 import { Card, SectionTitle, EmptyState } from '../components/ui';
 import { DonutChart } from '../components/DonutChart';
 import { VerticalBarChart } from '../components/VerticalBarChart';
@@ -22,11 +22,19 @@ export function AnalysisScreen({ refreshKey }: Props) {
 
   return (
     <div style={{ background: C.page, minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ flexShrink: 0, background: C.surface, borderBottom: `1px solid ${C.border}`, padding: '14px 16px 0' }}>
-        <div style={{ fontSize: 16, fontWeight: 800, color: C.text, textAlign: 'center', marginBottom: 12 }}>分析</div>
-        <div style={{ display: 'flex', gap: 4 }}>
-          <TabButton active={tab === 'graph'} onClick={() => setTab('graph')}>グラフ</TabButton>
-          <TabButton active={tab === 'ranking'} onClick={() => setTab('ranking')}>ランキング</TabButton>
+      <div style={{ flexShrink: 0, background: C.surface, borderBottom: `1px solid ${C.border}` }}>
+        <div style={{ height: 3, background: `linear-gradient(90deg,transparent,${C.brand},${C.brandBright} 50%,${C.brand},transparent)` }} />
+        <div style={{ padding: '13px 16px 0' }}>
+          <div style={{
+            fontSize: 16, fontWeight: 800, color: C.brand, textAlign: 'center', marginBottom: 12,
+            fontFamily: FONT, letterSpacing: '0.15em',
+          }}>
+            分 析
+          </div>
+          <div style={{ display: 'flex', gap: 4 }}>
+            <TabButton active={tab === 'graph'} onClick={() => setTab('graph')}>グラフ</TabButton>
+            <TabButton active={tab === 'ranking'} onClick={() => setTab('ranking')}>ランキング</TabButton>
+          </div>
         </div>
       </div>
 
@@ -44,8 +52,8 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
     <button
       onClick={onClick}
       style={{
-        flex: 1, padding: '10px 0', fontSize: 13, fontWeight: 700,
-        color: active ? C.brand : C.textMuted,
+        flex: 1, padding: '10px 0', fontSize: 13, fontWeight: 700, fontFamily: FONT, letterSpacing: '0.05em',
+        color: active ? C.brandBright : C.textMuted,
         borderBottom: active ? `2px solid ${C.brand}` : `2px solid transparent`,
       }}
     >
@@ -146,9 +154,10 @@ function ChipButton({ active, onClick, children }: { active: boolean; onClick: (
     <button
       onClick={onClick}
       style={{
-        flex: 1, padding: '8px 0', borderRadius: 10, fontSize: 12, fontWeight: 700,
-        background: active ? C.brand : C.card2,
-        color: active ? '#fff' : C.textSecondary,
+        flex: 1, padding: '8px 0', borderRadius: 10, fontSize: 12, fontWeight: 700, fontFamily: FONT,
+        background: active ? `linear-gradient(135deg,${C.brand},${C.brandBright})` : C.card2,
+        color: active ? '#1a1408' : C.textSecondary,
+        border: `1px solid ${active ? 'transparent' : C.border}`,
       }}
     >
       {children}

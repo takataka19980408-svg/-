@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { Expense, ExpenseCategory } from '../types';
 import { CATEGORY_INFO, CATEGORY_ORDER } from '../types';
 import { getExpensesForMonth, deleteExpense, updateExpense, formatYen, getMonthSpending } from '../storage';
-import { C, NAV_H } from '../theme';
+import { C, FONT, NAV_H } from '../theme';
 import { Card, EmptyState } from '../components/ui';
 
 interface Props { refreshKey: number; }
@@ -72,15 +72,23 @@ export function HistoryScreen({ refreshKey }: Props) {
 
   return (
     <div style={{ background: C.page, minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ flexShrink: 0, background: C.surface, borderBottom: `1px solid ${C.border}`, padding: '14px 16px' }}>
-        <div style={{ fontSize: 16, fontWeight: 800, color: C.text, textAlign: 'center', marginBottom: 10 }}>履歴</div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <button onClick={() => shift(-1)} style={{ fontSize: 16, padding: '4px 10px', color: C.brand }}>‹</button>
-          <span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{monthLabel(year, month)}</span>
-          <button onClick={() => shift(1)} style={{ fontSize: 16, padding: '4px 10px', color: C.brand }}>›</button>
-        </div>
-        <div style={{ textAlign: 'center', fontSize: 12, color: C.textMuted, marginTop: 2 }}>
-          合計 {formatYen(monthTotal)}
+      <div style={{ flexShrink: 0, background: C.surface, borderBottom: `1px solid ${C.border}` }}>
+        <div style={{ height: 3, background: `linear-gradient(90deg,transparent,${C.brand},${C.brandBright} 50%,${C.brand},transparent)` }} />
+        <div style={{ padding: '13px 16px 12px' }}>
+          <div style={{
+            fontSize: 16, fontWeight: 800, color: C.brand, textAlign: 'center', marginBottom: 10,
+            fontFamily: FONT, letterSpacing: '0.15em',
+          }}>
+            履 歴
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <button onClick={() => shift(-1)} style={{ fontSize: 18, padding: '4px 10px', color: C.brand }}>‹</button>
+            <span style={{ fontSize: 14, fontWeight: 700, color: C.text, fontFamily: FONT }}>{monthLabel(year, month)}</span>
+            <button onClick={() => shift(1)} style={{ fontSize: 18, padding: '4px 10px', color: C.brand }}>›</button>
+          </div>
+          <div style={{ textAlign: 'center', fontSize: 12, color: C.brandBright, marginTop: 2, fontFamily: FONT }}>
+            合計 {formatYen(monthTotal)}
+          </div>
         </div>
       </div>
 
@@ -97,7 +105,7 @@ export function HistoryScreen({ refreshKey }: Props) {
         {groups.length === 0 && <EmptyState>この月の記録はありません</EmptyState>}
         {groups.map(([date, list]) => (
           <div key={date} style={{ marginBottom: 14 }}>
-            <div style={{ fontSize: 11, color: C.textMuted, fontWeight: 600, margin: '10px 2px 6px' }}>
+            <div style={{ fontSize: 11, color: C.textMuted, fontWeight: 600, margin: '10px 2px 6px', fontFamily: FONT }}>
               {date.slice(5).replace('-', '/')}
             </div>
             <Card style={{ overflow: 'hidden' }}>
@@ -111,12 +119,12 @@ export function HistoryScreen({ refreshKey }: Props) {
                     >
                       <span style={{ width: 8, height: 8, borderRadius: 2.5, flexShrink: 0, background: CATEGORY_INFO[e.category].colorVar }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: C.text, fontFamily: FONT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {e.storeName}
                         </div>
                         <div style={{ fontSize: 10, color: C.textMuted }}>{CATEGORY_INFO[e.category].label}</div>
                       </div>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{formatYen(e.amount)}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: C.brandBright, fontFamily: FONT }}>{formatYen(e.amount)}</span>
                     </button>
 
                     {expanded && (
@@ -141,9 +149,9 @@ export function HistoryScreen({ refreshKey }: Props) {
                                   key={cat}
                                   onClick={() => setEditing({ ...editing, category: cat })}
                                   style={{
-                                    padding: '5px 10px', borderRadius: 12, fontSize: 11, fontWeight: 700,
+                                    padding: '5px 10px', borderRadius: 12, fontSize: 11, fontWeight: 700, fontFamily: FONT,
                                     background: editing.category === cat ? CATEGORY_INFO[cat].colorVar : C.card2,
-                                    color: editing.category === cat ? '#fff' : C.textSecondary,
+                                    color: editing.category === cat ? '#1a1408' : C.textSecondary,
                                   }}
                                 >
                                   {CATEGORY_INFO[cat].label}
@@ -156,22 +164,22 @@ export function HistoryScreen({ refreshKey }: Props) {
                               style={editInputStyle}
                             />
                             <div style={{ display: 'flex', gap: 8 }}>
-                              <button onClick={saveEdit} style={{ flex: 1, padding: '9px', borderRadius: 8, background: C.brand, color: '#fff', fontSize: 12, fontWeight: 700 }}>
+                              <button onClick={saveEdit} style={{ flex: 1, padding: '9px', borderRadius: 8, background: `linear-gradient(135deg,${C.brand},${C.brandBright})`, color: '#1a1408', fontSize: 12, fontWeight: 700, fontFamily: FONT }}>
                                 保存
                               </button>
-                              <button onClick={() => setEditing(null)} style={{ padding: '9px 14px', borderRadius: 8, background: C.card2, color: C.textSecondary, fontSize: 12 }}>
+                              <button onClick={() => setEditing(null)} style={{ padding: '9px 14px', borderRadius: 8, background: C.card2, color: C.textSecondary, fontSize: 12, fontFamily: FONT }}>
                                 取消
                               </button>
                             </div>
                           </div>
                         ) : (
                           <>
-                            {e.memo && <div style={{ fontSize: 12, color: C.textSecondary, marginBottom: 10 }}>{e.memo}</div>}
+                            {e.memo && <div style={{ fontSize: 12, color: C.textSecondary, marginBottom: 10, fontFamily: FONT }}>{e.memo}</div>}
                             <div style={{ display: 'flex', gap: 8 }}>
-                              <button onClick={() => startEdit(e)} style={{ flex: 1, padding: '9px', borderRadius: 8, background: C.card2, color: C.text, fontSize: 12, fontWeight: 700 }}>
+                              <button onClick={() => startEdit(e)} style={{ flex: 1, padding: '9px', borderRadius: 8, background: C.card2, color: C.text, fontSize: 12, fontWeight: 700, fontFamily: FONT }}>
                                 編集
                               </button>
-                              <button onClick={() => handleDelete(e.id)} style={{ flex: 1, padding: '9px', borderRadius: 8, background: C.dangerDim, color: C.danger, fontSize: 12, fontWeight: 700 }}>
+                              <button onClick={() => handleDelete(e.id)} style={{ flex: 1, padding: '9px', borderRadius: 8, background: C.dangerDim, color: C.dangerBright, fontSize: 12, fontWeight: 700, fontFamily: FONT }}>
                                 削除
                               </button>
                             </div>
@@ -197,9 +205,10 @@ function FilterChip({
     <button
       onClick={onClick}
       style={{
-        flexShrink: 0, padding: '6px 12px', borderRadius: 14, fontSize: 12, fontWeight: 700,
-        background: active ? (colorVar ?? C.brand) : C.card2,
-        color: active ? '#fff' : C.textSecondary,
+        flexShrink: 0, padding: '6px 12px', borderRadius: 14, fontSize: 12, fontWeight: 700, fontFamily: FONT,
+        background: active ? (colorVar ?? `linear-gradient(135deg,${C.brand},${C.brandBright})`) : C.card2,
+        color: active ? '#1a1408' : C.textSecondary,
+        border: `1px solid ${active ? 'transparent' : C.border}`,
         whiteSpace: 'nowrap',
       }}
     >

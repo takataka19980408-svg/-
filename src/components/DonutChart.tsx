@@ -1,4 +1,4 @@
-import { C } from '../theme';
+import { C, FONT } from '../theme';
 import { formatYen } from '../storage';
 
 export interface DonutItem {
@@ -45,8 +45,8 @@ export function DonutChart({ items, centerLabel, size = 172 }: Props) {
           borderRadius: '50%', background: C.surface,
           display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column',
         }}>
-          <span style={{ fontSize: 10, color: C.textMuted, marginBottom: 2 }}>合計</span>
-          <span style={{ fontSize: 15, fontWeight: 700, color: C.text, lineHeight: 1.2, textAlign: 'center' }}>
+          <span style={{ fontSize: 10, color: C.textMuted, marginBottom: 2, fontFamily: FONT, letterSpacing: '0.1em' }}>合計</span>
+          <span style={{ fontSize: 16, fontWeight: 800, color: C.brandBright, lineHeight: 1.2, textAlign: 'center', fontFamily: FONT }}>
             {centerLabel ?? formatYen(total)}
           </span>
         </div>
@@ -62,11 +62,11 @@ export function DonutChart({ items, centerLabel, size = 172 }: Props) {
               }} />
               <span style={{
                 fontSize: 12, color: C.textSecondary, flex: 1, minWidth: 0,
-                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: FONT,
               }}>
                 {item.label}
               </span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: C.text, flexShrink: 0 }}>{pct}%</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: C.text, flexShrink: 0, fontFamily: FONT }}>{pct}%</span>
             </div>
           );
         })}

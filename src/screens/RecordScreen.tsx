@@ -5,7 +5,7 @@ import {
   getStores, upsertStore, findStoreByName, saveExpense, generateId, todayStr, getSettings,
 } from '../storage';
 import { recognizeReceipt, fileToDataUrl, compressImage } from '../ocr';
-import { C } from '../theme';
+import { C, FONT } from '../theme';
 import { Card, PrimaryButton } from '../components/ui';
 
 interface Props {
@@ -61,6 +61,7 @@ export function RecordScreen({ onBack, onSaved }: Props) {
       if (result.date) setDate(result.date);
       if (result.storeName) {
         setStoreName(result.storeName);
+        if (result.company) setCompany(result.company);
         applyStoreAutofill(result.storeName);
       }
       if (result.amount) setAmount(String(result.amount));
@@ -106,13 +107,15 @@ export function RecordScreen({ onBack, onSaved }: Props) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: C.page }}>
-      <div style={{
-        flexShrink: 0, background: C.surface, borderBottom: `1px solid ${C.border}`,
-        display: 'flex', alignItems: 'center', padding: '14px 16px',
-      }}>
-        <button onClick={onBack} style={{ fontSize: 14, fontWeight: 600, color: C.brand }}>← 戻る</button>
-        <span style={{ flex: 1, textAlign: 'center', fontSize: 16, fontWeight: 700, color: C.text }}>記録</span>
-        <div style={{ width: 44 }} />
+      <div style={{ flexShrink: 0, background: C.surface, borderBottom: `1px solid ${C.border}` }}>
+        <div style={{ height: 3, background: `linear-gradient(90deg,transparent,${C.brand},${C.brandBright} 50%,${C.brand},transparent)` }} />
+        <div style={{ display: 'flex', alignItems: 'center', padding: '13px 16px' }}>
+          <button onClick={onBack} style={{ fontSize: 14, fontWeight: 600, color: C.brand, fontFamily: FONT }}>← 戻る</button>
+          <span style={{ flex: 1, textAlign: 'center', fontSize: 16, fontWeight: 800, color: C.brand, fontFamily: FONT, letterSpacing: '0.15em' }}>
+            記 録
+          </span>
+          <div style={{ width: 44 }} />
+        </div>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 110px' }}>
@@ -129,14 +132,14 @@ export function RecordScreen({ onBack, onSaved }: Props) {
             >
               <button onClick={() => fileInputRef.current?.click()} style={{ width: '100%' }}>
                 <div style={{ fontSize: 30, marginBottom: 8 }}>📷</div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 4 }}>レシートを読み取る</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: C.brandBright, marginBottom: 4, fontFamily: FONT }}>レシートを読み取る</div>
                 <div style={{ fontSize: 12, color: C.textMuted }}>撮影またはアップロードして自動入力</div>
               </button>
             </Card>
             <Card style={{ padding: '22px 16px', textAlign: 'center' }}>
               <button onClick={startManual} style={{ width: '100%' }}>
                 <div style={{ fontSize: 30, marginBottom: 8 }}>✏️</div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 4 }}>手入力で記録</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: C.brandBright, marginBottom: 4, fontFamily: FONT }}>手入力で記録</div>
                 <div style={{ fontSize: 12, color: C.textMuted }}>店舗名・金額を直接入力</div>
               </button>
             </Card>
@@ -151,7 +154,7 @@ export function RecordScreen({ onBack, onSaved }: Props) {
               animation: 'spin 0.8s linear infinite',
             }} />
             <style>{'@keyframes spin { to { transform: rotate(360deg); } }'}</style>
-            <div style={{ fontSize: 14, color: C.textSecondary }}>レシートを読み取り中...</div>
+            <div style={{ fontSize: 14, color: C.textSecondary, fontFamily: FONT }}>レシートを読み取り中...</div>
           </div>
         )}
 
@@ -160,7 +163,7 @@ export function RecordScreen({ onBack, onSaved }: Props) {
             {scanError && (
               <div style={{
                 padding: '10px 14px', background: C.dangerDim, border: `1px solid ${C.danger}`,
-                borderRadius: 8, fontSize: 12, color: C.danger,
+                borderRadius: 8, fontSize: 12, color: C.dangerBright, fontFamily: FONT,
               }}>
                 {scanError}
               </div>
@@ -215,9 +218,9 @@ export function RecordScreen({ onBack, onSaved }: Props) {
                       key={cat}
                       onClick={() => { setCategory(cat); setCategoryTouched(true); }}
                       style={{
-                        padding: '7px 12px', borderRadius: 16, fontSize: 12, fontWeight: 700,
+                        padding: '7px 12px', borderRadius: 16, fontSize: 12, fontWeight: 700, fontFamily: FONT,
                         background: active ? CATEGORY_INFO[cat].colorVar : C.card2,
-                        color: active ? '#fff' : C.textSecondary,
+                        color: active ? '#1a1408' : C.textSecondary,
                         border: `1px solid ${active ? CATEGORY_INFO[cat].colorVar : C.border}`,
                       }}
                     >
@@ -238,7 +241,7 @@ export function RecordScreen({ onBack, onSaved }: Props) {
                   type="number" inputMode="numeric" value={amount}
                   onChange={e => setAmount(e.target.value)}
                   placeholder="0"
-                  style={{ ...inputStyle, paddingLeft: 28, fontSize: 20, fontWeight: 700 }}
+                  style={{ ...inputStyle, paddingLeft: 28, fontSize: 22, fontWeight: 800, color: C.brandBright, fontFamily: FONT }}
                 />
               </div>
             </Field>
@@ -254,7 +257,7 @@ export function RecordScreen({ onBack, onSaved }: Props) {
             {error && (
               <div style={{
                 padding: '10px 14px', background: C.dangerDim, border: `1px solid ${C.danger}`,
-                borderRadius: 8, fontSize: 12, color: C.danger,
+                borderRadius: 8, fontSize: 12, color: C.dangerBright, fontFamily: FONT,
               }}>
                 {error}
               </div>
@@ -281,7 +284,9 @@ export function RecordScreen({ onBack, onSaved }: Props) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <div style={{ fontSize: 11, fontWeight: 600, color: C.textMuted, marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 11, fontWeight: 600, color: C.textMuted, marginBottom: 6, fontFamily: FONT, letterSpacing: '0.05em' }}>
+        {label}
+      </div>
       {children}
     </div>
   );
