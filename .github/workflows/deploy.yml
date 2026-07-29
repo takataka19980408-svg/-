@@ -1,8 +1,8 @@
-name: Deploy ゼニ帳 to GitHub Pages
+name: Deploy レシート家計簿 to GitHub Pages
 
 on:
   push:
-    branches: [claude/zeni-cho-app-design-by6y8z]
+    branches: [claude/household-budget-app-jt7k0r]
   workflow_dispatch:
 
 permissions:
