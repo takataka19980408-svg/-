@@ -24,19 +24,35 @@ async function getWorker() {
       corePath: `${ASSET_BASE}core/`,
       langPath: `${ASSET_BASE}tessdata`,
     }).then(async worker => {
-      // SINGLE_COLUMN suits receipts: a narrow strip of lines with varying font size.
-      await worker.setParameters({ tessedit_pageseg_mode: PSM.SINGLE_COLUMN });
+      // AUTO: a phone photo usually includes some background/desk around the
+      // receipt (and sometimes a slight tilt), so we rely on Tesseract's own
+      // layout analysis to find the text block(s) rather than assuming the
+      // whole frame is one clean column of text.
+      await worker.setParameters({ tessedit_pageseg_mode: PSM.AUTO });
       return worker;
     });
   }
   return workerPromise;
 }
 
+const MIN_USABLE_TEXT_LENGTH = 8;
+
 export async function recognizeReceipt(imageDataUrl: string): Promise<ReceiptOcrResult> {
   const worker = await getWorker();
+
   const preprocessed = await preprocessForOcr(imageDataUrl).catch(() => imageDataUrl);
-  const { data } = await worker.recognize(preprocessed);
-  const text = data.text ?? '';
+  let text = ((await worker.recognize(preprocessed)).data.text ?? '').trim();
+
+  // Local-adaptive binarization occasionally backfires — a hard shadow or paper
+  // edge can binarize into a solid border that Tesseract's layout analysis reads
+  // as a non-text graphic and skips entirely, returning ~nothing. If that
+  // happens, retry once against a gentler pass (grayscale + contrast only, no
+  // thresholding) rather than leaving the user with a silent failure.
+  if (text.length < MIN_USABLE_TEXT_LENGTH) {
+    const gentle = await gentlePreprocessForOcr(imageDataUrl).catch(() => imageDataUrl);
+    const retryText = ((await worker.recognize(gentle)).data.text ?? '').trim();
+    if (retryText.length > text.length) text = retryText;
+  }
 
   const store = resolveStoreName(text);
 
@@ -164,8 +180,27 @@ function looksLikeBoilerplate(line: string): boolean {
   return false;
 }
 
+// Tesseract frequently hallucinates a word-space between adjacent CJK glyphs
+// (more so on large/bold title text) — real Japanese store names never contain
+// a deliberate space there, so collapsing it is a safe, strict improvement.
+const CJK_RANGE = /[぀-ヿ㐀-鿿＀-￯]/;
+
+function collapseCjkSpaces(s: string): string {
+  let out = '';
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (/\s/.test(ch)) {
+      const prev = out[out.length - 1] ?? '';
+      const next = s[i + 1] ?? '';
+      if (CJK_RANGE.test(prev) && CJK_RANGE.test(next)) continue;
+    }
+    out += ch;
+  }
+  return out;
+}
+
 function heuristicStoreName(rawText: string): string | undefined {
-  const lines = rawText.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+  const lines = rawText.split(/\r?\n/).map(l => collapseCjkSpaces(l.trim())).filter(l => l.length > 0);
   for (const line of lines.slice(0, 8)) {
     if (looksLikeBoilerplate(line)) continue;
     const stripped = line.replace(/[0-9¥￥,.\-/:：]/g, '').trim();
@@ -194,26 +229,44 @@ function toHalfWidth(s: string): string {
   return s.replace(/[０-９]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xfee0));
 }
 
+function extractAmounts(text: string): number[] {
+  const numberPattern = /[¥￥]?\s*([0-9][0-9,]{1,9})\s*円?/g;
+  const out: number[] = [];
+  for (const m of text.matchAll(numberPattern)) {
+    const raw = m[1];
+    // A leading zero on a multi-digit run is never a real yen amount — it's
+    // almost always two OCR tokens (e.g. a stray mark + the real number)
+    // fused together, which would otherwise produce a wildly wrong total.
+    if (raw.length > 1 && raw[0] === '0') continue;
+    const n = parseInt(raw.replace(/,/g, ''), 10);
+    if (n > 0 && n < 10_000_000) out.push(n);
+  }
+  return out;
+}
+
 function guessAmount(text: string): number | undefined {
   const normalized = toHalfWidth(text);
   const lines = normalized.split(/\r?\n/);
-  const numberPattern = /[¥￥]?\s*([0-9][0-9,]{1,9})\s*円?/g;
 
+  // 1. A line naming the total, or the line right after it.
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (TOTAL_KEYWORDS.some(k => line.includes(k))) {
-      const candidates = [line, lines[i + 1] ?? ''];
-      for (const c of candidates) {
-        const nums = [...c.matchAll(numberPattern)].map(m => parseInt(m[1].replace(/,/g, ''), 10));
-        const valid = nums.filter(n => n > 0 && n < 10_000_000);
+    if (TOTAL_KEYWORDS.some(k => lines[i].includes(k))) {
+      for (const c of [lines[i], lines[i + 1] ?? '']) {
+        const valid = extractAmounts(c);
         if (valid.length > 0) return Math.max(...valid);
       }
     }
   }
 
-  const all = [...normalized.matchAll(numberPattern)]
-    .map(m => parseInt(m[1].replace(/,/g, ''), 10))
-    .filter(n => n > 0 && n < 10_000_000);
+  // 2. No keyword matched (common on a blurry/damaged receipt) — the total is
+  // almost always printed in the bottom portion of the receipt, below the
+  // itemized lines, so prefer numbers found there over ones from the middle.
+  const bottomStart = Math.floor(lines.length * 0.6);
+  const bottomValid = extractAmounts(lines.slice(bottomStart).join('\n'));
+  if (bottomValid.length > 0) return Math.max(...bottomValid);
+
+  // 3. Last resort: largest plausible amount anywhere in the receipt.
+  const all = extractAmounts(normalized);
   if (all.length === 0) return undefined;
   return Math.max(...all);
 }
@@ -221,10 +274,30 @@ function guessAmount(text: string): number | undefined {
 function guessDate(text: string): string | undefined {
   const normalized = toHalfWidth(text);
 
+  // Tier 1: the expected separator characters.
   const western = normalized.match(/(20\d{2})[/年.-](\d{1,2})[/月.-](\d{1,2})/);
   if (western) {
     const [, y, m, d] = western;
-    return toIsoDate(parseInt(y, 10), parseInt(m, 10), parseInt(d, 10));
+    const iso = toIsoDate(parseInt(y, 10), parseInt(m, 10), parseInt(d, 10));
+    if (iso) return iso;
+  }
+
+  // Tier 2: a thin "/" is one of the most commonly misread glyphs in OCR (easily
+  // confused with "7", "1", "7" etc.), so if the strict separator match failed,
+  // retry allowing any single stray character in its place.
+  const westernFuzzy = normalized.match(/(20\d{2}).(\d{1,2}).(\d{1,2})(?!\d)/);
+  if (westernFuzzy) {
+    const [, y, m, d] = westernFuzzy;
+    const iso = toIsoDate(parseInt(y, 10), parseInt(m, 10), parseInt(d, 10));
+    if (iso) return iso;
+  }
+
+  // Tier 3: separator dropped entirely — a bare YYYYMMDD run.
+  const westernBare = normalized.match(/20(\d{2})(\d{2})(\d{2})(?!\d)/);
+  if (westernBare) {
+    const [, yy, m, d] = westernBare;
+    const iso = toIsoDate(2000 + parseInt(yy, 10), parseInt(m, 10), parseInt(d, 10));
+    if (iso) return iso;
   }
 
   const era = normalized.match(/[令和RH平成](\d{1,2})[年.\-/](\d{1,2})[月.\-/](\d{1,2})/);
@@ -281,48 +354,183 @@ export function compressImage(dataUrl: string, maxWidth = 480, quality = 0.6): P
   });
 }
 
-// Grayscale + percentile contrast stretch, and upscale small photos. Receipts are
-// often low-contrast thermal prints; this materially improves Tesseract's read
-// rate on store names and totals without a hard binarization threshold that could
-// wipe out faint text under uneven lighting.
+// ── Receipt image preprocessing ──────────────────────────────
+// Phone photos of receipts are rarely clean: uneven lighting/shadows, faded or
+// slightly damp thermal paper, background clutter around the paper. A single
+// global contrast stretch (the previous approach) does nothing for a shadow
+// gradient across the page. This pipeline instead:
+//   1. Converts to grayscale and does a cheap global percentile contrast
+//      stretch (conditions the image for the next step; fast, O(n)).
+//   2. Applies a light 3x3 blur to suppress JPEG/sensor noise before
+//      thresholding.
+//   3. Runs Sauvola local-adaptive binarization: the threshold at each pixel
+//      is derived from the mean/stddev of its own neighborhood, computed in
+//      O(1) per pixel via summed-area tables. Unlike a single global
+//      threshold, this cleanly separates text from paper even when a shadow
+//      or damp patch makes one part of the receipt much darker than another.
+// Deliberately does NOT attempt to auto-crop out background clutter — tested
+// against a photo with a textured desk background and it was not reliable
+// (background texture reads as "ink" too, defeating the crop). Tesseract's
+// own layout analysis (PSM.AUTO) handles a receipt sitting in a larger frame
+// better than a hand-rolled heuristic does.
 function preprocessForOcr(dataUrl: string): Promise<string> {
+  return withScaledImageData(dataUrl, 1200, 2000, (ctx, imageData, w, h) => {
+    const n = w * h;
+    let gray = toGrayscale(imageData.data, n);
+    gray = percentileStretch(gray, n, 0.02, 0.98);
+    gray = boxBlur3(gray, w, h);
+    const binary = sauvolaBinarize(gray, w, h, 15, 0.2, 128);
+
+    const out = imageData.data;
+    for (let i = 0; i < n; i++) {
+      const v = binary[i];
+      const o = i * 4;
+      out[o] = out[o + 1] = out[o + 2] = v;
+    }
+    ctx.putImageData(imageData, 0, 0);
+  });
+}
+
+// Grayscale + global contrast stretch only — no local thresholding. Used as a
+// fallback retry when the binarized pass comes back empty (see
+// MIN_USABLE_TEXT_LENGTH above): less aggressive, so it can't misfire into a
+// solid graphic border the way Sauvola occasionally does, at the cost of being
+// less robust to shadows/fading than the primary pass.
+function gentlePreprocessForOcr(dataUrl: string): Promise<string> {
+  return withScaledImageData(dataUrl, 1200, 2000, (ctx, imageData, w, h) => {
+    const n = w * h;
+    const gray = percentileStretch(toGrayscale(imageData.data, n), n, 0.02, 0.98);
+    const out = imageData.data;
+    for (let i = 0; i < n; i++) {
+      const v = gray[i];
+      const o = i * 4;
+      out[o] = out[o + 1] = out[o + 2] = v;
+    }
+    ctx.putImageData(imageData, 0, 0);
+  });
+}
+
+function withScaledImageData(
+  dataUrl: string,
+  minLongSide: number,
+  maxLongSide: number,
+  process: (ctx: CanvasRenderingContext2D, imageData: ImageData, w: number, h: number) => void,
+): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     img.onload = () => {
-      const targetW = Math.min(Math.max(img.width, 1200), 2000);
-      const scale = targetW / img.width;
-      const w = Math.round(img.width * scale);
-      const h = Math.round(img.height * scale);
-      const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) { reject(new Error('canvas unsupported')); return; }
-      ctx.drawImage(img, 0, 0, w, h);
-
-      const imageData = ctx.getImageData(0, 0, w, h);
-      const data = imageData.data;
-      const n = w * h;
-      const gray = new Uint8ClampedArray(n);
-      for (let i = 0; i < n; i++) {
-        const o = i * 4;
-        gray[i] = 0.299 * data[o] + 0.587 * data[o + 1] + 0.114 * data[o + 2];
+      try {
+        const { w, h } = scaledDims(img.width, img.height, minLongSide, maxLongSide);
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { reject(new Error('canvas unsupported')); return; }
+        ctx.drawImage(img, 0, 0, w, h);
+        const imageData = ctx.getImageData(0, 0, w, h);
+        process(ctx, imageData, w, h);
+        resolve(canvas.toDataURL('image/png'));
+      } catch (e) {
+        reject(e instanceof Error ? e : new Error(String(e)));
       }
-
-      const sorted = gray.slice().sort();
-      const lo = sorted[Math.floor(n * 0.02)];
-      const hi = sorted[Math.floor(n * 0.98)] || 255;
-      const range = Math.max(hi - lo, 1);
-
-      for (let i = 0; i < n; i++) {
-        const v = Math.max(0, Math.min(255, ((gray[i] - lo) / range) * 255));
-        const o = i * 4;
-        data[o] = data[o + 1] = data[o + 2] = v;
-      }
-      ctx.putImageData(imageData, 0, 0);
-      resolve(canvas.toDataURL('image/png'));
     };
     img.onerror = reject;
     img.src = dataUrl;
   });
+}
+
+function scaledDims(w: number, h: number, minLongSide: number, maxLongSide: number): { w: number; h: number } {
+  const longSide = Math.max(w, h);
+  let scale = 1;
+  if (longSide > maxLongSide) scale = maxLongSide / longSide;
+  else if (longSide < minLongSide) scale = minLongSide / longSide;
+  return { w: Math.max(1, Math.round(w * scale)), h: Math.max(1, Math.round(h * scale)) };
+}
+
+function toGrayscale(src: Uint8ClampedArray, n: number): Float32Array {
+  const gray = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const o = i * 4;
+    gray[i] = 0.299 * src[o] + 0.587 * src[o + 1] + 0.114 * src[o + 2];
+  }
+  return gray;
+}
+
+// Histogram-based percentile stretch — O(n), independent of image size (unlike
+// sorting every pixel, which gets slow on a multi-megapixel photo).
+function percentileStretch(gray: Float32Array, n: number, loPct: number, hiPct: number): Float32Array {
+  const hist = new Uint32Array(256);
+  for (let i = 0; i < n; i++) hist[Math.max(0, Math.min(255, gray[i] | 0))]++;
+  const loTarget = n * loPct, hiTarget = n * hiPct;
+  let cum = 0, lo = 0, hi = 255, loFound = false;
+  for (let v = 0; v < 256; v++) {
+    cum += hist[v];
+    if (!loFound && cum >= loTarget) { lo = v; loFound = true; }
+    if (cum >= hiTarget) { hi = v; break; }
+  }
+  const range = Math.max(hi - lo, 1);
+  const out = new Float32Array(n);
+  for (let i = 0; i < n; i++) out[i] = Math.max(0, Math.min(255, ((gray[i] - lo) / range) * 255));
+  return out;
+}
+
+function boxBlur3(src: Float32Array, w: number, h: number): Float32Array {
+  const tmp = new Float32Array(w * h);
+  for (let y = 0; y < h; y++) {
+    const row = y * w;
+    for (let x = 0; x < w; x++) {
+      const x0 = Math.max(0, x - 1), x1 = Math.min(w - 1, x + 1);
+      tmp[row + x] = (src[row + x0] + src[row + x] + src[row + x1]) / 3;
+    }
+  }
+  const out = new Float32Array(w * h);
+  for (let x = 0; x < w; x++) {
+    for (let y = 0; y < h; y++) {
+      const y0 = Math.max(0, y - 1), y1 = Math.min(h - 1, y + 1);
+      out[y * w + x] = (tmp[y0 * w + x] + tmp[y * w + x] + tmp[y1 * w + x]) / 3;
+    }
+  }
+  return out;
+}
+
+// Sauvola local-adaptive binarization via summed-area tables (integral images)
+// for O(1)-per-pixel windowed mean/variance. k/R are the standard Sauvola
+// constants; a lower k (0.2) is more permissive, keeping faint/thin strokes
+// that a harsher threshold would erase — important for faded thermal print.
+function sauvolaBinarize(
+  gray: Float32Array, w: number, h: number, windowRadius: number, k: number, R: number,
+): Uint8ClampedArray {
+  const iw = w + 1;
+  const sum = new Float64Array(iw * (h + 1));
+  const sumSq = new Float64Array(iw * (h + 1));
+  for (let y = 0; y < h; y++) {
+    let rowSum = 0, rowSumSq = 0;
+    const rowBase = (y + 1) * iw;
+    const prevRowBase = y * iw;
+    for (let x = 0; x < w; x++) {
+      const v = gray[y * w + x];
+      rowSum += v;
+      rowSumSq += v * v;
+      sum[rowBase + x + 1] = sum[prevRowBase + x + 1] + rowSum;
+      sumSq[rowBase + x + 1] = sumSq[prevRowBase + x + 1] + rowSumSq;
+    }
+  }
+
+  const out = new Uint8ClampedArray(w * h);
+  for (let y = 0; y < h; y++) {
+    const y0 = Math.max(0, y - windowRadius), y1 = Math.min(h - 1, y + windowRadius);
+    for (let x = 0; x < w; x++) {
+      const x0 = Math.max(0, x - windowRadius), x1 = Math.min(w - 1, x + windowRadius);
+      const area = (x1 - x0 + 1) * (y1 - y0 + 1);
+      const A = y0 * iw + x0, B = y0 * iw + (x1 + 1), C = (y1 + 1) * iw + x0, D = (y1 + 1) * iw + (x1 + 1);
+      const s = sum[D] - sum[B] - sum[C] + sum[A];
+      const sSq = sumSq[D] - sumSq[B] - sumSq[C] + sumSq[A];
+      const mean = s / area;
+      const variance = Math.max(sSq / area - mean * mean, 0);
+      const std = Math.sqrt(variance);
+      const threshold = mean * (1 + k * (std / R - 1));
+      out[y * w + x] = gray[y * w + x] > threshold ? 255 : 0;
+    }
+  }
+  return out;
 }
