@@ -24,11 +24,15 @@ async function getWorker() {
       corePath: `${ASSET_BASE}core/`,
       langPath: `${ASSET_BASE}tessdata`,
     }).then(async worker => {
-      // AUTO: a phone photo usually includes some background/desk around the
-      // receipt (and sometimes a slight tilt), so we rely on Tesseract's own
-      // layout analysis to find the text block(s) rather than assuming the
-      // whole frame is one clean column of text.
-      await worker.setParameters({ tessedit_pageseg_mode: PSM.AUTO });
+      // SPARSE_TEXT: tested head-to-head against AUTO and SINGLE_COLUMN on
+      // both synthetic and real receipt photos — it's the only mode that
+      // reliably reads all the way down to the 合計/total line on a real,
+      // imperfectly-photographed receipt (background, tilt, small dense
+      // print). It emits one fragment per line rather than reconstructed
+      // paragraphs, which is why the text-parsing helpers below work off
+      // whitespace-stripped lines and check a small window on both sides of
+      // a keyword instead of assuming reliable top-to-bottom line order.
+      await worker.setParameters({ tessedit_pageseg_mode: PSM.SPARSE_TEXT });
       return worker;
     });
   }
@@ -84,6 +88,9 @@ const KNOWN_CHAINS: KnownChain[] = [
   { match: ['ミニストップ'], label: 'ミニストップ', company: 'ミニストップ' },
   { match: ['セイコーマート'], label: 'セイコーマート', company: 'セコマ' },
   // スーパー
+  { match: ['ザ・ビッグエクスプレス', 'ザ・ビッグ'], label: 'ザ・ビッグ', company: 'イオン' },
+  { match: ['マックスバリュ'], label: 'マックスバリュ', company: 'イオン' },
+  { match: ['ダイエー'], label: 'ダイエー', company: 'イオン' },
   { match: ['イオンスタイル', 'イオン'], label: 'イオン', company: 'イオン' },
   { match: ['西友'], label: '西友', company: '西友' },
   { match: ['ライフ'], label: 'ライフ', company: 'ライフコーポレーション' },
@@ -135,7 +142,12 @@ function normalize(text: string): string {
   return toHalfWidth(text).replace(/[\s\u3000]+/g, '');
 }
 
-function matchKnownChain(rawText: string): { name: string; company: string } | null {
+// Top lines of a receipt only — a chain name appearing further down is more
+// likely a promotional footer ("「イオン琉球」で検索") than the store's own
+// name line, and using it verbatim would show the user a slogan instead.
+const CHAIN_NAME_LINE_LIMIT = 5;
+
+function matchKnownChain(rawText: string): { name: string; company: string; nameIsReliable: boolean } | null {
   const normLines = rawText.split(/\r?\n/).map(l => normalize(l));
   for (const chain of KNOWN_CHAINS) {
     for (const m of chain.match) {
@@ -144,8 +156,10 @@ function matchKnownChain(rawText: string): { name: string; company: string } | n
       const line = normLines[lineIdx];
       // Prefer the full matched line as the store name (often includes a branch
       // suffix like "渋谷店"), falling back to the bare chain label.
-      const name = line.length <= 24 && line.length >= m.length ? line : chain.label;
-      return { name, company: chain.company };
+      const usableLine = line.length <= 24 && line.length >= m.length && !/[「」]/.test(line);
+      const nameIsReliable = usableLine && lineIdx < CHAIN_NAME_LINE_LIMIT;
+      const name = usableLine ? line : chain.label;
+      return { name, company: chain.company, nameIsReliable };
     }
   }
   return null;
@@ -204,7 +218,12 @@ function heuristicStoreName(rawText: string): string | undefined {
   for (const line of lines.slice(0, 8)) {
     if (looksLikeBoilerplate(line)) continue;
     const stripped = line.replace(/[0-9¥￥,.\-/:：]/g, '').trim();
-    if (stripped.length >= 2 && stripped.length <= 20) {
+    // A logo/graphic (e.g. a brand mark like "AEON") often OCRs as a short
+    // fragment mixing a couple of stray Latin letters with a lone kana — real
+    // Japanese store names are predominantly CJK script, so require at least
+    // two CJK characters before trusting a candidate as the name.
+    const cjkCount = (stripped.match(new RegExp(CJK_RANGE, 'g')) ?? []).length;
+    if (stripped.length >= 2 && stripped.length <= 20 && cjkCount >= 2) {
       return line.length > 20 ? line.slice(0, 20) : line;
     }
   }
@@ -216,14 +235,23 @@ function resolveStoreName(rawText: string): { name: string; company?: string } |
   if (registered) return registered;
 
   const chain = matchKnownChain(rawText);
-  if (chain) return chain;
-
   const guess = heuristicStoreName(rawText);
+
+  if (chain) {
+    // The chain dictionary's company mapping is reliable regardless of where
+    // the brand name was found, but the NAME should come from the top of the
+    // receipt (where the store actually prints its own name/branch) rather
+    // than wherever the brand happened to be mentioned in the OCR text.
+    return { name: chain.nameIsReliable ? chain.name : (guess ?? chain.name), company: chain.company };
+  }
+
   return guess ? { name: guess } : undefined;
 }
 
 // ── Amount / date extraction ─────────────────────────────────
-const TOTAL_KEYWORDS = ['合計', '合  計', 'ご 合計', '税込合計', '御会計', 'お会計', '会計', '総額', '小計'];
+// Matched against whitespace-stripped lines (see `lines` in guessAmount).
+const TOTAL_KEYWORDS = ['合計', 'ご合計', '税込合計', '御会計', 'お会計', '会計', '総額', '小計'];
+const PAYMENT_LINE_KEYWORDS = ['預かり', '預り', 'お預り', '現金', 'お釣り', '釣銭', 'おつり', 'カード', 'クレジット'];
 
 function toHalfWidth(s: string): string {
   return s.replace(/[０-９]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xfee0));
@@ -244,25 +272,71 @@ function extractAmounts(text: string): number[] {
   return out;
 }
 
+// A heavily degraded photo sometimes has Tesseract split a comma-grouped
+// total ("3,792") into two separate bare-digit lines ("3" then "792") with
+// nothing else on either — recombine those, conservatively (only when each
+// line is truly just digits, so a real item line like "おにぎり 150" can
+// never trigger this).
+function mergedFragmentAmounts(lines: string[]): number[] {
+  const out: number[] = [];
+  for (let i = 0; i < lines.length - 1; i++) {
+    const a = lines[i], b = lines[i + 1];
+    if (/^[0-9]{1,2}$/.test(a) && /^[0-9]{3,4}$/.test(b)) {
+      const n = parseInt(a + b, 10);
+      if (n > 0 && n < 10_000_000) out.push(n);
+    }
+  }
+  return out;
+}
+
 function guessAmount(text: string): number | undefined {
   const normalized = toHalfWidth(text);
-  const lines = normalized.split(/\r?\n/);
+  // PSM.SPARSE_TEXT (used for photos with background around the receipt)
+  // emits one recognized fragment per line, typically with a blank line
+  // after every single one — so anything checking "the next line" needs to
+  // work over non-blank lines, or it silently lands on blanks and falls
+  // through to a less reliable tier. Internal whitespace is stripped too:
+  // Tesseract frequently hallucinates a space between adjacent CJK glyphs
+  // (see collapseCjkSpaces), which would otherwise break a keyword substring
+  // check like "お預かり" split into "お 預 か り".
+  const lines = normalized.split(/\r?\n/)
+    .map(l => l.replace(/[\s\u3000]+/g, ''))
+    .filter(l => l.length > 0);
 
-  // 1. A line naming the total, or the line right after it.
+  // 1. A line naming the total, or within a couple of lines of it. Checked on
+  // both sides: PSM.SPARSE_TEXT (used for photos with background) does not
+  // reliably emit fragments in top-to-bottom reading order, so the amount can
+  // end up recognized just *before* the "合計" fragment instead of after it.
   for (let i = 0; i < lines.length; i++) {
     if (TOTAL_KEYWORDS.some(k => lines[i].includes(k))) {
-      for (const c of [lines[i], lines[i + 1] ?? '']) {
+      // Closest lines first, so an unrelated number two lines away never
+      // outranks one immediately adjacent to the keyword. Payment lines
+      // (tendered cash / change) are excluded even when adjacent — "合計"
+      // sitting right next to "お預かり1000円" would otherwise win on
+      // proximity alone and report the wrong number.
+      const window = [lines[i], lines[i + 1] ?? '', lines[i - 1] ?? '', lines[i + 2] ?? '', lines[i - 2] ?? '']
+        .filter(l => !PAYMENT_LINE_KEYWORDS.some(k => l.includes(k)));
+      for (const c of window) {
         const valid = extractAmounts(c);
         if (valid.length > 0) return Math.max(...valid);
       }
+      const contextLines = lines.slice(Math.max(0, i - 2), i + 3)
+        .filter(l => !PAYMENT_LINE_KEYWORDS.some(k => l.includes(k)));
+      const merged = mergedFragmentAmounts(contextLines);
+      if (merged.length > 0) return Math.max(...merged);
     }
   }
 
-  // 2. No keyword matched (common on a blurry/damaged receipt) — the total is
-  // almost always printed in the bottom portion of the receipt, below the
-  // itemized lines, so prefer numbers found there over ones from the middle.
-  const bottomStart = Math.floor(lines.length * 0.6);
-  const bottomValid = extractAmounts(lines.slice(bottomStart).join('\n'));
+  // 2. No keyword matched (common on a blurry/damaged receipt, or when "合計"
+  // itself misreads badly enough to not contain any known keyword substring).
+  // The total is almost always printed in the bottom portion of the receipt,
+  // below the itemized lines — but so are the tendered-cash and change lines,
+  // which are typically >= and <= the total respectively and would otherwise
+  // make "largest number near the bottom" pick the wrong one. Drop those
+  // lines before taking the max.
+  const bottomLines = lines.slice(Math.floor(lines.length * 0.6))
+    .filter(l => !PAYMENT_LINE_KEYWORDS.some(k => l.includes(k)));
+  const bottomValid = [...extractAmounts(bottomLines.join('\n')), ...mergedFragmentAmounts(bottomLines)];
   if (bottomValid.length > 0) return Math.max(...bottomValid);
 
   // 3. Last resort: largest plausible amount anywhere in the receipt.
@@ -356,9 +430,10 @@ export function compressImage(dataUrl: string, maxWidth = 480, quality = 0.6): P
 
 // ── Receipt image preprocessing ──────────────────────────────
 // Phone photos of receipts are rarely clean: uneven lighting/shadows, faded or
-// slightly damp thermal paper, background clutter around the paper. A single
-// global contrast stretch (the previous approach) does nothing for a shadow
-// gradient across the page. This pipeline instead:
+// slightly damp thermal paper, background clutter around the paper, and real
+// thermal-print text is small and dense. A single global contrast stretch
+// (the original approach) does nothing for a shadow gradient across the page.
+// This pipeline instead:
 //   1. Converts to grayscale and does a cheap global percentile contrast
 //      stretch (conditions the image for the next step; fast, O(n)).
 //   2. Applies a light 3x3 blur to suppress JPEG/sensor noise before
@@ -368,18 +443,30 @@ export function compressImage(dataUrl: string, maxWidth = 480, quality = 0.6): P
 //      O(1) per pixel via summed-area tables. Unlike a single global
 //      threshold, this cleanly separates text from paper even when a shadow
 //      or damp patch makes one part of the receipt much darker than another.
-// Deliberately does NOT attempt to auto-crop out background clutter — tested
-// against a photo with a textured desk background and it was not reliable
-// (background texture reads as "ink" too, defeating the crop). Tesseract's
-// own layout analysis (PSM.AUTO) handles a receipt sitting in a larger frame
-// better than a hand-rolled heuristic does.
+// Working resolution is capped fairly high (up to 2800px on the long side,
+// window radius 10) — verified against a real supermarket receipt photo that
+// small, dense thermal print needs materially more pixels than a synthetic
+// large-font test receipt to come through legibly.
+//
+// Deliberately does NOT attempt to auto-crop out background clutter. Two
+// different approaches were tried and both proved unreliable enough to ship:
+//   - Ink-density (Sauvola) projection profile: background texture reads as
+//     "ink" just as readily as real text, so the crop box never tightens.
+//   - Brightness (Otsu) connected-component box: correctly isolates the
+//     paper from a textured desk, but a strong shadow ON the receipt itself
+//     reads as "not paper" and silently crops away real, still-legible text
+//     (verified on the shadow-gradient case, which the binarization step
+//     alone already handles correctly — the crop only made it worse).
+// Tesseract's own layout analysis (PSM.SPARSE_TEXT, see getWorker above)
+// handles a receipt sitting in a larger frame better than either hand-rolled
+// heuristic did in testing.
 function preprocessForOcr(dataUrl: string): Promise<string> {
-  return withScaledImageData(dataUrl, 1200, 2000, (ctx, imageData, w, h) => {
+  return withScaledImageData(dataUrl, 1800, 2800, (ctx, imageData, w, h) => {
     const n = w * h;
     let gray = toGrayscale(imageData.data, n);
     gray = percentileStretch(gray, n, 0.02, 0.98);
     gray = boxBlur3(gray, w, h);
-    const binary = sauvolaBinarize(gray, w, h, 15, 0.2, 128);
+    const binary = sauvolaBinarize(gray, w, h, 10, 0.2, 128);
 
     const out = imageData.data;
     for (let i = 0; i < n; i++) {
