@@ -7,6 +7,7 @@ import { RecordScreen } from './screens/RecordScreen';
 import { HistoryScreen } from './screens/HistoryScreen';
 import { AnalysisScreen } from './screens/AnalysisScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
+import { PwaUpdater } from './PwaUpdater';
 
 export default function App() {
   const [screen, setScreen] = useState<MainScreen>('home');
@@ -19,11 +20,17 @@ export default function App() {
   };
 
   if (showRecord) {
-    return <RecordScreen onBack={() => setShowRecord(false)} onSaved={handleSaved} />;
+    return (
+      <>
+        <PwaUpdater />
+        <RecordScreen onBack={() => setShowRecord(false)} onSaved={handleSaved} />
+      </>
+    );
   }
 
   return (
     <>
+      <PwaUpdater />
       {screen === 'home'     && <HomeScreen refreshKey={refreshKey} />}
       {screen === 'history'  && <HistoryScreen refreshKey={refreshKey} />}
       {screen === 'analysis' && <AnalysisScreen refreshKey={refreshKey} />}
