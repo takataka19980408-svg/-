@@ -220,10 +220,12 @@ function heuristicStoreName(rawText: string): string | undefined {
     const stripped = line.replace(/[0-9¥￥,.\-/:：]/g, '').trim();
     // A logo/graphic (e.g. a brand mark like "AEON") often OCRs as a short
     // fragment mixing a couple of stray Latin letters with a lone kana — real
-    // Japanese store names are predominantly CJK script, so require at least
-    // two CJK characters before trusting a candidate as the name.
+    // Japanese store names are predominantly CJK script, so require both a
+    // decent absolute count AND a high proportion of the candidate to be CJK,
+    // not just two kana padded out with punctuation/Latin noise.
     const cjkCount = (stripped.match(new RegExp(CJK_RANGE, 'g')) ?? []).length;
-    if (stripped.length >= 2 && stripped.length <= 20 && cjkCount >= 2) {
+    const cjkRatio = cjkCount / Math.max(stripped.length, 1);
+    if (stripped.length >= 2 && stripped.length <= 20 && cjkCount >= 3 && cjkRatio >= 0.6) {
       return line.length > 20 ? line.slice(0, 20) : line;
     }
   }
