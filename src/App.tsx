@@ -1,14 +1,34 @@
 import { useState } from 'react';
-import type { AppMode } from './appMode';
-import { getAppMode, setAppMode } from './appMode';
-import PersonalApp from './PersonalApp';
-import { BaccaratApp } from './baccarat/BaccaratApp';
+import './index.css';
+import type { MainScreen } from './types';
+import { BottomNav } from './components/BottomNav';
+import { HomeScreen } from './screens/HomeScreen';
+import { RecordScreen } from './screens/RecordScreen';
+import { HistoryScreen } from './screens/HistoryScreen';
+import { AnalysisScreen } from './screens/AnalysisScreen';
+import { SettingsScreen } from './screens/SettingsScreen';
 
 export default function App() {
-  const [mode, setMode] = useState<AppMode>(getAppMode);
+  const [screen, setScreen] = useState<MainScreen>('home');
+  const [showRecord, setShowRecord] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  if (mode === 'baccarat') {
-    return <BaccaratApp onSwitchToPersonal={() => { setAppMode('personal'); setMode('personal'); }} />;
+  const handleSaved = () => {
+    setRefreshKey(k => k + 1);
+    setShowRecord(false);
+  };
+
+  if (showRecord) {
+    return <RecordScreen onBack={() => setShowRecord(false)} onSaved={handleSaved} />;
   }
-  return <PersonalApp onSwitchToBaccarat={() => { setAppMode('baccarat'); setMode('baccarat'); }} />;
+
+  return (
+    <>
+      {screen === 'home'     && <HomeScreen refreshKey={refreshKey} />}
+      {screen === 'history'  && <HistoryScreen refreshKey={refreshKey} />}
+      {screen === 'analysis' && <AnalysisScreen refreshKey={refreshKey} />}
+      {screen === 'settings' && <SettingsScreen onDataChange={() => setRefreshKey(k => k + 1)} />}
+      <BottomNav active={screen} onChange={setScreen} onRecord={() => setShowRecord(true)} />
+    </>
+  );
 }

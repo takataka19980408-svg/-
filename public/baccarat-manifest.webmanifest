@@ -1,0 +1,16 @@
+{
+  "name": "バカラ卓 運用記録",
+  "short_name": "バカラ卓",
+  "description": "バカラ卓の運用記録アプリ（店舗スタッフ用）",
+  "start_url": "/-/baccarat/",
+  "scope": "/-/baccarat/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#07100C",
+  "theme_color": "#07100C",
+  "icons": [
+    { "src": "/-/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/-/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/-/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

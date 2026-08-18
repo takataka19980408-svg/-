@@ -2,12 +2,10 @@ import { useState } from 'react';
 import type { MasterKind } from '../types';
 import { MASTER_LABELS } from '../types';
 import { getMasters, addMasterItem, removeMasterItem } from '../storage';
-import { GOLD, GOLDB, RED, REDB, CARD, BDR, TEXT, SUB, BRUSH, FELTD, NAV_H } from '../theme';
-import { setAppMode } from '../../appMode';
+import { GOLD, GOLDB, REDB, CARD, BDR, TEXT, SUB, BRUSH, FELTD, NAV_H } from '../theme';
 
 interface Props {
   onDataChange: () => void;
-  onSwitchToPersonal: () => void;
 }
 
 const KINDS: MasterKind[] = ['dealers', 'shuffles', 'tables', 'customers'];
@@ -69,7 +67,7 @@ function MasterList({ kind, values, onChange }: { kind: MasterKind; values: stri
   );
 }
 
-export function BaccaratMastersScreen({ onDataChange, onSwitchToPersonal }: Props) {
+export function BaccaratMastersScreen({ onDataChange }: Props) {
   const [masters, setMasters] = useState(getMasters);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -120,16 +118,6 @@ export function BaccaratMastersScreen({ onDataChange, onSwitchToPersonal }: Prop
         {KINDS.map(kind => (
           <MasterList key={kind} kind={kind} values={masters[kind]} onChange={refresh} />
         ))}
-
-        <button
-          onClick={() => { setAppMode('personal'); onSwitchToPersonal(); }}
-          style={{
-            width: '100%', padding: '12px', borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: BRUSH,
-            background: 'transparent', border: `1px solid ${RED}44`, color: '#FF7A5C', cursor: 'pointer', marginTop: 8,
-          }}
-        >
-          個人用アプリ（ゼニ帳）に切り替え
-        </button>
       </div>
 
       {toast && (

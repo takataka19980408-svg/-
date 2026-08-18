@@ -6,11 +6,7 @@ import { BaccaratHistoryScreen } from './screens/BaccaratHistoryScreen';
 import { BaccaratSummaryScreen } from './screens/BaccaratSummaryScreen';
 import { BaccaratMastersScreen } from './screens/BaccaratMastersScreen';
 
-interface Props {
-  onSwitchToPersonal: () => void;
-}
-
-export function BaccaratApp({ onSwitchToPersonal }: Props) {
+export function BaccaratApp() {
   const [screen, setScreen] = useState<BaccaratScreen>('record');
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -21,7 +17,7 @@ export function BaccaratApp({ onSwitchToPersonal }: Props) {
       {screen === 'record'  && <BaccaratRecordScreen onSaved={() => { handleDataChange(); setScreen('history'); }} />}
       {screen === 'history' && <BaccaratHistoryScreen refreshKey={refreshKey} onDataChange={handleDataChange} />}
       {screen === 'summary' && <BaccaratSummaryScreen refreshKey={refreshKey} />}
-      {screen === 'masters' && <BaccaratMastersScreen onDataChange={handleDataChange} onSwitchToPersonal={onSwitchToPersonal} />}
+      {screen === 'masters' && <BaccaratMastersScreen onDataChange={handleDataChange} />}
       <BaccaratBottomNav active={screen} onChange={setScreen} />
     </>
   );
