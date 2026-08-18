@@ -66,28 +66,28 @@ export function today(): string {
 export interface AggregateItem {
   label: string;
   count: number;
-  inSum: number;
-  outSum: number;
-  storeProfit: number; // 店の収支 = -( outSum - inSum )
+  startSum: number;
+  endSum: number;
+  storeProfit: number; // 店の収支 = endSum - startSum
   holdRate: number | null;
 }
 
 function aggregateBy(records: BaccaratRecord[], keyFn: (r: BaccaratRecord) => string | undefined): AggregateItem[] {
-  const map = new Map<string, { count: number; inSum: number; outSum: number }>();
+  const map = new Map<string, { count: number; startSum: number; endSum: number }>();
   for (const r of records) {
     const k = keyFn(r);
     if (!k) continue;
-    const e = map.get(k) ?? { count: 0, inSum: 0, outSum: 0 };
+    const e = map.get(k) ?? { count: 0, startSum: 0, endSum: 0 };
     e.count += 1;
-    e.inSum += r.inAmount;
-    e.outSum += r.outAmount;
+    e.startSum += r.startAmount;
+    e.endSum += r.endAmount;
     map.set(k, e);
   }
   return Array.from(map.entries()).map(([label, e]) => {
-    const storeProfit = e.inSum - e.outSum;
+    const storeProfit = e.endSum - e.startSum;
     return {
-      label, count: e.count, inSum: e.inSum, outSum: e.outSum, storeProfit,
-      holdRate: e.inSum > 0 ? storeProfit / e.inSum : null,
+      label, count: e.count, startSum: e.startSum, endSum: e.endSum, storeProfit,
+      holdRate: e.startSum > 0 ? storeProfit / e.startSum : null,
     };
   }).sort((a, b) => b.storeProfit - a.storeProfit);
 }
@@ -106,18 +106,18 @@ export function getCustomerSummary(): AggregateItem[] {
 
 export interface OverallSummary {
   count: number;
-  inSum: number;
-  outSum: number;
+  startSum: number;
+  endSum: number;
   storeProfit: number;
   holdRate: number | null;
 }
 
 export function getOverallSummary(): OverallSummary {
   const records = getRecords();
-  const inSum = records.reduce((s, r) => s + r.inAmount, 0);
-  const outSum = records.reduce((s, r) => s + r.outAmount, 0);
-  const storeProfit = inSum - outSum;
-  return { count: records.length, inSum, outSum, storeProfit, holdRate: inSum > 0 ? storeProfit / inSum : null };
+  const startSum = records.reduce((s, r) => s + r.startAmount, 0);
+  const endSum = records.reduce((s, r) => s + r.endAmount, 0);
+  const storeProfit = endSum - startSum;
+  return { count: records.length, startSum, endSum, storeProfit, holdRate: startSum > 0 ? storeProfit / startSum : null };
 }
 
 export function formatYen(n: number): string {

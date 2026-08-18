@@ -33,7 +33,7 @@ export function BaccaratHistoryScreen({ refreshKey, onDataChange }: Props) {
           </div>
         )}
         {records.map(r => {
-          const storeProfit = r.inAmount - r.outAmount;
+          const storeProfit = r.endAmount - r.startAmount;
           return (
             <div key={r.id} style={{
               background: CARD, border: `1px solid ${BDR}`, borderRadius: 10, padding: '12px 14px', marginBottom: 10,
@@ -57,7 +57,7 @@ export function BaccaratHistoryScreen({ refreshKey, onDataChange }: Props) {
               )}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: 11, color: SUB, fontFamily: BRUSH }}>
-                  スタート {r.inAmount.toLocaleString()} / エンド {r.outAmount.toLocaleString()}
+                  スタート {r.startAmount.toLocaleString()} / エンド {r.endAmount.toLocaleString()}
                 </span>
                 {confirmId === r.id ? (
                   <div style={{ display: 'flex', gap: 6 }}>

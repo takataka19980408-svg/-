@@ -5,7 +5,7 @@ export function getCSVText(): string {
   const records = getRecords().slice().sort((a, b) => a.date.localeCompare(b.date));
   const rows = records.map(r => [
     r.date, r.table, r.dealer, r.shuffle, r.customerId ?? '',
-    r.inAmount, r.outAmount, r.profit, r.memo ?? '',
+    r.startAmount, r.endAmount, r.profit, r.memo ?? '',
   ].join(','));
   return '﻿' + [header.join(','), ...rows].join('\r\n');
 }

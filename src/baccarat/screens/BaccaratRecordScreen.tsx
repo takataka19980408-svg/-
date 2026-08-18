@@ -15,16 +15,16 @@ export function BaccaratRecordScreen({ onSaved }: Props) {
   const [dealer, setDealer] = useState('');
   const [shuffle, setShuffle] = useState('');
   const [customerId, setCustomerId] = useState('');
-  const [inAmount, setInAmount] = useState(0);
-  const [outAmount, setOutAmount] = useState(0);
+  const [startAmount, setStartAmount] = useState(0);
+  const [endAmount, setEndAmount] = useState(0);
   const [memo, setMemo] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const storeProfit = inAmount - outAmount;
+  const storeProfit = endAmount - startAmount;
 
-  const addIn = useCallback((n: number) => setInAmount(v => v + n), []);
-  const addOut = useCallback((n: number) => setOutAmount(v => v + n), []);
+  const addStart = useCallback((n: number) => setStartAmount(v => v + n), []);
+  const addEnd = useCallback((n: number) => setEndAmount(v => v + n), []);
 
   const refreshMasters = () => setMasters(getMasters());
 
@@ -32,19 +32,19 @@ export function BaccaratRecordScreen({ onSaved }: Props) {
     setError('');
     if (!dealer) { setError('ディーラーを選択してください'); return; }
     if (!shuffle) { setError('シャッフル方式を選択してください'); return; }
-    if (inAmount === 0 && outAmount === 0) { setError('スタートまたはエンドを入力してください'); return; }
+    if (startAmount === 0 && endAmount === 0) { setError('スタートまたはエンドを入力してください'); return; }
     setSaving(true);
     saveRecord({
       id: generateId(), date, table, dealer, shuffle,
       customerId: customerId || undefined,
-      inAmount, outAmount, profit: outAmount - inAmount,
+      startAmount, endAmount, profit: endAmount - startAmount,
       memo: memo.trim() || undefined,
       createdAt: new Date().toISOString(),
     });
     setTimeout(() => {
       setSaving(false);
       setTable(''); setDealer(''); setShuffle(''); setCustomerId('');
-      setInAmount(0); setOutAmount(0); setMemo('');
+      setStartAmount(0); setEndAmount(0); setMemo('');
       onSaved();
     }, 250);
   };
@@ -84,8 +84,8 @@ export function BaccaratRecordScreen({ onSaved }: Props) {
         <MasterPicker label="客ID" options={masters.customers} value={customerId} optional
           onChange={setCustomerId} onAdd={v => { addMasterItem('customers', v); refreshMasters(); }} />
 
-        <AmountField label="スタート（客の投資額）" amount={inAmount} onAdd={addIn} onReset={() => setInAmount(0)} accent={GOLD} />
-        <AmountField label="エンド（客の回収額）" amount={outAmount} onAdd={addOut} onReset={() => setOutAmount(0)} accent="#00C896" />
+        <AmountField label="スタート（店の開始額）" amount={startAmount} onAdd={addStart} onReset={() => setStartAmount(0)} accent={GOLD} />
+        <AmountField label="エンド（店の終了額）" amount={endAmount} onAdd={addEnd} onReset={() => setEndAmount(0)} accent="#00C896" />
 
         <div style={{
           padding: '13px 16px', borderRadius: 8, marginBottom: 20, textAlign: 'center',

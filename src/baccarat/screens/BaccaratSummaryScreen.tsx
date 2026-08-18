@@ -35,7 +35,7 @@ function List({ items }: { items: AggregateItem[] }) {
             </span>
           </div>
           <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH }}>
-            対応 {it.count}回 スタート {it.inSum.toLocaleString()} エンド {it.outSum.toLocaleString()}
+            対応 {it.count}回 スタート {it.startSum.toLocaleString()} エンド {it.endSum.toLocaleString()}
             {it.holdRate !== null && ` ホールド率 ${(it.holdRate * 100).toFixed(1)}%`}
           </div>
         </div>
@@ -71,7 +71,7 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
             <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>スタート合計 / エンド合計</span>
             <span style={{ fontSize: 13, color: TEXT, fontFamily: BRUSH }}>
-              {overall.inSum.toLocaleString()} / {overall.outSum.toLocaleString()}
+              {overall.startSum.toLocaleString()} / {overall.endSum.toLocaleString()}
             </span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between' }}>

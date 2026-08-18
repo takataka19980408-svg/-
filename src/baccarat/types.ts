@@ -5,9 +5,9 @@ export interface BaccaratRecord {
   dealer: string;
   shuffle: string;
   customerId?: string;
-  inAmount: number;
-  outAmount: number;
-  profit: number; // エンド - スタート（店の収支はこの符号反転）
+  startAmount: number;
+  endAmount: number;
+  profit: number; // 店の収支 = エンド - スタート
   memo?: string;
   createdAt: string;
 }
