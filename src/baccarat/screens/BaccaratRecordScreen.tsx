@@ -32,7 +32,7 @@ export function BaccaratRecordScreen({ onSaved }: Props) {
     setError('');
     if (!dealer) { setError('ディーラーを選択してください'); return; }
     if (!shuffle) { setError('シャッフル方式を選択してください'); return; }
-    if (inAmount === 0 && outAmount === 0) { setError('客INまたは客OUTを入力してください'); return; }
+    if (inAmount === 0 && outAmount === 0) { setError('スタートまたはエンドを入力してください'); return; }
     setSaving(true);
     saveRecord({
       id: generateId(), date, table, dealer, shuffle,
@@ -84,8 +84,8 @@ export function BaccaratRecordScreen({ onSaved }: Props) {
         <MasterPicker label="客ID" options={masters.customers} value={customerId} optional
           onChange={setCustomerId} onAdd={v => { addMasterItem('customers', v); refreshMasters(); }} />
 
-        <AmountField label="客IN（客の投資額）" amount={inAmount} onAdd={addIn} onReset={() => setInAmount(0)} accent={GOLD} />
-        <AmountField label="客OUT（客の回収額）" amount={outAmount} onAdd={addOut} onReset={() => setOutAmount(0)} accent="#00C896" />
+        <AmountField label="スタート（客の投資額）" amount={inAmount} onAdd={addIn} onReset={() => setInAmount(0)} accent={GOLD} />
+        <AmountField label="エンド（客の回収額）" amount={outAmount} onAdd={addOut} onReset={() => setOutAmount(0)} accent="#00C896" />
 
         <div style={{
           padding: '13px 16px', borderRadius: 8, marginBottom: 20, textAlign: 'center',

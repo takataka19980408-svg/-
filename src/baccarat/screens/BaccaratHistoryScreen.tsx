@@ -57,7 +57,7 @@ export function BaccaratHistoryScreen({ refreshKey, onDataChange }: Props) {
               )}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: 11, color: SUB, fontFamily: BRUSH }}>
-                  IN {r.inAmount.toLocaleString()} / OUT {r.outAmount.toLocaleString()}
+                  スタート {r.inAmount.toLocaleString()} / エンド {r.outAmount.toLocaleString()}
                 </span>
                 {confirmId === r.id ? (
                   <div style={{ display: 'flex', gap: 6 }}>

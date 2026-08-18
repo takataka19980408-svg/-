@@ -15,7 +15,7 @@ function autoWidths(rows: (string | number)[][]): { wch: number }[] {
 }
 
 function logSheet(): XLSX.WorkSheet {
-  const header = ['日付', '卓', 'ディーラー', 'シャッフル方式', '客ID', '客IN', '客OUT', '収支', 'メモ'];
+  const header = ['日付', '卓', 'ディーラー', 'シャッフル方式', '客ID', '客スタート', '客エンド', '収支', 'メモ'];
   const records = getRecords().slice().sort((a, b) => a.date.localeCompare(b.date));
   const body = records.map(r => [
     r.date, r.table, r.dealer, r.shuffle, r.customerId ?? '',
@@ -35,7 +35,7 @@ function logSheet(): XLSX.WorkSheet {
 }
 
 function summaryDimSheet(title: string, items: ReturnType<typeof getDealerSummary>): XLSX.WorkSheet {
-  const header = [title, '対応件数', 'IN合計', 'OUT合計', '店収支合計', 'ホールド率'];
+  const header = [title, '対応件数', 'スタート合計', 'エンド合計', '店収支合計', 'ホールド率'];
   const body = items.map(i => [i.label, i.count, i.inSum, i.outSum, i.storeProfit, i.holdRate ?? '']);
   const ws = XLSX.utils.aoa_to_sheet([header, ...body]);
   ws['!cols'] = autoWidths([header, ...body]);
@@ -56,8 +56,8 @@ function overallSheet(): XLSX.WorkSheet {
   const rows: (string | number)[][] = [
     ['項目', '値'],
     ['記録件数', o.count],
-    ['IN合計', o.inSum],
-    ['OUT合計', o.outSum],
+    ['スタート合計', o.inSum],
+    ['エンド合計', o.outSum],
     ['店収支合計', o.storeProfit],
     ['ホールド率', o.holdRate ?? ''],
   ];

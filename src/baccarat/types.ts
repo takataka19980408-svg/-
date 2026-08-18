@@ -7,7 +7,7 @@ export interface BaccaratRecord {
   customerId?: string;
   inAmount: number;
   outAmount: number;
-  profit: number; // 客OUT - 客IN（店の収支はこの符号反転）
+  profit: number; // エンド - スタート（店の収支はこの符号反転）
   memo?: string;
   createdAt: string;
 }
