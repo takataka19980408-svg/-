@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { MasterKind } from '../types';
 import { MASTER_LABELS } from '../types';
-import { getMasters, addMasterItem, removeMasterItem } from '../storage';
+import { getMasters, addMasterItem, removeMasterItem, getRecords, clearRecords } from '../storage';
 import { GOLD, GOLDB, REDB, CARD, BDR, TEXT, SUB, BRUSH, FELTD, NAV_H } from '../theme';
 
 interface Props {
@@ -70,10 +70,27 @@ function MasterList({ kind, values, onChange }: { kind: MasterKind; values: stri
 export function BaccaratMastersScreen({ onDataChange }: Props) {
   const [masters, setMasters] = useState(getMasters);
   const [toast, setToast] = useState<string | null>(null);
+  const [seedConfirm, setSeedConfirm] = useState(false);
+  const [clearConfirm, setClearConfirm] = useState(false);
 
   const refresh = () => { setMasters(getMasters()); onDataChange(); };
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2200); };
+
+  const handleSeed = async () => {
+    const { generateMockData } = await import('../mockData');
+    generateMockData(1000);
+    setSeedConfirm(false);
+    refresh();
+    showToast('サンプルデータを1000件生成しました');
+  };
+
+  const handleClear = () => {
+    clearRecords();
+    setClearConfirm(false);
+    refresh();
+    showToast('記録を全て削除しました');
+  };
 
   const canShare = typeof navigator !== 'undefined' && 'share' in navigator && 'canShare' in navigator;
 
@@ -146,6 +163,60 @@ export function BaccaratMastersScreen({ onDataChange }: Props) {
           }}>
             {canShare ? '📤 ' : '💾 '}エクセルで{canShare ? '送信' : '保存'}
           </button>
+        </div>
+
+        <div style={{ background: CARD, border: `1px solid ${BDR}`, borderRadius: 10, padding: '14px 16px', marginBottom: 16 }}>
+          <div style={{ fontSize: 12, color: SUB, fontFamily: BRUSH, lineHeight: 1.7, marginBottom: 10 }}>
+            現在の記録件数：{getRecords().length.toLocaleString()}件（テスト用）
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => setSeedConfirm(true)} style={{
+              flex: 1, padding: '11px', borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: BRUSH,
+              background: `${GOLD}0A`, border: `1px solid ${GOLD}33`, color: GOLD, cursor: 'pointer',
+            }}>
+              サンプルデータを1000件生成
+            </button>
+            <button onClick={() => setClearConfirm(true)} style={{
+              flex: 1, padding: '11px', borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: BRUSH,
+              background: 'transparent', border: `1px solid ${BDR}`, color: SUB, cursor: 'pointer',
+            }}>
+              記録を全て削除
+            </button>
+          </div>
+          {seedConfirm && (
+            <div style={{ marginTop: 10, padding: 12, background: `${GOLD}0A`, border: `1px solid ${GOLD}33`, borderRadius: 8 }}>
+              <div style={{ fontSize: 12, color: TEXT, fontFamily: BRUSH, marginBottom: 10, lineHeight: 1.7 }}>
+                ディーラー・シャッフル方式・卓・客IDのマスタも合わせてランダム生成し、既存の記録に追加します。動作確認用です。
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={handleSeed} style={{
+                  flex: 1, padding: '9px', borderRadius: 6, fontSize: 12, fontWeight: 700, fontFamily: BRUSH,
+                  background: GOLD, color: '#0A0900', border: 'none', cursor: 'pointer',
+                }}>生成する</button>
+                <button onClick={() => setSeedConfirm(false)} style={{
+                  padding: '9px 16px', borderRadius: 6, fontSize: 12, fontFamily: BRUSH,
+                  background: 'transparent', color: SUB, border: `1px solid ${BDR}`, cursor: 'pointer',
+                }}>取消</button>
+              </div>
+            </div>
+          )}
+          {clearConfirm && (
+            <div style={{ marginTop: 10, padding: 12, background: `${REDB}14`, border: `1px solid ${REDB}44`, borderRadius: 8 }}>
+              <div style={{ fontSize: 12, color: REDB, fontFamily: BRUSH, marginBottom: 10, lineHeight: 1.7 }}>
+                記録を全て削除します（マスタ一覧は残ります）。元に戻せません。
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={handleClear} style={{
+                  flex: 1, padding: '9px', borderRadius: 6, fontSize: 12, fontWeight: 700, fontFamily: BRUSH,
+                  background: REDB, color: '#fff', border: 'none', cursor: 'pointer',
+                }}>削除する</button>
+                <button onClick={() => setClearConfirm(false)} style={{
+                  padding: '9px 16px', borderRadius: 6, fontSize: 12, fontFamily: BRUSH,
+                  background: 'transparent', color: SUB, border: `1px solid ${BDR}`, cursor: 'pointer',
+                }}>取消</button>
+              </div>
+            </div>
+          )}
         </div>
 
         {KINDS.map(kind => (

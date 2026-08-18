@@ -2,7 +2,7 @@ export interface BaccaratRecord {
   id: string;
   date: string;
   table: string;
-  dealer: string;
+  dealerIds: string[];
   shuffle: string;
   customerIds?: string[];
   startAmount: number;

@@ -13,7 +13,7 @@ export function BaccaratRecordScreen({ onSaved }: Props) {
   const [masters, setMasters] = useState(getMasters);
   const [date, setDate] = useState(today());
   const [table, setTable] = useState('');
-  const [dealer, setDealer] = useState('');
+  const [dealerIds, setDealerIds] = useState<string[]>([]);
   const [shuffle, setShuffle] = useState('');
   const [customerIds, setCustomerIds] = useState<string[]>([]);
   const [startAmount, setStartAmount] = useState(0);
@@ -31,12 +31,12 @@ export function BaccaratRecordScreen({ onSaved }: Props) {
 
   const handleSave = () => {
     setError('');
-    if (!dealer) { setError('ディーラーを選択してください'); return; }
+    if (dealerIds.length === 0) { setError('ディーラーを選択してください'); return; }
     if (!shuffle) { setError('シャッフル方式を選択してください'); return; }
     if (startAmount === 0 && endAmount === 0) { setError('スタートまたはエンドを入力してください'); return; }
     setSaving(true);
     saveRecord({
-      id: generateId(), date, table, dealer, shuffle,
+      id: generateId(), date, table, dealerIds, shuffle,
       customerIds: customerIds.length ? customerIds : undefined,
       startAmount, endAmount, profit: endAmount - startAmount,
       memo: memo.trim() || undefined,
@@ -44,7 +44,7 @@ export function BaccaratRecordScreen({ onSaved }: Props) {
     });
     setTimeout(() => {
       setSaving(false);
-      setTable(''); setDealer(''); setShuffle(''); setCustomerIds([]);
+      setTable(''); setDealerIds([]); setShuffle(''); setCustomerIds([]);
       setStartAmount(0); setEndAmount(0); setMemo('');
       onSaved();
     }, 250);
@@ -78,8 +78,8 @@ export function BaccaratRecordScreen({ onSaved }: Props) {
 
         <MasterPicker label="卓" options={masters.tables} value={table}
           onChange={setTable} onAdd={v => { addMasterItem('tables', v); refreshMasters(); }} />
-        <MasterPicker label="ディーラー" options={masters.dealers} value={dealer}
-          onChange={setDealer} onAdd={v => { addMasterItem('dealers', v); refreshMasters(); }} />
+        <MultiMasterPicker label="ディーラー" options={masters.dealers} values={dealerIds}
+          onChange={setDealerIds} onAdd={v => { addMasterItem('dealers', v); refreshMasters(); }} />
         <MasterPicker label="シャッフル方式" options={masters.shuffles} value={shuffle}
           onChange={setShuffle} onAdd={v => { addMasterItem('shuffles', v); refreshMasters(); }} />
         <MultiMasterPicker label="客ID" options={masters.customers} values={customerIds} optional

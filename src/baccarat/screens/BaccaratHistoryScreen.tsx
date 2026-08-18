@@ -7,9 +7,13 @@ interface Props {
   onDataChange: () => void;
 }
 
+const PAGE_SIZE = 50;
+
 export function BaccaratHistoryScreen({ refreshKey, onDataChange }: Props) {
   const [confirmId, setConfirmId] = useState<string | null>(null);
-  const records = getRecords().slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const allRecords = getRecords().slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const records = allRecords.slice(0, visibleCount);
   void refreshKey;
 
   const handleDelete = (id: string) => {
@@ -48,7 +52,7 @@ export function BaccaratHistoryScreen({ refreshKey, onDataChange }: Props) {
                 </span>
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: r.memo ? 6 : 0 }}>
-                <Tag>{r.dealer}</Tag>
+                {r.dealerIds.map(d => <Tag key={d}>{d}</Tag>)}
                 <Tag>{r.shuffle}</Tag>
                 {(r.customerIds ?? []).map(c => <Tag key={c}>{c}</Tag>)}
               </div>
@@ -79,6 +83,17 @@ export function BaccaratHistoryScreen({ refreshKey, onDataChange }: Props) {
             </div>
           );
         })}
+        {allRecords.length > visibleCount && (
+          <button
+            onClick={() => setVisibleCount(v => v + PAGE_SIZE)}
+            style={{
+              width: '100%', padding: '12px', borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: BRUSH,
+              background: CARD, border: `1px solid ${BDR}`, color: SUB, cursor: 'pointer', marginBottom: 10,
+            }}
+          >
+            もっと見る（残り{(allRecords.length - visibleCount).toLocaleString()}件）
+          </button>
+        )}
       </div>
     </div>
   );

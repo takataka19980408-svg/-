@@ -18,6 +18,14 @@ export function saveRecord(record: BaccaratRecord): void {
   localStorage.setItem(RECORDS_KEY, JSON.stringify(records));
 }
 
+export function saveRecords(newRecords: BaccaratRecord[]): void {
+  localStorage.setItem(RECORDS_KEY, JSON.stringify([...getRecords(), ...newRecords]));
+}
+
+export function clearRecords(): void {
+  localStorage.setItem(RECORDS_KEY, JSON.stringify([]));
+}
+
 export function deleteRecord(id: string): void {
   localStorage.setItem(RECORDS_KEY, JSON.stringify(getRecords().filter(r => r.id !== id)));
 }
@@ -36,6 +44,10 @@ export function getMasters(): BaccaratMasters {
     const d = localStorage.getItem(MASTERS_KEY);
     return d ? { ...DEFAULT_MASTERS, ...JSON.parse(d) } : { ...DEFAULT_MASTERS };
   } catch { return { ...DEFAULT_MASTERS }; }
+}
+
+export function setMasters(masters: BaccaratMasters): void {
+  localStorage.setItem(MASTERS_KEY, JSON.stringify(masters));
 }
 
 export function addMasterItem(kind: MasterKind, value: string): void {
@@ -94,7 +106,7 @@ function aggregateBy(records: BaccaratRecord[], keysFn: (r: BaccaratRecord) => s
 }
 
 export function getDealerSummary(): AggregateItem[] {
-  return aggregateBy(getRecords(), r => [r.dealer]);
+  return aggregateBy(getRecords(), r => r.dealerIds);
 }
 
 export function getShuffleSummary(): AggregateItem[] {
