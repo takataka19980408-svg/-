@@ -78,6 +78,39 @@ export function BaccaratMastersScreen({ onDataChange }: Props) {
   const canShare = typeof navigator !== 'undefined' && 'share' in navigator && 'canShare' in navigator;
 
   const handleExport = async () => {
+    // Inside a capability-enabled artifact view, real file downloads and
+    // Web Share aren't available — offer the data via the downloads
+    // capability instead. Elsewhere (the real deployed app) this branch
+    // is skipped entirely.
+    const claudeApi = (window as unknown as { claude?: { use?: (name: string) => Promise<unknown> } }).claude;
+    if (claudeApi?.use) {
+      const downloads = (await claudeApi.use('downloads')) as {
+        save: (req: { filename: string; data: string }) => Promise<unknown>;
+      } | null;
+      if (downloads) {
+        const { getCSVText, getCSVFilename } = await import('../csvExport');
+        const csv = getCSVText();
+        const filename = getCSVFilename();
+        try {
+          await downloads.save({ filename, data: csv });
+          showToast('CSVをダウンロードしました');
+        } catch (err) {
+          const code = (err as { code?: string })?.code;
+          if (code === 'rejected_extension' || code === 'extension_not_enabled') {
+            try {
+              await downloads.save({ filename: filename.replace(/\.csv$/, '.txt'), data: csv });
+              showToast('テキストファイルとしてダウンロードしました');
+            } catch {
+              showToast('ダウンロードできませんでした');
+            }
+          } else if (code !== 'declined') {
+            showToast('ダウンロードできませんでした');
+          }
+        }
+        return;
+      }
+    }
+
     const { exportXLSX, getXLSXFile } = await import('../xlsxExport');
     const { blob, filename } = getXLSXFile();
     const file = new File([blob], filename, { type: blob.type });
