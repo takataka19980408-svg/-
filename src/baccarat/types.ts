@@ -4,7 +4,7 @@ export interface BaccaratRecord {
   table: string;
   dealer: string;
   shuffle: string;
-  customerId?: string;
+  customerIds?: string[];
   startAmount: number;
   endAmount: number;
   profit: number; // 店の収支 = エンド - スタート

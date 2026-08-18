@@ -72,16 +72,17 @@ export interface AggregateItem {
   holdRate: number | null;
 }
 
-function aggregateBy(records: BaccaratRecord[], keyFn: (r: BaccaratRecord) => string | undefined): AggregateItem[] {
+function aggregateBy(records: BaccaratRecord[], keysFn: (r: BaccaratRecord) => string[]): AggregateItem[] {
   const map = new Map<string, { count: number; startSum: number; endSum: number }>();
   for (const r of records) {
-    const k = keyFn(r);
-    if (!k) continue;
-    const e = map.get(k) ?? { count: 0, startSum: 0, endSum: 0 };
-    e.count += 1;
-    e.startSum += r.startAmount;
-    e.endSum += r.endAmount;
-    map.set(k, e);
+    for (const k of keysFn(r)) {
+      if (!k) continue;
+      const e = map.get(k) ?? { count: 0, startSum: 0, endSum: 0 };
+      e.count += 1;
+      e.startSum += r.startAmount;
+      e.endSum += r.endAmount;
+      map.set(k, e);
+    }
   }
   return Array.from(map.entries()).map(([label, e]) => {
     const storeProfit = e.endSum - e.startSum;
@@ -93,15 +94,15 @@ function aggregateBy(records: BaccaratRecord[], keyFn: (r: BaccaratRecord) => st
 }
 
 export function getDealerSummary(): AggregateItem[] {
-  return aggregateBy(getRecords(), r => r.dealer);
+  return aggregateBy(getRecords(), r => [r.dealer]);
 }
 
 export function getShuffleSummary(): AggregateItem[] {
-  return aggregateBy(getRecords(), r => r.shuffle);
+  return aggregateBy(getRecords(), r => [r.shuffle]);
 }
 
 export function getCustomerSummary(): AggregateItem[] {
-  return aggregateBy(getRecords(), r => r.customerId);
+  return aggregateBy(getRecords(), r => r.customerIds ?? []);
 }
 
 export interface OverallSummary {

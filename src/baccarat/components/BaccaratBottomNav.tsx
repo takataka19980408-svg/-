@@ -16,7 +16,7 @@ const ITEMS: { id: BaccaratScreen; label: string; icon: string }[] = [
 export function BaccaratBottomNav({ active, onChange }: Props) {
   return (
     <nav style={{
-      position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+      position: 'fixed', bottom: 0, left: 0, right: 0, margin: '0 auto',
       width: '100%', maxWidth: 480,
       display: 'flex',
       background: FELTD,

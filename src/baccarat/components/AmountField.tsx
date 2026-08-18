@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { GOLD, CARD, BDR, TEXT, SUB, BRUSH } from '../theme';
 
-const QUICK = [10000, 50000, 100000, 300000, 500000, 1000000];
+const QUICK = [1000, 10000, 50000, 100000, 500000, 1000000];
 
 function fmt(n: number): string {
   if (n === 0) return '0';

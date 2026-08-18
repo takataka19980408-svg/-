@@ -50,7 +50,7 @@ export function BaccaratHistoryScreen({ refreshKey, onDataChange }: Props) {
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: r.memo ? 6 : 0 }}>
                 <Tag>{r.dealer}</Tag>
                 <Tag>{r.shuffle}</Tag>
-                {r.customerId && <Tag>{r.customerId}</Tag>}
+                {(r.customerIds ?? []).map(c => <Tag key={c}>{c}</Tag>)}
               </div>
               {r.memo && (
                 <div style={{ fontSize: 12, color: SUB, fontFamily: BRUSH, marginBottom: 6 }}>{r.memo}</div>

@@ -18,7 +18,7 @@ function logSheet(): XLSX.WorkSheet {
   const header = ['日付', '卓', 'ディーラー', 'シャッフル方式', '客ID', '客スタート', '客エンド', '収支', 'メモ'];
   const records = getRecords().slice().sort((a, b) => a.date.localeCompare(b.date));
   const body = records.map(r => [
-    r.date, r.table, r.dealer, r.shuffle, r.customerId ?? '',
+    r.date, r.table, r.dealer, r.shuffle, (r.customerIds ?? []).join('、'),
     r.startAmount, r.endAmount, r.profit, r.memo ?? '',
   ]);
   const ws = XLSX.utils.aoa_to_sheet([header, ...body]);
