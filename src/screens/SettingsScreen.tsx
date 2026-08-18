@@ -5,7 +5,7 @@ import {
   exportBackup, restoreBackup, getBackupJson,
 } from '../storage';
 
-interface Props { onDataChange: () => void; }
+interface Props { onDataChange: () => void; onSwitchToBaccarat: () => void; }
 
 const NAV_H = 60;
 const GOLD  = '#C9A227';
@@ -70,7 +70,7 @@ function ActionBtn({
   );
 }
 
-export function SettingsScreen({ onDataChange }: Props) {
+export function SettingsScreen({ onDataChange, onSwitchToBaccarat }: Props) {
   const [settings, setSettings] = useState<AppSettings>(getSettings());
   const [toast, setToast] = useState<string | null>(null);
   const [restoreConfirm, setRestoreConfirm] = useState(false);
@@ -335,6 +335,16 @@ export function SettingsScreen({ onDataChange }: Props) {
             <div>⑤ 設定タブの「データを共有」でエクセル・CSV・バックアップを他端末へ転送</div>
           </div>
         </SettingsCard>
+
+        <button
+          onClick={onSwitchToBaccarat}
+          style={{
+            width: '100%', padding: '12px', borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: BRUSH,
+            background: 'transparent', border: `1px solid ${BDR}`, color: SUB, cursor: 'pointer', marginBottom: 16,
+          }}
+        >
+          店舗用（バカラ卓 運用記録）に切り替え
+        </button>
 
         <div style={{ textAlign: 'center', fontSize: 10, color: `${TEXT}22`, fontFamily: BRUSH, paddingTop: 4 }}>
           ゼニ帳 v1.0
