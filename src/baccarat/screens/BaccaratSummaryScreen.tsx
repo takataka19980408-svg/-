@@ -2,10 +2,12 @@ import { useState } from 'react';
 import {
   getDealerSummary, getShuffleSummary, getCustomerSummary,
   getMonthSummary, getWeekSummary, getWeekdaySummary,
+  getRecordsForMonth, getRecordsForWeek,
   getOverallSummary, formatYen,
 } from '../storage';
 import type { AggregateItem } from '../storage';
 import { CustomerDetail } from '../components/CustomerDetail';
+import { PeriodDetail } from '../components/PeriodDetail';
 import { GOLD, GOLDB, REDB, CARD, BDR, TEXT, SUB, BRUSH, FELTD, NAV_H } from '../theme';
 
 interface Props {
@@ -71,6 +73,7 @@ const SUMMARY_FNS: Record<Tab, () => AggregateItem[]> = {
 export function BaccaratSummaryScreen({ refreshKey }: Props) {
   const [tab, setTab] = useState<Tab>('dealer');
   const [selectedCustomer, setSelectedCustomer] = useState<AggregateItem | null>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState<{ kind: 'month' | 'week'; item: AggregateItem } | null>(null);
   const [customerSearch, setCustomerSearch] = useState('');
   void refreshKey;
 
@@ -91,6 +94,14 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '16px', paddingBottom: NAV_H + 16 }}>
         {selectedCustomer ? (
           <CustomerDetail customer={selectedCustomer} onBack={() => setSelectedCustomer(null)} />
+        ) : selectedPeriod ? (
+          <PeriodDetail
+            period={selectedPeriod.item}
+            records={selectedPeriod.kind === 'month'
+              ? getRecordsForMonth(selectedPeriod.item.label)
+              : getRecordsForWeek(selectedPeriod.item.label)}
+            onBack={() => setSelectedPeriod(null)}
+          />
         ) : (
           <>
             <div style={{
@@ -151,6 +162,8 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
                 />
                 <List items={visibleItems} onSelect={setSelectedCustomer} />
               </>
+            ) : tab === 'month' || tab === 'week' ? (
+              <List items={items} onSelect={it => setSelectedPeriod({ kind: tab, item: it })} />
             ) : (
               <List items={items} />
             )}

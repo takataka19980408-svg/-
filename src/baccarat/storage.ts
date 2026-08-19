@@ -155,6 +155,24 @@ export function getWeekSummary(): AggregateItem[] {
   return aggregateBy(getRecords(), r => [getWeekKey(r.date)], (a, b) => a.label.localeCompare(b.label));
 }
 
+// ── 月／週の期間ごとの個別記録（期間の来店履歴・客別内訳表用） ──
+export function getRecordsForMonth(monthKey: string): BaccaratRecord[] {
+  return getRecords()
+    .filter(r => getMonthKey(r.date) === monthKey)
+    .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
+}
+
+export function getRecordsForWeek(weekKey: string): BaccaratRecord[] {
+  return getRecords()
+    .filter(r => getWeekKey(r.date) === weekKey)
+    .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
+}
+
+// 特定の記録群（期間で絞り込み済み）内での客別内訳。ディーラー／シャッフルとは掛け合わせない。
+export function getCustomerSummaryForRecords(records: BaccaratRecord[]): AggregateItem[] {
+  return aggregateBy(records, r => r.customerIds ?? []);
+}
+
 export function getWeekdaySummary(): AggregateItem[] {
   return aggregateBy(getRecords(), r => [getWeekdayKey(r.date)],
     (a, b) => WEEKDAY_LABELS.indexOf(a.label) - WEEKDAY_LABELS.indexOf(b.label));
