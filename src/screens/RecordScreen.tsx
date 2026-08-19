@@ -129,7 +129,7 @@ function AmountInput({
           <input
             type="number" value={customRaw}
             onChange={e => setCustomRaw(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && applyCustom()}
+            onKeyDown={e => e.key === 'Enter' && !e.nativeEvent.isComposing && applyCustom()}
             placeholder="金額を入力" autoFocus
             style={{
               flex: 1, padding: '10px 12px', background: CARD,
@@ -335,7 +335,7 @@ export function RecordScreen({ onBack, onSaved }: Props) {
               <input
                 type="text" value={newStoreName}
                 onChange={e => setNewStoreName(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleAddStore()}
+                onKeyDown={e => e.key === 'Enter' && !e.nativeEvent.isComposing && handleAddStore()}
                 placeholder="例：マルハン渋谷店" autoFocus
                 style={{
                   width: '100%', padding: '10px 12px', background: '#0A0905',

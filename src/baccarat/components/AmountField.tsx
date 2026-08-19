@@ -83,7 +83,7 @@ export function AmountField({ label, amount, onAdd, onReset, accent }: Props) {
           <input
             type="number" value={customRaw} autoFocus
             onChange={e => setCustomRaw(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && applyCustom()}
+            onKeyDown={e => e.key === 'Enter' && !e.nativeEvent.isComposing && applyCustom()}
             placeholder="金額を入力"
             style={{
               flex: 1, padding: '10px 12px', background: CARD, border: `1px solid ${accent}`, borderRadius: 6,

@@ -61,7 +61,7 @@ export function MasterPicker({ label, options, value, onChange, onAdd, placehold
           <input
             type="text" value={newVal} autoFocus
             onChange={e => setNewVal(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && commitNew()}
+            onKeyDown={e => e.key === 'Enter' && !e.nativeEvent.isComposing && commitNew()}
             placeholder={`新しい${label}を入力`}
             style={{
               flex: 1, padding: '10px 12px', background: '#0a0f0c',

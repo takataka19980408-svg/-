@@ -51,7 +51,7 @@ function MasterList({ kind, values, onChange }: { kind: MasterKind; values: stri
         <input
           type="text" value={newVal}
           onChange={e => setNewVal(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && add()}
+          onKeyDown={e => e.key === 'Enter' && !e.nativeEvent.isComposing && add()}
           placeholder={`${MASTER_LABELS[kind]}を追加`}
           style={{
             flex: 1, padding: '9px 12px', background: '#0a0f0c', border: `1px solid ${BDR}`, borderRadius: 6,
