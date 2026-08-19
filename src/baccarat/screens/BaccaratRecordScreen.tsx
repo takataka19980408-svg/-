@@ -134,6 +134,7 @@ export function BaccaratRecordScreen({ onSaved }: Props) {
           onClick={handleSave} disabled={saving}
           style={{
             width: '100%', padding: '17px', borderRadius: 6, fontSize: 17, fontWeight: 800, letterSpacing: '0.15em',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', boxSizing: 'border-box',
             background: saving ? `${GOLD}44` : `linear-gradient(135deg,${FELT} 0%,${GOLD} 60%,${GOLDB} 100%)`,
             color: saving ? GOLD : '#08120D',
             boxShadow: saving ? 'none' : `0 4px 24px ${FELT}AA`,
