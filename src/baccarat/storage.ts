@@ -84,7 +84,11 @@ export interface AggregateItem {
   holdRate: number | null;
 }
 
-function aggregateBy(records: BaccaratRecord[], keysFn: (r: BaccaratRecord) => string[]): AggregateItem[] {
+function aggregateBy(
+  records: BaccaratRecord[],
+  keysFn: (r: BaccaratRecord) => string[],
+  sortFn: (a: AggregateItem, b: AggregateItem) => number = (a, b) => b.storeProfit - a.storeProfit,
+): AggregateItem[] {
   const map = new Map<string, { count: number; startSum: number; endSum: number }>();
   for (const r of records) {
     for (const k of keysFn(r)) {
@@ -102,7 +106,7 @@ function aggregateBy(records: BaccaratRecord[], keysFn: (r: BaccaratRecord) => s
       label, count: e.count, startSum: e.startSum, endSum: e.endSum, storeProfit,
       holdRate: e.startSum > 0 ? storeProfit / e.startSum : null,
     };
-  }).sort((a, b) => b.storeProfit - a.storeProfit);
+  }).sort(sortFn);
 }
 
 export function getDealerSummary(): AggregateItem[] {
@@ -115,6 +119,52 @@ export function getShuffleSummary(): AggregateItem[] {
 
 export function getCustomerSummary(): AggregateItem[] {
   return aggregateBy(getRecords(), r => r.customerIds ?? []);
+}
+
+// ── 日付ベースの集計（月別／週別／曜日別） ─────────────────
+function getMonthKey(date: string): string {
+  return date.slice(0, 7).replace('-', '年') + '月';
+}
+
+function getMondayOf(date: string): Date {
+  const d = new Date(date + 'T00:00:00');
+  const day = d.getDay();
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diffToMonday);
+  return d;
+}
+
+function getWeekKey(date: string): string {
+  const monday = getMondayOf(date);
+  const mm = String(monday.getMonth() + 1).padStart(2, '0');
+  const dd = String(monday.getDate()).padStart(2, '0');
+  return `${monday.getFullYear()}/${mm}/${dd}週`;
+}
+
+const WEEKDAY_LABELS = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];
+
+function getWeekdayKey(date: string): string {
+  return WEEKDAY_LABELS[new Date(date + 'T00:00:00').getDay()];
+}
+
+export function getMonthSummary(): AggregateItem[] {
+  return aggregateBy(getRecords(), r => [getMonthKey(r.date)], (a, b) => a.label.localeCompare(b.label));
+}
+
+export function getWeekSummary(): AggregateItem[] {
+  return aggregateBy(getRecords(), r => [getWeekKey(r.date)], (a, b) => a.label.localeCompare(b.label));
+}
+
+export function getWeekdaySummary(): AggregateItem[] {
+  return aggregateBy(getRecords(), r => [getWeekdayKey(r.date)],
+    (a, b) => WEEKDAY_LABELS.indexOf(a.label) - WEEKDAY_LABELS.indexOf(b.label));
+}
+
+// ── 客ごとの個別記録（客のピックアップ表用。単一の客に絞り込んだ生データ） ──
+export function getRecordsForCustomer(customerId: string): BaccaratRecord[] {
+  return getRecords()
+    .filter(r => (r.customerIds ?? []).includes(customerId))
+    .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
 }
 
 export interface OverallSummary {

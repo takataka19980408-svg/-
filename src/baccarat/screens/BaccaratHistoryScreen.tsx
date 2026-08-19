@@ -30,7 +30,7 @@ export function BaccaratHistoryScreen({ refreshKey, onDataChange }: Props) {
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: NAV_H + 16 }}>
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '16px', paddingBottom: NAV_H + 16 }}>
         {records.length === 0 && (
           <div style={{ textAlign: 'center', color: SUB, fontFamily: BRUSH, fontSize: 13, padding: '40px 0' }}>
             まだ記録がありません

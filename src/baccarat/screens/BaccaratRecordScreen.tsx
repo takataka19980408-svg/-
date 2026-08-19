@@ -61,7 +61,7 @@ export function BaccaratRecordScreen({ onSaved }: Props) {
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: `16px 16px ${110 + NAV_H}px` }}>
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: `16px 16px ${110 + NAV_H}px` }}>
         <div style={{ marginBottom: 16 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: GOLD, letterSpacing: '0.1em', fontFamily: BRUSH, marginBottom: 6 }}>
             日付

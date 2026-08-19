@@ -151,7 +151,7 @@ export function BaccaratMastersScreen({ onDataChange }: Props) {
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px', paddingBottom: NAV_H + 16 }}>
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '16px', paddingBottom: NAV_H + 16 }}>
         <div style={{ background: CARD, border: `1px solid ${BDR}`, borderRadius: 10, padding: '14px 16px', marginBottom: 16 }}>
           <div style={{ fontSize: 12, color: SUB, fontFamily: BRUSH, lineHeight: 1.7, marginBottom: 10 }}>
             記録データをエクセル（.xlsx）で{canShare ? '送信' : '保存'}できます。サマリー・入力ログ・ディーラー別・シャッフル方式別・客別来店履歴の5シート構成です。
