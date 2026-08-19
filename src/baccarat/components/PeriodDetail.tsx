@@ -1,16 +1,52 @@
 import type { BaccaratRecord } from '../types';
 import type { AggregateItem } from '../storage';
-import { getCustomerSummaryForRecords, formatYen } from '../storage';
+import { getCustomerSummaryForRecords, getWeekdaySummaryForRecords, formatYen } from '../storage';
 import { GOLD, GOLDB, REDB, CARD, BDR, TEXT, SUB, BRUSH } from '../theme';
 
+type PeriodKind = 'year' | 'month' | 'week' | 'weekday';
+
 interface Props {
+  kind: PeriodKind;
   period: AggregateItem;
   records: BaccaratRecord[];
   onBack: () => void;
 }
 
-export function PeriodDetail({ period, records, onBack }: Props) {
+function BreakdownList({ title, items }: { title: string; items: AggregateItem[] }) {
+  return (
+    <>
+      <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, fontFamily: BRUSH, margin: '16px 0 8px', letterSpacing: '0.05em' }}>
+        {title}（{items.length}）
+      </div>
+      {items.length === 0 ? (
+        <div style={{ textAlign: 'center', color: SUB, fontFamily: BRUSH, fontSize: 13, padding: '16px 0' }}>データがありません</div>
+      ) : (
+        items.map(it => (
+          <div key={it.label} style={{
+            background: CARD, border: `1px solid ${BDR}`, borderRadius: 10, padding: '12px 14px', marginBottom: 8,
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: TEXT, fontFamily: BRUSH }}>{it.label}</span>
+              <span style={{
+                fontSize: 15, fontWeight: 800, fontFamily: BRUSH,
+                color: it.storeProfit > 0 ? GOLDB : it.storeProfit < 0 ? REDB : SUB,
+              }}>
+                {formatYen(it.storeProfit)}円
+              </span>
+            </div>
+            <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH }}>
+              来店 {it.count}回 スタート {it.startSum.toLocaleString()} エンド {it.endSum.toLocaleString()}
+            </div>
+          </div>
+        ))
+      )}
+    </>
+  );
+}
+
+export function PeriodDetail({ kind, period, records, onBack }: Props) {
   const customerItems = getCustomerSummaryForRecords(records);
+  const weekdayItems = kind === 'weekday' ? null : getWeekdaySummaryForRecords(records);
 
   return (
     <div>
@@ -52,31 +88,8 @@ export function PeriodDetail({ period, records, onBack }: Props) {
         </div>
       </div>
 
-      <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, fontFamily: BRUSH, marginBottom: 8, letterSpacing: '0.05em' }}>
-        客別内訳（{customerItems.length}名）
-      </div>
-      {customerItems.length === 0 ? (
-        <div style={{ textAlign: 'center', color: SUB, fontFamily: BRUSH, fontSize: 13, padding: '16px 0' }}>データがありません</div>
-      ) : (
-        customerItems.map(c => (
-          <div key={c.label} style={{
-            background: CARD, border: `1px solid ${BDR}`, borderRadius: 10, padding: '12px 14px', marginBottom: 8,
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: TEXT, fontFamily: BRUSH }}>{c.label}</span>
-              <span style={{
-                fontSize: 15, fontWeight: 800, fontFamily: BRUSH,
-                color: c.storeProfit > 0 ? GOLDB : c.storeProfit < 0 ? REDB : SUB,
-              }}>
-                {formatYen(c.storeProfit)}円
-              </span>
-            </div>
-            <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH }}>
-              来店 {c.count}回 スタート {c.startSum.toLocaleString()} エンド {c.endSum.toLocaleString()}
-            </div>
-          </div>
-        ))
-      )}
+      <BreakdownList title="客別内訳" items={customerItems} />
+      {weekdayItems && <BreakdownList title="曜日別内訳" items={weekdayItems} />}
 
       <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, fontFamily: BRUSH, margin: '16px 0 8px', letterSpacing: '0.05em' }}>
         来店履歴（{records.length}件）

@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import {
   getDealerSummary, getShuffleSummary, getCustomerSummary,
-  getMonthSummary, getWeekSummary, getWeekdaySummary,
-  getRecordsForMonth, getRecordsForWeek,
+  getYearSummary, getMonthSummary, getWeekSummary, getWeekdaySummary,
+  getRecordsForYear, getRecordsForMonth, getRecordsForWeek, getRecordsForWeekday,
   getOverallSummary, formatYen,
 } from '../storage';
 import type { AggregateItem } from '../storage';
+import type { BaccaratRecord } from '../types';
 import { CustomerDetail } from '../components/CustomerDetail';
 import { PeriodDetail } from '../components/PeriodDetail';
 import { GOLD, GOLDB, REDB, CARD, BDR, TEXT, SUB, BRUSH, FELTD, NAV_H } from '../theme';
@@ -14,12 +15,15 @@ interface Props {
   refreshKey: number;
 }
 
-type Tab = 'dealer' | 'shuffle' | 'customer' | 'month' | 'week' | 'weekday';
+type Tab = 'dealer' | 'shuffle' | 'customer' | 'year' | 'month' | 'week' | 'weekday';
+type PeriodTab = 'year' | 'month' | 'week' | 'weekday';
+const PERIOD_TABS: PeriodTab[] = ['year', 'month', 'week', 'weekday'];
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'dealer',   label: 'ディーラー別' },
   { id: 'shuffle',  label: 'シャッフル別' },
   { id: 'customer', label: '客別' },
+  { id: 'year',     label: '年別' },
   { id: 'month',    label: '月別' },
   { id: 'week',     label: '週別' },
   { id: 'weekday',  label: '曜日別' },
@@ -65,15 +69,23 @@ const SUMMARY_FNS: Record<Tab, () => AggregateItem[]> = {
   dealer: getDealerSummary,
   shuffle: getShuffleSummary,
   customer: getCustomerSummary,
+  year: getYearSummary,
   month: getMonthSummary,
   week: getWeekSummary,
   weekday: getWeekdaySummary,
 };
 
+const RECORDS_FOR_PERIOD: Record<PeriodTab, (label: string) => BaccaratRecord[]> = {
+  year: getRecordsForYear,
+  month: getRecordsForMonth,
+  week: getRecordsForWeek,
+  weekday: getRecordsForWeekday,
+};
+
 export function BaccaratSummaryScreen({ refreshKey }: Props) {
   const [tab, setTab] = useState<Tab>('dealer');
   const [selectedCustomer, setSelectedCustomer] = useState<AggregateItem | null>(null);
-  const [selectedPeriod, setSelectedPeriod] = useState<{ kind: 'month' | 'week'; item: AggregateItem } | null>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState<{ kind: PeriodTab; item: AggregateItem } | null>(null);
   const [customerSearch, setCustomerSearch] = useState('');
   void refreshKey;
 
@@ -96,10 +108,9 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
           <CustomerDetail customer={selectedCustomer} onBack={() => setSelectedCustomer(null)} />
         ) : selectedPeriod ? (
           <PeriodDetail
+            kind={selectedPeriod.kind}
             period={selectedPeriod.item}
-            records={selectedPeriod.kind === 'month'
-              ? getRecordsForMonth(selectedPeriod.item.label)
-              : getRecordsForWeek(selectedPeriod.item.label)}
+            records={RECORDS_FOR_PERIOD[selectedPeriod.kind](selectedPeriod.item.label)}
             onBack={() => setSelectedPeriod(null)}
           />
         ) : (
@@ -130,7 +141,7 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6, marginBottom: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6, marginBottom: 14 }}>
               {TABS.map(t => (
                 <button
                   key={t.id}
@@ -162,8 +173,8 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
                 />
                 <List items={visibleItems} onSelect={setSelectedCustomer} />
               </>
-            ) : tab === 'month' || tab === 'week' ? (
-              <List items={items} onSelect={it => setSelectedPeriod({ kind: tab, item: it })} />
+            ) : PERIOD_TABS.includes(tab as PeriodTab) ? (
+              <List items={items} onSelect={it => setSelectedPeriod({ kind: tab as PeriodTab, item: it })} />
             ) : (
               <List items={items} />
             )}
