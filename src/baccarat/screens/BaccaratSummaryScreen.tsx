@@ -71,10 +71,14 @@ const SUMMARY_FNS: Record<Tab, () => AggregateItem[]> = {
 export function BaccaratSummaryScreen({ refreshKey }: Props) {
   const [tab, setTab] = useState<Tab>('dealer');
   const [selectedCustomer, setSelectedCustomer] = useState<AggregateItem | null>(null);
+  const [customerSearch, setCustomerSearch] = useState('');
   void refreshKey;
 
   const overall = getOverallSummary();
   const items = SUMMARY_FNS[tab]();
+  const visibleItems = tab === 'customer' && customerSearch.trim()
+    ? items.filter(it => it.label.toLowerCase().includes(customerSearch.trim().toLowerCase()))
+    : items;
 
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#07100C' }}>
@@ -133,7 +137,20 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
             </div>
 
             {tab === 'customer' ? (
-              <List items={items} onSelect={setSelectedCustomer} />
+              <>
+                <input
+                  type="text"
+                  value={customerSearch}
+                  onChange={e => setCustomerSearch(e.target.value)}
+                  placeholder="客IDで検索"
+                  style={{
+                    width: '100%', padding: '9px 12px', marginBottom: 10,
+                    background: '#0a0f0c', border: `1px solid ${BDR}`, borderRadius: 6,
+                    fontSize: 13, color: TEXT, fontFamily: BRUSH, outline: 'none', boxSizing: 'border-box',
+                  }}
+                />
+                <List items={visibleItems} onSelect={setSelectedCustomer} />
+              </>
             ) : (
               <List items={items} />
             )}
