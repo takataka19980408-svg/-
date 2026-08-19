@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { GOLD, CARD, BDR, TEXT, SUB, BRUSH } from '../theme';
+import { GOLD, GOLDB, CARD, BDR, TEXT, SUB, BRUSH } from '../theme';
 
 interface Props {
   label: string;
@@ -29,33 +29,30 @@ export function MasterPicker({ label, options, value, onChange, onAdd, placehold
       <div style={{ fontSize: 11, fontWeight: 700, color: GOLD, letterSpacing: '0.1em', fontFamily: BRUSH, marginBottom: 6 }}>
         {label}{optional && <span style={{ color: SUB, fontWeight: 400 }}>（任意）</span>}
       </div>
-      <div style={{ display: 'flex', gap: 6 }}>
-        <select
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          style={{
-            flex: 1, padding: '12px 10px', background: CARD,
-            border: `1px solid ${BDR}`, borderRadius: 6,
-            fontSize: 15, fontWeight: 600, color: value ? TEXT : SUB,
-            fontFamily: BRUSH, appearance: 'none', WebkitAppearance: 'none', colorScheme: 'dark',
-          }}
-        >
-          <option value="" style={{ background: '#0a0f0c' }}>{placeholder ?? '選択してください'}</option>
-          {options.map(o => (
-            <option key={o} value={o} style={{ background: '#0a0f0c' }}>{o}</option>
-          ))}
-        </select>
-        <button
-          onClick={() => setShowNew(v => !v)}
-          style={{
-            width: 44, borderRadius: 6, fontSize: 18, fontWeight: 700,
-            background: showNew ? `${GOLD}22` : CARD, border: `1px solid ${showNew ? GOLD : BDR}`,
-            color: showNew ? GOLD : SUB, cursor: 'pointer',
-          }}
-        >
-          ＋
-        </button>
-      </div>
+      <select
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        style={{
+          width: '100%', padding: '12px 10px', background: CARD,
+          border: `1px solid ${BDR}`, borderRadius: 6,
+          fontSize: 15, fontWeight: 600, color: value ? TEXT : SUB,
+          fontFamily: BRUSH, appearance: 'none', WebkitAppearance: 'none', colorScheme: 'dark',
+        }}
+      >
+        <option value="" style={{ background: '#0a0f0c' }}>{placeholder ?? '選択してください'}</option>
+        {options.map(o => (
+          <option key={o} value={o} style={{ background: '#0a0f0c' }}>{o}</option>
+        ))}
+      </select>
+      <button
+        onClick={() => setShowNew(v => !v)}
+        style={{
+          marginTop: 8, fontSize: 12, color: showNew ? GOLDB : SUB, fontWeight: 700,
+          background: 'none', border: 'none', fontFamily: BRUSH, cursor: 'pointer', padding: 0,
+        }}
+      >
+        ＋ 新しい{label}を追加
+      </button>
       {showNew && (
         <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
           <input
