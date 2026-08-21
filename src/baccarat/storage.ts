@@ -73,6 +73,41 @@ export function removeMasterItem(kind: MasterKind, value: string): void {
   localStorage.setItem(MASTERS_KEY, JSON.stringify(masters));
 }
 
+// ── Backup / Restore ────────────────────────────────────────────
+export function getBackupJson(): { json: string; filename: string } {
+  const data = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    records: getRecords(),
+    masters: getMasters(),
+  };
+  return { json: JSON.stringify(data, null, 2), filename: `baccarat_backup_${today()}.json` };
+}
+
+export function exportBackup(): void {
+  const { json, filename } = getBackupJson();
+  triggerDownload(json, filename, 'application/json');
+}
+
+export function restoreBackup(json: string): void {
+  const data = JSON.parse(json);
+  if (!Array.isArray(data.records)) throw new Error('invalid backup');
+  localStorage.setItem(RECORDS_KEY, JSON.stringify(data.records));
+  if (data.masters) localStorage.setItem(MASTERS_KEY, JSON.stringify({ ...DEFAULT_MASTERS, ...data.masters }));
+}
+
+function triggerDownload(content: string, filename: string, mime: string): void {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 // ── ID ───────────────────────────────────────────────────────
 export function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);

@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { MasterKind } from '../types';
 import { MASTER_LABELS } from '../types';
-import { getMasters, addMasterItem, removeMasterItem, getRecords, clearRecords } from '../storage';
-import { GOLD, GOLDB, REDB, CARD, BDR, TEXT, SUB, BRUSH, FELTD, NAV_H, NAV_SAFE_BOTTOM } from '../theme';
+import {
+  getMasters, addMasterItem, removeMasterItem, getRecords, clearRecords,
+  getBackupJson, exportBackup, restoreBackup,
+} from '../storage';
+import { GOLD, GOLDB, RED, REDB, CARD, BDR, TEXT, SUB, BRUSH, FELTD, NAV_H, NAV_SAFE_BOTTOM } from '../theme';
 
 interface Props {
   onDataChange: () => void;
@@ -70,20 +73,13 @@ function MasterList({ kind, values, onChange }: { kind: MasterKind; values: stri
 export function BaccaratMastersScreen({ onDataChange }: Props) {
   const [masters, setMasters] = useState(getMasters);
   const [toast, setToast] = useState<string | null>(null);
-  const [seedConfirm, setSeedConfirm] = useState(false);
   const [clearConfirm, setClearConfirm] = useState(false);
+  const [restoreConfirm, setRestoreConfirm] = useState(false);
+  const backupImportRef = useRef<HTMLInputElement>(null);
 
   const refresh = () => { setMasters(getMasters()); onDataChange(); };
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2200); };
-
-  const handleSeed = async () => {
-    const { generateMockData } = await import('../mockData');
-    generateMockData(1000);
-    setSeedConfirm(false);
-    refresh();
-    showToast('サンプルデータを1000件生成しました');
-  };
 
   const handleClear = () => {
     clearRecords();
@@ -143,6 +139,39 @@ export function BaccaratMastersScreen({ onDataChange }: Props) {
     }
   };
 
+  const handleShareBackup = async () => {
+    const { json, filename } = getBackupJson();
+    const file = new File([json], filename, { type: 'application/json' });
+    try {
+      if (canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'バカラ卓 バックアップ' });
+      } else {
+        exportBackup();
+      }
+      showToast('バックアップを出力しました');
+    } catch {
+      exportBackup();
+    }
+  };
+
+  const handleImportBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        restoreBackup(ev.target?.result as string);
+        refresh();
+        setRestoreConfirm(false);
+        showToast('バックアップを復元しました');
+      } catch {
+        showToast('復元に失敗しました（ファイル形式を確認してください）');
+      }
+    };
+    reader.readAsText(file, 'utf-8');
+    e.target.value = '';
+  };
+
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#07100C' }}>
       <div style={{ flexShrink: 0, background: `linear-gradient(180deg,${FELTD},#07100C)`, borderBottom: `1px solid ${BDR}` }}>
@@ -154,52 +183,67 @@ export function BaccaratMastersScreen({ onDataChange }: Props) {
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '16px', paddingBottom: NAV_H + 16 }}>
         <div style={{ background: CARD, border: `1px solid ${BDR}`, borderRadius: 10, padding: '14px 16px', marginBottom: 16 }}>
           <div style={{ fontSize: 12, color: SUB, fontFamily: BRUSH, lineHeight: 1.7, marginBottom: 10 }}>
-            記録データをエクセル（.xlsx）で{canShare ? '送信' : '保存'}できます。サマリー・入力ログ・ディーラー別・シャッフル方式別・客別来店履歴の5シート構成です。
+            記録データをエクセルやバックアップ（.json）として{canShare ? 'AirDrop・LINE・メール等で送信' : '保存'}できます。
+            エクセルはサマリー・入力ログ・ディーラー別・シャッフル方式別・客別来店履歴の5シート構成です。
           </div>
-          <button onClick={handleExport} style={{
-            width: '100%', padding: '13px', borderRadius: 8, fontSize: 14, fontWeight: 700, fontFamily: BRUSH,
-            background: `linear-gradient(135deg,#1D6F42 0%,#2E9E5B 100%)`,
-            border: `1px solid #2E9E5B88`, color: '#EAFBF1', cursor: 'pointer', letterSpacing: '0.05em',
-          }}>
-            {canShare ? '📤 ' : '💾 '}エクセルで{canShare ? '送信' : '保存'}
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={handleExport} style={{
+              flex: 1, padding: '13px 8px', borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: BRUSH,
+              background: `linear-gradient(135deg,#1D6F42 0%,#2E9E5B 100%)`,
+              border: `1px solid #2E9E5B88`, color: '#EAFBF1', cursor: 'pointer', letterSpacing: '0.05em',
+            }}>
+              {canShare ? '📤 ' : '💾 '}エクセル{canShare ? '送信' : '保存'}
+            </button>
+            <button onClick={handleShareBackup} style={{
+              flex: 1, padding: '13px 8px', borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: BRUSH,
+              background: `linear-gradient(135deg,${GOLD}18,${GOLD}0A)`,
+              border: `1px solid ${GOLD}55`, color: GOLDB, cursor: 'pointer', letterSpacing: '0.05em',
+            }}>
+              {canShare ? '📤 ' : '💾 '}バックアップ{canShare ? '送信' : '保存'}
+            </button>
+          </div>
         </div>
 
         <div style={{ background: CARD, border: `1px solid ${BDR}`, borderRadius: 10, padding: '14px 16px', marginBottom: 16 }}>
           <div style={{ fontSize: 12, color: SUB, fontFamily: BRUSH, lineHeight: 1.7, marginBottom: 10 }}>
-            現在の記録件数：{getRecords().length.toLocaleString()}件（テスト用）
+            バックアップ（.json）ファイルから全データを復元します。別の端末への引き継ぎにも使えます。
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => setSeedConfirm(true)} style={{
-              flex: 1, padding: '11px', borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: BRUSH,
-              background: `${GOLD}0A`, border: `1px solid ${GOLD}33`, color: GOLD, cursor: 'pointer',
-            }}>
-              サンプルデータを1000件生成
-            </button>
-            <button onClick={() => setClearConfirm(true)} style={{
-              flex: 1, padding: '11px', borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: BRUSH,
-              background: 'transparent', border: `1px solid ${BDR}`, color: SUB, cursor: 'pointer',
-            }}>
-              記録を全て削除
-            </button>
-          </div>
-          {seedConfirm && (
-            <div style={{ marginTop: 10, padding: 12, background: `${GOLD}0A`, border: `1px solid ${GOLD}33`, borderRadius: 8 }}>
-              <div style={{ fontSize: 12, color: TEXT, fontFamily: BRUSH, marginBottom: 10, lineHeight: 1.7 }}>
-                ディーラー・シャッフル方式・卓・客IDのマスタも合わせてランダム生成し、既存の記録に追加します。動作確認用です。
+          <button onClick={() => setRestoreConfirm(true)} style={{
+            width: '100%', padding: '11px', borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: BRUSH,
+            background: `${RED}0D`, border: `1px solid ${RED}33`, color: REDB, cursor: 'pointer',
+          }}>
+            バックアップから復元
+          </button>
+          {restoreConfirm && (
+            <div style={{ marginTop: 10, padding: 12, background: `${RED}0A`, border: `1px solid ${RED}44`, borderRadius: 8 }}>
+              <div style={{ fontSize: 12, color: REDB, fontFamily: BRUSH, marginBottom: 10, lineHeight: 1.7 }}>
+                現在の記録・マスタは全て上書きされます。本当に復元しますか？
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={handleSeed} style={{
+                <button onClick={() => backupImportRef.current?.click()} style={{
                   flex: 1, padding: '9px', borderRadius: 6, fontSize: 12, fontWeight: 700, fontFamily: BRUSH,
-                  background: GOLD, color: '#0A0900', border: 'none', cursor: 'pointer',
-                }}>生成する</button>
-                <button onClick={() => setSeedConfirm(false)} style={{
+                  background: REDB, color: '#fff', border: 'none', cursor: 'pointer',
+                }}>ファイルを選択して復元</button>
+                <button onClick={() => setRestoreConfirm(false)} style={{
                   padding: '9px 16px', borderRadius: 6, fontSize: 12, fontFamily: BRUSH,
                   background: 'transparent', color: SUB, border: `1px solid ${BDR}`, cursor: 'pointer',
                 }}>取消</button>
               </div>
             </div>
           )}
+          <input ref={backupImportRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleImportBackup} />
+        </div>
+
+        <div style={{ background: CARD, border: `1px solid ${BDR}`, borderRadius: 10, padding: '14px 16px', marginBottom: 16 }}>
+          <div style={{ fontSize: 12, color: SUB, fontFamily: BRUSH, lineHeight: 1.7, marginBottom: 10 }}>
+            現在の記録件数：{getRecords().length.toLocaleString()}件
+          </div>
+          <button onClick={() => setClearConfirm(true)} style={{
+            width: '100%', padding: '11px', borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: BRUSH,
+            background: 'transparent', border: `1px solid ${BDR}`, color: SUB, cursor: 'pointer',
+          }}>
+            記録を全て削除
+          </button>
           {clearConfirm && (
             <div style={{ marginTop: 10, padding: 12, background: `${REDB}14`, border: `1px solid ${REDB}44`, borderRadius: 8 }}>
               <div style={{ fontSize: 12, color: REDB, fontFamily: BRUSH, marginBottom: 10, lineHeight: 1.7 }}>
