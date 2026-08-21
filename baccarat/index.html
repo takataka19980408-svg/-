@@ -31,8 +31,17 @@
     <script type="module" src="/src/baccarat-main.tsx"></script>
     <script>
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/-/baccarat-sw.js', { scope: '/-/baccarat/' });
+        window.addEventListener('load', async () => {
+          const reg = await navigator.serviceWorker.register('/-/baccarat-sw.js', { scope: '/-/baccarat/' });
+          // 開いたままのタブやホーム画面アプリが新しいデプロイに気づかず
+          // 古いバンドルを表示し続けないよう、定期的に更新を確認し、
+          // 新しいService Workerが有効になったらページを再読み込みする。
+          navigator.serviceWorker.addEventListener('controllerchange', () => location.reload());
+          const checkForUpdate = () => reg.update().catch(() => {});
+          setInterval(checkForUpdate, 60000);
+          document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') checkForUpdate();
+          });
         });
       }
     </script>
