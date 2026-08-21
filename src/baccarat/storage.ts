@@ -298,6 +298,22 @@ export function getOverallSummary(): OverallSummary {
   return { count: records.length, startSum, endSum, storeProfit, holdRate: startSum > 0 ? storeProfit / startSum : null };
 }
 
+export interface MonthSummary extends OverallSummary {
+  monthLabel: string;
+}
+
+export function getThisMonthSummary(): MonthSummary {
+  const monthLabel = getMonthKey(today());
+  const records = getRecords().filter(r => getMonthKey(r.date) === monthLabel);
+  const startSum = records.reduce((s, r) => s + r.startAmount, 0);
+  const endSum = records.reduce((s, r) => s + r.endAmount, 0);
+  const storeProfit = endSum - startSum;
+  return {
+    monthLabel, count: records.length, startSum, endSum, storeProfit,
+    holdRate: startSum > 0 ? storeProfit / startSum : null,
+  };
+}
+
 export function formatYen(n: number): string {
   const abs = Math.abs(Math.round(n));
   const sign = n > 0 ? '+' : n < 0 ? '−' : '';

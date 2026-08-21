@@ -3,7 +3,7 @@ import {
   getCustomerSummary, getDealerSummary,
   getYearSummary, getMonthSummary, getDaySummary,
   getRecordsForYear, getRecordsForMonth, getRecordsForDay,
-  getOverallSummary, formatYen,
+  getThisMonthSummary, formatYen,
 } from '../storage';
 import type { AggregateItem } from '../storage';
 import type { BaccaratRecord } from '../types';
@@ -93,7 +93,7 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
   const [customerSearch, setCustomerSearch] = useState('');
   void refreshKey;
 
-  const overall = getOverallSummary();
+  const thisMonth = getThisMonthSummary();
   const items = SUMMARY_FNS[tab]();
   const visibleItems = tab === 'customer' && customerSearch.trim()
     ? items.filter(it => it.label.toLowerCase().includes(customerSearch.trim().toLowerCase()))
@@ -124,25 +124,25 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
             <div style={{
               background: CARD, border: `1px solid ${BDR}`, borderRadius: 10, padding: '14px 16px', marginBottom: 16,
             }}>
-              <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH, marginBottom: 8 }}>全体サマリー</div>
+              <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH, marginBottom: 8 }}>今月の集計（{thisMonth.monthLabel}）</div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                 <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>記録件数</span>
-                <span style={{ fontSize: 13, color: TEXT, fontFamily: BRUSH }}>{overall.count.toLocaleString()}件</span>
+                <span style={{ fontSize: 13, color: TEXT, fontFamily: BRUSH }}>{thisMonth.count.toLocaleString()}件</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
                 <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>スタート合計 / エンド合計</span>
                 <span style={{ fontSize: 13, color: TEXT, fontFamily: BRUSH }}>
-                  {overall.startSum.toLocaleString()} / {overall.endSum.toLocaleString()}
+                  {thisMonth.startSum.toLocaleString()} / {thisMonth.endSum.toLocaleString()}
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>店収支合計</span>
                 <span style={{
                   fontSize: 18, fontWeight: 800, fontFamily: BRUSH,
-                  color: overall.storeProfit > 0 ? GOLDB : overall.storeProfit < 0 ? REDB : SUB,
+                  color: thisMonth.storeProfit > 0 ? GOLDB : thisMonth.storeProfit < 0 ? REDB : SUB,
                 }}>
-                  {formatYen(overall.storeProfit)}円
-                  {overall.holdRate !== null && ` （${(overall.holdRate * 100).toFixed(1)}%）`}
+                  {formatYen(thisMonth.storeProfit)}円
+                  {thisMonth.holdRate !== null && ` （${(thisMonth.holdRate * 100).toFixed(1)}%）`}
                 </span>
               </div>
             </div>
