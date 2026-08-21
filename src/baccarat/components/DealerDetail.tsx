@@ -1,6 +1,7 @@
 import type { AggregateItem } from '../storage';
 import {
-  getRecordsForDealer, getCustomerSummaryForRecords, getShuffleSummaryForRecords, formatYen,
+  getRecordsForDealer, getCustomerSummaryForRecords, getShuffleSummaryForRecords,
+  getDealerSummaryForRecords, formatYen,
 } from '../storage';
 import { BreakdownList } from './BreakdownList';
 import { GOLD, GOLDB, REDB, CARD, BDR, TEXT, SUB, BRUSH } from '../theme';
@@ -12,6 +13,9 @@ interface Props {
 
 export function DealerDetail({ dealer, onBack }: Props) {
   const records = getRecordsForDealer(dealer.label);
+  // 呼び出し元のdealerは今月分などスコープが絞られている場合があるため、
+  // ここで取得した全期間のrecordsから改めて集計し直して表示する。
+  const summary = getDealerSummaryForRecords(records).find(it => it.label === dealer.label) ?? dealer;
   const customerItems = getCustomerSummaryForRecords(records);
   const shuffleItems = getShuffleSummaryForRecords(records);
 
@@ -35,22 +39,22 @@ export function DealerDetail({ dealer, onBack }: Props) {
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
           <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>対応回数</span>
-          <span style={{ fontSize: 13, color: TEXT, fontFamily: BRUSH }}>{dealer.count.toLocaleString()}回</span>
+          <span style={{ fontSize: 13, color: TEXT, fontFamily: BRUSH }}>{summary.count.toLocaleString()}回</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
           <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>スタート合計 / エンド合計</span>
           <span style={{ fontSize: 13, color: TEXT, fontFamily: BRUSH }}>
-            {dealer.startSum.toLocaleString()} / {dealer.endSum.toLocaleString()}
+            {summary.startSum.toLocaleString()} / {summary.endSum.toLocaleString()}
           </span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>店収支合計</span>
           <span style={{
             fontSize: 16, fontWeight: 800, fontFamily: BRUSH,
-            color: dealer.storeProfit > 0 ? GOLDB : dealer.storeProfit < 0 ? REDB : SUB,
+            color: summary.storeProfit > 0 ? GOLDB : summary.storeProfit < 0 ? REDB : SUB,
           }}>
-            {formatYen(dealer.storeProfit)}円
-            {dealer.holdRate !== null && ` （${(dealer.holdRate * 100).toFixed(1)}%）`}
+            {formatYen(summary.storeProfit)}円
+            {summary.holdRate !== null && ` （${(summary.holdRate * 100).toFixed(1)}%）`}
           </span>
         </div>
       </div>

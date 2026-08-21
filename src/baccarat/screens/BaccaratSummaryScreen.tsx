@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import {
-  getCustomerSummary, getDealerSummary,
+  getCustomerSummaryForRecords, getDealerSummaryForRecords, getShuffleSummaryForRecords,
   getYearSummary, getMonthSummary, getDaySummary,
-  getRecordsForYear, getRecordsForMonth, getRecordsForDay,
+  getRecordsForYear, getRecordsForMonth, getRecordsForDay, getRecordsForThisMonth,
   getThisMonthSummary, formatYen,
 } from '../storage';
 import type { AggregateItem } from '../storage';
@@ -18,16 +18,19 @@ interface Props {
 }
 
 type PeriodTab = 'year' | 'month' | 'day';
-type Tab = PeriodTab | 'customer' | 'dealer';
+type Tab = PeriodTab | 'customer' | 'dealer' | 'shuffle';
 
-// シャッフル別の収支は独立タブではなく、年別/月別/日別/客別/ディーラー別の
-// 詳細画面内の内訳として表示する（ChartBreakdown in PeriodDetail/CustomerDetail/DealerDetail）。
+// 客別・ディーラー別・シャッフル別は今月分のみを集計する（全期間分は
+// 年別/月別/日別タブや、各詳細画面内の内訳から確認できる）。
+const MONTHLY_TABS: Tab[] = ['customer', 'dealer', 'shuffle'];
+
 const TABS: { id: Tab; label: string }[] = [
   { id: 'year',     label: '年別' },
   { id: 'month',    label: '月別' },
   { id: 'day',      label: '日別' },
   { id: 'customer', label: '客別' },
   { id: 'dealer',   label: 'ディーラー別' },
+  { id: 'shuffle',  label: 'シャッフル別' },
 ];
 
 function List({ items, onSelect, invert }: { items: AggregateItem[]; onSelect?: (item: AggregateItem) => void; invert?: boolean }) {
@@ -72,8 +75,9 @@ function List({ items, onSelect, invert }: { items: AggregateItem[]; onSelect?: 
 }
 
 const SUMMARY_FNS: Record<Tab, () => AggregateItem[]> = {
-  customer: getCustomerSummary,
-  dealer: getDealerSummary,
+  customer: () => getCustomerSummaryForRecords(getRecordsForThisMonth()),
+  dealer: () => getDealerSummaryForRecords(getRecordsForThisMonth()),
+  shuffle: () => getShuffleSummaryForRecords(getRecordsForThisMonth()),
   year: getYearSummary,
   month: getMonthSummary,
   day: getDaySummary,
@@ -164,6 +168,12 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
               ))}
             </div>
 
+            {MONTHLY_TABS.includes(tab) && (
+              <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH, marginBottom: 10 }}>
+                {thisMonth.monthLabel}分のみ集計（全期間は年別/月別/日別、または各詳細画面の内訳から確認できます）
+              </div>
+            )}
+
             {tab === 'customer' ? (
               <>
                 <input
@@ -184,6 +194,11 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
               <>
                 <BarChart items={items} onSelect={setSelectedDealer} />
                 <List items={items} onSelect={setSelectedDealer} />
+              </>
+            ) : tab === 'shuffle' ? (
+              <>
+                <BarChart items={items} />
+                <List items={items} />
               </>
             ) : (
               <>

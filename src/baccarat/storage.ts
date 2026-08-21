@@ -290,6 +290,11 @@ export interface OverallSummary {
   holdRate: number | null;
 }
 
+export function getRecordsForThisMonth(): BaccaratRecord[] {
+  const monthLabel = getMonthKey(today());
+  return getRecords().filter(r => getMonthKey(r.date) === monthLabel);
+}
+
 export function getOverallSummary(): OverallSummary {
   const records = getRecords();
   const startSum = records.reduce((s, r) => s + r.startAmount, 0);
@@ -304,7 +309,7 @@ export interface MonthSummary extends OverallSummary {
 
 export function getThisMonthSummary(): MonthSummary {
   const monthLabel = getMonthKey(today());
-  const records = getRecords().filter(r => getMonthKey(r.date) === monthLabel);
+  const records = getRecordsForThisMonth();
   const startSum = records.reduce((s, r) => s + r.startAmount, 0);
   const endSum = records.reduce((s, r) => s + r.endAmount, 0);
   const storeProfit = endSum - startSum;
