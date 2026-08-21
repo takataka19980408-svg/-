@@ -116,9 +116,10 @@ export function BaccaratRecordScreen({ onSaved, editRecord, onCancel }: Props) {
           <input
             type="date" value={date} onChange={e => setDate(e.target.value)}
             style={{
-              width: '100%', padding: '12px 10px', background: '#0E1712',
+              width: '100%', maxWidth: '100%', padding: '12px 10px', background: '#0E1712',
               border: `1px solid ${BDR}`, borderRadius: 6, fontSize: 15, color: TEXT,
               fontFamily: BRUSH, colorScheme: 'dark', boxSizing: 'border-box',
+              WebkitAppearance: 'none', appearance: 'none', minWidth: 0,
             }}
           />
         </div>
