@@ -39,16 +39,23 @@ export function generateMockData(count = 1000): void {
     const startAmount = roundTo1000(10000 + Math.random() * 990000);
     const swing = roundTo1000((Math.random() - 0.5) * startAmount * 1.2);
     const endAmount = Math.max(0, startAmount + swing);
+    const profit = endAmount - startAmount;
+    const customerIds = Math.random() < 0.85 ? pickSome(MOCK_CUSTOMERS, 1, 2) : undefined;
+    const ratio = 0.3 + Math.random() * 0.4; // 30〜70%を1人目に配分
+    const customerProfits = customerIds && customerIds.length > 1
+      ? { [customerIds[0]]: roundTo1000(profit * ratio), [customerIds[1]]: roundTo1000(profit * (1 - ratio)) }
+      : undefined;
     return {
       id: generateId(),
       date: randomDateWithinDays(90),
       table: pick(MOCK_TABLES),
       dealerIds: pickSome(MOCK_DEALERS, 1, 2),
       shuffle: pick(MOCK_SHUFFLES),
-      customerIds: Math.random() < 0.85 ? pickSome(MOCK_CUSTOMERS, 1, 2) : undefined,
+      customerIds,
+      customerProfits,
       startAmount,
       endAmount,
-      profit: endAmount - startAmount,
+      profit,
       memo: undefined,
       createdAt: new Date().toISOString(),
     };

@@ -117,8 +117,44 @@ export function getShuffleSummary(): AggregateItem[] {
   return aggregateBy(getRecords(), r => [r.shuffle]);
 }
 
+// 客が2人以上いる対応は、店収支をそのまま全員に付けると水増しになるため、
+// customerProfits（手入力の客ごとの配分）をその客の収支として使う。
+// 客が1人以下の対応は従来どおり店収支をそのまま使う。
+function aggregateCustomers(records: BaccaratRecord[]): AggregateItem[] {
+  const map = new Map<string, { count: number; startSum: number; endSum: number; profitSum: number }>();
+  for (const r of records) {
+    const ids = r.customerIds ?? [];
+    if (ids.length === 0) continue;
+    for (const id of ids) {
+      const e = map.get(id) ?? { count: 0, startSum: 0, endSum: 0, profitSum: 0 };
+      e.count += 1;
+      if (ids.length === 1) {
+        e.startSum += r.startAmount;
+        e.endSum += r.endAmount;
+        e.profitSum += r.endAmount - r.startAmount;
+      } else {
+        e.profitSum += r.customerProfits?.[id] ?? 0;
+      }
+      map.set(id, e);
+    }
+  }
+  return Array.from(map.entries()).map(([label, e]) => ({
+    label, count: e.count, startSum: e.startSum, endSum: e.endSum,
+    storeProfit: e.profitSum,
+    holdRate: e.startSum > 0 ? e.profitSum / e.startSum : null,
+  })).sort((a, b) => b.storeProfit - a.storeProfit);
+}
+
 export function getCustomerSummary(): AggregateItem[] {
-  return aggregateBy(getRecords(), r => r.customerIds ?? []);
+  return aggregateCustomers(getRecords());
+}
+
+// ある対応（記録）における特定の客の収支。客が1人以下ならその対応の店収支
+// そのもの、2人以上ならcustomerProfits（手入力の配分）から取得。
+export function getCustomerProfitForRecord(r: BaccaratRecord, customerId: string): number {
+  const ids = r.customerIds ?? [];
+  if (ids.length <= 1) return r.endAmount - r.startAmount;
+  return r.customerProfits?.[customerId] ?? 0;
 }
 
 // ── 日付ベースの集計（年別／月別／週別／曜日別） ─────────────
@@ -173,7 +209,7 @@ export function getRecordsForDay(dayKey: string): BaccaratRecord[] {
 
 // 特定の記録群（期間で絞り込み済み）内での内訳。ディーラー／シャッフルとは掛け合わせない。
 export function getCustomerSummaryForRecords(records: BaccaratRecord[]): AggregateItem[] {
-  return aggregateBy(records, r => r.customerIds ?? []);
+  return aggregateCustomers(records);
 }
 
 export function getDealerSummaryForRecords(records: BaccaratRecord[]): AggregateItem[] {

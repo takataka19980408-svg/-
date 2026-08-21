@@ -16,6 +16,7 @@ export function BaccaratRecordScreen({ onSaved }: Props) {
   const [dealerIds, setDealerIds] = useState<string[]>([]);
   const [shuffle, setShuffle] = useState('');
   const [customerIds, setCustomerIds] = useState<string[]>([]);
+  const [customerProfits, setCustomerProfits] = useState<Record<string, string>>({});
   const [startAmount, setStartAmount] = useState(0);
   const [endAmount, setEndAmount] = useState(0);
   const [memo, setMemo] = useState('');
@@ -23,6 +24,7 @@ export function BaccaratRecordScreen({ onSaved }: Props) {
   const [saving, setSaving] = useState(false);
 
   const storeProfit = endAmount - startAmount;
+  const allocatedSum = customerIds.reduce((s, id) => s + (Number(customerProfits[id]) || 0), 0);
 
   const addStart = useCallback((n: number) => setStartAmount(v => v + n), []);
   const addEnd = useCallback((n: number) => setEndAmount(v => v + n), []);
@@ -34,17 +36,24 @@ export function BaccaratRecordScreen({ onSaved }: Props) {
     if (dealerIds.length === 0) { setError('ディーラーを選択してください'); return; }
     if (!shuffle) { setError('シャッフル方式を選択してください'); return; }
     if (startAmount === 0 && endAmount === 0) { setError('スタートまたはエンドを入力してください'); return; }
+    if (customerIds.length > 1 && customerIds.some(id => !customerProfits[id]?.trim())) {
+      setError('客ごとの収支配分をすべて入力してください');
+      return;
+    }
     setSaving(true);
     saveRecord({
       id: generateId(), date, table, dealerIds, shuffle,
       customerIds: customerIds.length ? customerIds : undefined,
+      customerProfits: customerIds.length > 1
+        ? Object.fromEntries(customerIds.map(id => [id, Number(customerProfits[id])]))
+        : undefined,
       startAmount, endAmount, profit: endAmount - startAmount,
       memo: memo.trim() || undefined,
       createdAt: new Date().toISOString(),
     });
     setTimeout(() => {
       setSaving(false);
-      setTable(''); setDealerIds([]); setShuffle(''); setCustomerIds([]);
+      setTable(''); setDealerIds([]); setShuffle(''); setCustomerIds([]); setCustomerProfits({});
       setStartAmount(0); setEndAmount(0); setMemo('');
       onSaved();
     }, 250);
@@ -84,6 +93,40 @@ export function BaccaratRecordScreen({ onSaved }: Props) {
           onChange={setShuffle} onAdd={v => { addMasterItem('shuffles', v); refreshMasters(); }} />
         <MultiMasterPicker label="客ID" options={masters.customers} values={customerIds} optional
           onChange={setCustomerIds} onAdd={v => { addMasterItem('customers', v); refreshMasters(); }} />
+
+        {customerIds.length > 1 && (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: GOLD, letterSpacing: '0.1em', fontFamily: BRUSH, marginBottom: 6 }}>
+              客ごとの収支配分（手入力）
+            </div>
+            {customerIds.map(id => (
+              <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <span style={{
+                  fontSize: 13, color: TEXT, fontFamily: BRUSH, flex: 1,
+                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                }}>
+                  {id}
+                </span>
+                <input
+                  type="number" inputMode="numeric" value={customerProfits[id] ?? ''}
+                  onChange={e => setCustomerProfits(cp => ({ ...cp, [id]: e.target.value }))}
+                  placeholder="0"
+                  style={{
+                    width: 110, padding: '9px 10px', background: '#0E1712', border: `1px solid ${BDR}`,
+                    borderRadius: 6, fontSize: 14, color: TEXT, fontFamily: BRUSH, textAlign: 'right', boxSizing: 'border-box',
+                  }}
+                />
+                <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>円</span>
+              </div>
+            ))}
+            <div style={{
+              fontSize: 11, fontFamily: BRUSH, textAlign: 'right',
+              color: allocatedSum === storeProfit ? SUB : REDB,
+            }}>
+              配分合計 {formatYen(allocatedSum)}円 ／ 店収支 {formatYen(storeProfit)}円
+            </div>
+          </div>
+        )}
 
         <AmountField label="スタート（店の開始額）" amount={startAmount} onAdd={addStart} onReset={() => setStartAmount(0)} accent={GOLD} />
         <AmountField label="エンド（店の終了額）" amount={endAmount} onAdd={addEnd} onReset={() => setEndAmount(0)} accent="#00C896" />
