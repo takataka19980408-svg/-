@@ -9,9 +9,10 @@ import type { AggregateItem } from '../storage';
 import type { BaccaratRecord } from '../types';
 import { CustomerDetail } from '../components/CustomerDetail';
 import { DealerDetail } from '../components/DealerDetail';
+import { ShuffleDetail } from '../components/ShuffleDetail';
 import { PeriodDetail } from '../components/PeriodDetail';
 import { BarChart } from '../components/BarChart';
-import { GOLD, GOLDB, REDB, CARD, BDR, TEXT, SUB, BRUSH, FELTD, NAV_H } from '../theme';
+import { GOLD, GOLDB, REDB, CARD, BDR, TEXT, SUB, BRUSH, FELTD, NAV_SAFE_BOTTOM } from '../theme';
 
 interface Props {
   refreshKey: number;
@@ -93,6 +94,7 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
   const [tab, setTab] = useState<Tab>('customer');
   const [selectedCustomer, setSelectedCustomer] = useState<AggregateItem | null>(null);
   const [selectedDealer, setSelectedDealer] = useState<AggregateItem | null>(null);
+  const [selectedShuffle, setSelectedShuffle] = useState<AggregateItem | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<{ kind: PeriodTab; item: AggregateItem } | null>(null);
   const [customerSearch, setCustomerSearch] = useState('');
   void refreshKey;
@@ -111,11 +113,13 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '16px', paddingBottom: NAV_H + 16 }}>
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '16px', paddingBottom: `calc(${NAV_SAFE_BOTTOM} + 16px)` }}>
         {selectedCustomer ? (
           <CustomerDetail customer={selectedCustomer} onBack={() => setSelectedCustomer(null)} />
         ) : selectedDealer ? (
           <DealerDetail dealer={selectedDealer} onBack={() => setSelectedDealer(null)} />
+        ) : selectedShuffle ? (
+          <ShuffleDetail shuffle={selectedShuffle} onBack={() => setSelectedShuffle(null)} />
         ) : selectedPeriod ? (
           <PeriodDetail
             kind={selectedPeriod.kind}
@@ -197,8 +201,8 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
               </>
             ) : tab === 'shuffle' ? (
               <>
-                <BarChart items={items} />
-                <List items={items} />
+                <BarChart items={items} onSelect={setSelectedShuffle} />
+                <List items={items} onSelect={setSelectedShuffle} />
               </>
             ) : (
               <>

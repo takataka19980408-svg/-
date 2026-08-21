@@ -1,6 +1,6 @@
 import type { AggregateItem } from '../storage';
 import {
-  getRecordsForDealer, getCustomerSummaryForRecords, getShuffleSummaryForRecords,
+  getRecordsForShuffle, getCustomerSummaryForRecords, getShuffleSummaryForRecords,
   getDealerSummaryForRecords, groupRecordsByDay, formatTime, formatYen,
 } from '../storage';
 import { BreakdownList } from './BreakdownList';
@@ -8,17 +8,17 @@ import { DayGroupHeader } from './DayGroupHeader';
 import { GOLD, GOLDB, REDB, CARD, BDR, TEXT, SUB, BRUSH } from '../theme';
 
 interface Props {
-  dealer: AggregateItem;
+  shuffle: AggregateItem;
   onBack: () => void;
 }
 
-export function DealerDetail({ dealer, onBack }: Props) {
-  const records = getRecordsForDealer(dealer.label);
-  // 呼び出し元のdealerは今月分などスコープが絞られている場合があるため、
+export function ShuffleDetail({ shuffle, onBack }: Props) {
+  const records = getRecordsForShuffle(shuffle.label);
+  // 呼び出し元のshuffleは今月分などスコープが絞られている場合があるため、
   // ここで取得した全期間のrecordsから改めて集計し直して表示する。
-  const summary = getDealerSummaryForRecords(records).find(it => it.label === dealer.label) ?? dealer;
+  const summary = getShuffleSummaryForRecords(records).find(it => it.label === shuffle.label) ?? shuffle;
   const customerItems = getCustomerSummaryForRecords(records);
-  const shuffleItems = getShuffleSummaryForRecords(records);
+  const dealerItems = getDealerSummaryForRecords(records);
   const dayGroups = groupRecordsByDay(records);
 
   return (
@@ -30,14 +30,14 @@ export function DealerDetail({ dealer, onBack }: Props) {
           background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginBottom: 12,
         }}
       >
-        ← ディーラー別集計に戻る
+        ← シャッフル別集計に戻る
       </button>
 
       <div style={{
         background: CARD, border: `1px solid ${BDR}`, borderRadius: 10, padding: '14px 16px', marginBottom: 16,
       }}>
         <div style={{ fontSize: 16, fontWeight: 800, color: TEXT, fontFamily: BRUSH, marginBottom: 10 }}>
-          {dealer.label} の成績
+          {shuffle.label} の成績
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
           <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>対応回数</span>
@@ -61,10 +61,10 @@ export function DealerDetail({ dealer, onBack }: Props) {
         </div>
       </div>
 
-      <BreakdownList title="客別内訳" items={customerItems} showChart invert colorByDisplay />
-      <BreakdownList title="シャッフル別内訳" items={shuffleItems} showChart />
+      <BreakdownList title="客別内訳" items={customerItems} showChart invert />
+      <BreakdownList title="ディーラー別内訳" items={dealerItems} showChart />
 
-      <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, fontFamily: BRUSH, marginBottom: 8, letterSpacing: '0.05em' }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, fontFamily: BRUSH, margin: '16px 0 8px', letterSpacing: '0.05em' }}>
         対応履歴（{records.length}件）
       </div>
       {dayGroups.map((group, gi) => {
@@ -90,7 +90,7 @@ export function DealerDetail({ dealer, onBack }: Props) {
                     </span>
                   </div>
                   <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH }}>
-                    {r.shuffle}
+                    {r.dealerIds.join('、')}
                     {r.customerIds && r.customerIds.length > 0 && ` / ${r.customerIds.join('、')}`}
                   </div>
                   <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH }}>

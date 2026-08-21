@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { getRecords, deleteRecord, formatYen, formatTime, groupRecordsByDay } from '../storage';
 import type { BaccaratRecord } from '../types';
 import { DayGroupHeader } from '../components/DayGroupHeader';
-import { GOLD, GOLDB, REDB, CARD, BDR, SUB, BRUSH, FELTD, NAV_H } from '../theme';
+import { GOLD, GOLDB, REDB, CARD, BDR, SUB, BRUSH, FELTD, NAV_SAFE_BOTTOM } from '../theme';
 
 interface Props {
   refreshKey: number;
@@ -33,7 +33,7 @@ export function BaccaratHistoryScreen({ refreshKey, onDataChange, onEdit }: Prop
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '16px', paddingBottom: NAV_H + 16 }}>
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '16px', paddingBottom: `calc(${NAV_SAFE_BOTTOM} + 16px)` }}>
         {groups.length === 0 && (
           <div style={{ textAlign: 'center', color: SUB, fontFamily: BRUSH, fontSize: 13, padding: '40px 0' }}>
             まだ記録がありません

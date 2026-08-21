@@ -306,6 +306,13 @@ export function getRecordsForDealer(dealerId: string): BaccaratRecord[] {
     .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
 }
 
+// ── シャッフルごとの個別記録（シャッフル別画面用。単一のシャッフル方式に絞り込んだ生データ） ──
+export function getRecordsForShuffle(shuffle: string): BaccaratRecord[] {
+  return getRecords()
+    .filter(r => r.shuffle === shuffle)
+    .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
+}
+
 export interface OverallSummary {
   count: number;
   startSum: number;

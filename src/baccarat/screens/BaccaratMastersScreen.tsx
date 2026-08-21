@@ -5,7 +5,7 @@ import {
   getMasters, addMasterItem, removeMasterItem, getRecords, clearRecords,
   getBackupJson, exportBackup, restoreBackup,
 } from '../storage';
-import { GOLD, GOLDB, RED, REDB, CARD, BDR, TEXT, SUB, BRUSH, FELTD, NAV_H, NAV_SAFE_BOTTOM } from '../theme';
+import { GOLD, GOLDB, RED, REDB, CARD, BDR, TEXT, SUB, BRUSH, FELTD, NAV_SAFE_BOTTOM } from '../theme';
 
 interface Props {
   onDataChange: () => void;
@@ -180,7 +180,7 @@ export function BaccaratMastersScreen({ onDataChange }: Props) {
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '16px', paddingBottom: NAV_H + 16 }}>
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '16px', paddingBottom: `calc(${NAV_SAFE_BOTTOM} + 16px)` }}>
         <div style={{ background: CARD, border: `1px solid ${BDR}`, borderRadius: 10, padding: '14px 16px', marginBottom: 16 }}>
           <div style={{ fontSize: 12, color: SUB, fontFamily: BRUSH, lineHeight: 1.7, marginBottom: 10 }}>
             記録データをエクセルやバックアップ（.json）として{canShare ? 'AirDrop・LINE・メール等で送信' : '保存'}できます。
