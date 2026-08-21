@@ -1,6 +1,10 @@
 import type { BaccaratRecord } from '../types';
 import type { AggregateItem } from '../storage';
-import { getCustomerSummaryForRecords, getWeekdaySummaryForRecords, formatYen } from '../storage';
+import {
+  getCustomerSummaryForRecords, getWeekdaySummaryForRecords,
+  getDealerSummaryForRecords, getShuffleSummaryForRecords, formatYen,
+} from '../storage';
+import { BarChart } from './BarChart';
 import { GOLD, GOLDB, REDB, CARD, BDR, TEXT, SUB, BRUSH } from '../theme';
 
 type PeriodKind = 'year' | 'month' | 'day';
@@ -44,8 +48,25 @@ function BreakdownList({ title, items }: { title: string; items: AggregateItem[]
   );
 }
 
+function ChartBreakdown({ title, items }: { title: string; items: AggregateItem[] }) {
+  return (
+    <>
+      <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, fontFamily: BRUSH, margin: '16px 0 8px', letterSpacing: '0.05em' }}>
+        {title}（{items.length}）
+      </div>
+      {items.length === 0 ? (
+        <div style={{ textAlign: 'center', color: SUB, fontFamily: BRUSH, fontSize: 13, padding: '16px 0' }}>データがありません</div>
+      ) : (
+        <BarChart items={items} />
+      )}
+    </>
+  );
+}
+
 export function PeriodDetail({ kind, period, records, onBack }: Props) {
   const customerItems = getCustomerSummaryForRecords(records);
+  const dealerItems = getDealerSummaryForRecords(records);
+  const shuffleItems = getShuffleSummaryForRecords(records);
   const weekdayItems = kind === 'day' ? null : getWeekdaySummaryForRecords(records);
 
   return (
@@ -89,6 +110,8 @@ export function PeriodDetail({ kind, period, records, onBack }: Props) {
       </div>
 
       <BreakdownList title="客別内訳" items={customerItems} />
+      <ChartBreakdown title="ディーラー別内訳" items={dealerItems} />
+      <ChartBreakdown title="シャッフル別内訳" items={shuffleItems} />
       {weekdayItems && <BreakdownList title="曜日別内訳" items={weekdayItems} />}
 
       <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, fontFamily: BRUSH, margin: '16px 0 8px', letterSpacing: '0.05em' }}>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  getDealerSummary, getShuffleSummary, getCustomerSummary,
+  getCustomerSummary,
   getYearSummary, getMonthSummary, getDaySummary,
   getRecordsForYear, getRecordsForMonth, getRecordsForDay,
   getOverallSummary, formatYen,
@@ -16,18 +16,16 @@ interface Props {
   refreshKey: number;
 }
 
-type Tab = 'dealer' | 'shuffle' | 'customer' | 'year' | 'month' | 'day';
 type PeriodTab = 'year' | 'month' | 'day';
-const PERIOD_TABS: PeriodTab[] = ['year', 'month', 'day'];
-const CHART_TABS: Tab[] = ['dealer', 'shuffle', 'customer', 'day'];
+type Tab = PeriodTab | 'customer';
 
+// ディーラー別・シャッフル別の収支は独立タブではなく、年別/月別/日別/客別の
+// 詳細画面内の内訳として表示する（ChartBreakdown in PeriodDetail/CustomerDetail）。
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'dealer',   label: 'ディーラー別' },
-  { id: 'shuffle',  label: 'シャッフル別' },
-  { id: 'customer', label: '客別' },
   { id: 'year',     label: '年別' },
   { id: 'month',    label: '月別' },
   { id: 'day',      label: '日別' },
+  { id: 'customer', label: '客別' },
 ];
 
 function List({ items, onSelect }: { items: AggregateItem[]; onSelect?: (item: AggregateItem) => void }) {
@@ -67,8 +65,6 @@ function List({ items, onSelect }: { items: AggregateItem[]; onSelect?: (item: A
 }
 
 const SUMMARY_FNS: Record<Tab, () => AggregateItem[]> = {
-  dealer: getDealerSummary,
-  shuffle: getShuffleSummary,
   customer: getCustomerSummary,
   year: getYearSummary,
   month: getMonthSummary,
@@ -82,7 +78,7 @@ const RECORDS_FOR_PERIOD: Record<PeriodTab, (label: string) => BaccaratRecord[]>
 };
 
 export function BaccaratSummaryScreen({ refreshKey }: Props) {
-  const [tab, setTab] = useState<Tab>('dealer');
+  const [tab, setTab] = useState<Tab>('year');
   const [selectedCustomer, setSelectedCustomer] = useState<AggregateItem | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<{ kind: PeriodTab; item: AggregateItem } | null>(null);
   const [customerSearch, setCustomerSearch] = useState('');
@@ -170,20 +166,15 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
                     fontSize: 13, color: TEXT, fontFamily: BRUSH, outline: 'none', boxSizing: 'border-box',
                   }}
                 />
-                {CHART_TABS.includes(tab) && <BarChart items={visibleItems} onSelect={setSelectedCustomer} />}
+                <BarChart items={visibleItems} onSelect={setSelectedCustomer} />
                 <List items={visibleItems} onSelect={setSelectedCustomer} />
-              </>
-            ) : PERIOD_TABS.includes(tab as PeriodTab) ? (
-              <>
-                {CHART_TABS.includes(tab) && (
-                  <BarChart items={items} onSelect={it => setSelectedPeriod({ kind: tab as PeriodTab, item: it })} />
-                )}
-                <List items={items} onSelect={it => setSelectedPeriod({ kind: tab as PeriodTab, item: it })} />
               </>
             ) : (
               <>
-                {CHART_TABS.includes(tab) && <BarChart items={items} />}
-                <List items={items} />
+                {tab === 'day' && (
+                  <BarChart items={items} onSelect={it => setSelectedPeriod({ kind: tab, item: it })} />
+                )}
+                <List items={items} onSelect={it => setSelectedPeriod({ kind: tab as PeriodTab, item: it })} />
               </>
             )}
           </>

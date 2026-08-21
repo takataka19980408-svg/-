@@ -176,6 +176,14 @@ export function getCustomerSummaryForRecords(records: BaccaratRecord[]): Aggrega
   return aggregateBy(records, r => r.customerIds ?? []);
 }
 
+export function getDealerSummaryForRecords(records: BaccaratRecord[]): AggregateItem[] {
+  return aggregateBy(records, r => r.dealerIds);
+}
+
+export function getShuffleSummaryForRecords(records: BaccaratRecord[]): AggregateItem[] {
+  return aggregateBy(records, r => [r.shuffle]);
+}
+
 export function getWeekdaySummaryForRecords(records: BaccaratRecord[]): AggregateItem[] {
   return aggregateBy(records, r => [getWeekdayKey(r.date)],
     (a, b) => WEEKDAY_LABELS.indexOf(a.label) - WEEKDAY_LABELS.indexOf(b.label));
