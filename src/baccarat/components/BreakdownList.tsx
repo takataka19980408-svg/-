@@ -11,12 +11,9 @@ interface Props {
   // 店収支の符号のまま（店のプラス＝客の負け＝金色、店のマイナス＝
   // 客の勝ち＝赤）で変えない。
   invert?: boolean;
-  // trueのとき色を表示値（invert後の値）の符号で決める（マイナス＝赤）。
-  // 省略時は従来どおり店収支の符号のまま色を決める。
-  colorByDisplay?: boolean;
 }
 
-export function BreakdownList({ title, items, showChart, invert, colorByDisplay }: Props) {
+export function BreakdownList({ title, items, showChart, invert }: Props) {
   return (
     <>
       <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, fontFamily: BRUSH, margin: '16px 0 8px', letterSpacing: '0.05em' }}>
@@ -26,12 +23,11 @@ export function BreakdownList({ title, items, showChart, invert, colorByDisplay 
         <div style={{ textAlign: 'center', color: SUB, fontFamily: BRUSH, fontSize: 13, padding: '16px 0' }}>データがありません</div>
       ) : (
         <>
-          {showChart && <BarChart items={items} invert={invert} colorByDisplay={colorByDisplay} />}
+          {showChart && <BarChart items={items} invert={invert} />}
           {items.map(it => {
+            const positive = it.storeProfit > 0;
+            const negative = it.storeProfit < 0;
             const displayValue = invert ? -it.storeProfit : it.storeProfit;
-            const signValue = colorByDisplay ? displayValue : it.storeProfit;
-            const positive = signValue > 0;
-            const negative = signValue < 0;
             return (
               <div key={it.label} style={{
                 background: CARD, border: `1px solid ${BDR}`, borderRadius: 10, padding: '12px 14px', marginBottom: 8,

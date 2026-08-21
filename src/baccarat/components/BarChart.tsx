@@ -10,24 +10,20 @@ interface Props {
   // （店がプラス＝店の勝ち＝客の負け＝金色、店がマイナス＝客の勝ち＝赤）
   // なので色のロジック自体はinvertしない。
   invert?: boolean;
-  // trueのとき色を表示値（invert後の値）の符号で決める（マイナス＝赤）。
-  // 省略時は従来どおり店収支の符号のまま色を決める。
-  colorByDisplay?: boolean;
 }
 
-export function BarChart({ items, onSelect, invert, colorByDisplay }: Props) {
+export function BarChart({ items, onSelect, invert }: Props) {
   if (items.length === 0) return null;
   const maxAbs = Math.max(1, ...items.map(it => Math.abs(it.storeProfit)));
 
   return (
     <div style={{ marginBottom: 16 }}>
       {items.map(it => {
-        const displayValue = invert ? -it.storeProfit : it.storeProfit;
-        const signValue = colorByDisplay ? displayValue : it.storeProfit;
-        const positive = signValue > 0;
-        const negative = signValue < 0;
+        const positive = it.storeProfit > 0;
+        const negative = it.storeProfit < 0;
         const color = positive ? GOLD : negative ? RED : BDR;
         const colorB = positive ? GOLDB : negative ? REDB : SUB;
+        const displayValue = invert ? -it.storeProfit : it.storeProfit;
         const widthPct = (Math.abs(it.storeProfit) / maxAbs) * 100;
         return (
           <div
