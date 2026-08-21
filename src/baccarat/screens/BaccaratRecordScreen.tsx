@@ -20,7 +20,9 @@ export function BaccaratRecordScreen({ onSaved, editRecord, onCancel }: Props) {
   const [shuffle, setShuffle] = useState(editRecord?.shuffle ?? '');
   const [customerIds, setCustomerIds] = useState<string[]>(editRecord?.customerIds ?? []);
   const [customerProfits, setCustomerProfits] = useState<Record<string, string>>(() =>
-    Object.fromEntries(Object.entries(editRecord?.customerProfits ?? {}).map(([k, v]) => [k, String(v)])));
+    Object.fromEntries(Object.entries(editRecord?.customerProfits ?? {}).map(([k, v]) => [k, String(Math.abs(v))])));
+  const [customerProfitSigns, setCustomerProfitSigns] = useState<Record<string, '+' | '-'>>(() =>
+    Object.fromEntries(Object.entries(editRecord?.customerProfits ?? {}).map(([k, v]) => [k, v < 0 ? '-' : '+'])));
   const [startAmount, setStartAmount] = useState(editRecord?.startAmount ?? 0);
   const [endAmount, setEndAmount] = useState(editRecord?.endAmount ?? 0);
   const [memo, setMemo] = useState(editRecord?.memo ?? '');
@@ -28,7 +30,11 @@ export function BaccaratRecordScreen({ onSaved, editRecord, onCancel }: Props) {
   const [saving, setSaving] = useState(false);
 
   const storeProfit = endAmount - startAmount;
-  const allocatedSum = customerIds.reduce((s, id) => s + (Number(customerProfits[id]) || 0), 0);
+  const getSignedProfit = (id: string) => {
+    const mag = Number(customerProfits[id]) || 0;
+    return customerProfitSigns[id] === '-' ? -mag : mag;
+  };
+  const allocatedSum = customerIds.reduce((s, id) => s + getSignedProfit(id), 0);
 
   const addStart = useCallback((n: number) => setStartAmount(v => v + n), []);
   const addEnd = useCallback((n: number) => setEndAmount(v => v + n), []);
@@ -40,16 +46,22 @@ export function BaccaratRecordScreen({ onSaved, editRecord, onCancel }: Props) {
     if (dealerIds.length === 0) { setError('ディーラーを選択してください'); return; }
     if (!shuffle) { setError('シャッフル方式を選択してください'); return; }
     if (startAmount === 0 && endAmount === 0) { setError('スタートまたはエンドを入力してください'); return; }
-    if (customerIds.length > 1 && customerIds.some(id => !customerProfits[id]?.trim())) {
-      setError('客ごとの収支配分をすべて入力してください');
-      return;
+    if (customerIds.length > 1) {
+      if (customerIds.some(id => !customerProfits[id]?.trim())) {
+        setError('客ごとの収支配分をすべて入力してください');
+        return;
+      }
+      if (allocatedSum !== storeProfit) {
+        setError(`客ごとの収支配分の合計（${formatYen(allocatedSum)}円）が店収支（${formatYen(storeProfit)}円）と一致していません`);
+        return;
+      }
     }
     setSaving(true);
     const record: BaccaratRecord = {
       id: editRecord?.id ?? generateId(), date, table, dealerIds, shuffle,
       customerIds: customerIds.length ? customerIds : undefined,
       customerProfits: customerIds.length > 1
-        ? Object.fromEntries(customerIds.map(id => [id, Number(customerProfits[id])]))
+        ? Object.fromEntries(customerIds.map(id => [id, getSignedProfit(id)]))
         : undefined,
       startAmount, endAmount, profit: endAmount - startAmount,
       memo: memo.trim() || undefined,
@@ -63,7 +75,8 @@ export function BaccaratRecordScreen({ onSaved, editRecord, onCancel }: Props) {
     setTimeout(() => {
       setSaving(false);
       if (!editRecord) {
-        setTable(''); setDealerIds([]); setShuffle(''); setCustomerIds([]); setCustomerProfits({});
+        setTable(''); setDealerIds([]); setShuffle(''); setCustomerIds([]);
+        setCustomerProfits({}); setCustomerProfitSigns({});
         setStartAmount(0); setEndAmount(0); setMemo('');
       }
       onSaved();
@@ -120,31 +133,48 @@ export function BaccaratRecordScreen({ onSaved, editRecord, onCancel }: Props) {
             <div style={{ fontSize: 11, fontWeight: 700, color: GOLD, letterSpacing: '0.1em', fontFamily: BRUSH, marginBottom: 6 }}>
               客ごとの収支配分（手入力）
             </div>
-            {customerIds.map(id => (
-              <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                <span style={{
-                  fontSize: 13, color: TEXT, fontFamily: BRUSH, flex: 1,
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                }}>
-                  {id}
-                </span>
-                <input
-                  type="number" inputMode="numeric" value={customerProfits[id] ?? ''}
-                  onChange={e => setCustomerProfits(cp => ({ ...cp, [id]: e.target.value }))}
-                  placeholder="0"
-                  style={{
-                    width: 110, padding: '9px 10px', background: '#0E1712', border: `1px solid ${BDR}`,
-                    borderRadius: 6, fontSize: 14, color: TEXT, fontFamily: BRUSH, textAlign: 'right', boxSizing: 'border-box',
-                  }}
-                />
-                <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>円</span>
-              </div>
-            ))}
+            {customerIds.map(id => {
+              const sign = customerProfitSigns[id] ?? '+';
+              return (
+                <div key={id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <span style={{
+                    fontSize: 13, color: TEXT, fontFamily: BRUSH, flex: 1,
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>
+                    {id}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setCustomerProfitSigns(cs => ({ ...cs, [id]: sign === '-' ? '+' : '-' }))}
+                    style={{
+                      width: 34, height: 36, borderRadius: 6, fontSize: 16, fontWeight: 800, fontFamily: BRUSH,
+                      flexShrink: 0, cursor: 'pointer',
+                      background: sign === '-' ? `${REDB}22` : `${GOLD}18`,
+                      color: sign === '-' ? REDB : GOLDB,
+                      border: `1px solid ${sign === '-' ? REDB : GOLD}55`,
+                    }}
+                  >
+                    {sign === '-' ? '－' : '＋'}
+                  </button>
+                  <input
+                    type="number" inputMode="numeric" min="0" value={customerProfits[id] ?? ''}
+                    onChange={e => setCustomerProfits(cp => ({ ...cp, [id]: e.target.value.replace(/-/g, '') }))}
+                    placeholder="0"
+                    style={{
+                      width: 100, padding: '9px 10px', background: '#0E1712', border: `1px solid ${BDR}`,
+                      borderRadius: 6, fontSize: 14, color: TEXT, fontFamily: BRUSH, textAlign: 'right', boxSizing: 'border-box',
+                    }}
+                  />
+                  <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>円</span>
+                </div>
+              );
+            })}
             <div style={{
               fontSize: 11, fontFamily: BRUSH, textAlign: 'right',
               color: allocatedSum === storeProfit ? SUB : REDB,
             }}>
               配分合計 {formatYen(allocatedSum)}円 ／ 店収支 {formatYen(storeProfit)}円
+              {allocatedSum !== storeProfit && '（一致するまで保存できません）'}
             </div>
           </div>
         )}
