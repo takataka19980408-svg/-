@@ -37,8 +37,9 @@ function List({ items, onSelect, invert }: { items: AggregateItem[]; onSelect?: 
   return (
     <>
       {items.map(it => {
-        const positive = invert ? it.storeProfit < 0 : it.storeProfit > 0;
-        const negative = invert ? it.storeProfit > 0 : it.storeProfit < 0;
+        const positive = it.storeProfit > 0;
+        const negative = it.storeProfit < 0;
+        const displayValue = invert ? -it.storeProfit : it.storeProfit;
         return (
           <div
             key={it.label}
@@ -56,7 +57,7 @@ function List({ items, onSelect, invert }: { items: AggregateItem[]; onSelect?: 
                 fontSize: 16, fontWeight: 800, fontFamily: BRUSH,
                 color: positive ? GOLDB : negative ? REDB : SUB,
               }}>
-                {formatYen(it.storeProfit)}円
+                {formatYen(displayValue)}円
               </span>
             </div>
             <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH }}>

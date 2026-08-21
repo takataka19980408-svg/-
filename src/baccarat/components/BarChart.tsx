@@ -5,9 +5,10 @@ import { GOLD, GOLDB, RED, REDB, BDR, TEXT, SUB, BRUSH } from '../theme';
 interface Props {
   items: AggregateItem[];
   onSelect?: (item: AggregateItem) => void;
-  // trueのとき色の意味を反転する（客別: 客が勝った＝店がマイナス＝金色、
-  // 客が負けた＝店がプラス＝赤）。店・ディーラー・シャッフル・期間別は
-  // 通常どおり店収支プラス＝金色のまま。
+  // trueのとき客本人の勝敗として表示する（数値の符号を反転：客が勝った
+  // ＝店収支はマイナスだが表示は客のプラス）。色は店収支の符号のまま
+  // （店がプラス＝店の勝ち＝客の負け＝金色、店がマイナス＝客の勝ち＝赤）
+  // なので色のロジック自体はinvertしない。
   invert?: boolean;
 }
 
@@ -18,10 +19,11 @@ export function BarChart({ items, onSelect, invert }: Props) {
   return (
     <div style={{ marginBottom: 16 }}>
       {items.map(it => {
-        const positive = invert ? it.storeProfit < 0 : it.storeProfit > 0;
-        const negative = invert ? it.storeProfit > 0 : it.storeProfit < 0;
+        const positive = it.storeProfit > 0;
+        const negative = it.storeProfit < 0;
         const color = positive ? GOLD : negative ? RED : BDR;
         const colorB = positive ? GOLDB : negative ? REDB : SUB;
+        const displayValue = invert ? -it.storeProfit : it.storeProfit;
         const widthPct = (Math.abs(it.storeProfit) / maxAbs) * 100;
         return (
           <div
@@ -37,7 +39,7 @@ export function BarChart({ items, onSelect, invert }: Props) {
                 {it.label}
               </span>
               <span style={{ fontSize: 12, fontWeight: 700, color: colorB, fontFamily: BRUSH, flexShrink: 0 }}>
-                {formatYen(it.storeProfit)}円
+                {formatYen(displayValue)}円
               </span>
             </div>
             <div style={{ height: 8, background: BDR, borderRadius: 4, overflow: 'hidden' }}>

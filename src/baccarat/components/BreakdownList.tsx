@@ -7,8 +7,9 @@ interface Props {
   title: string;
   items: AggregateItem[];
   showChart?: boolean;
-  // trueのとき色の意味を反転する（客別内訳: 客が勝った＝店がマイナス＝
-  // 金色、客が負けた＝店がプラス＝赤）。
+  // trueのとき客本人の勝敗として表示する（数値の符号を反転）。色は
+  // 店収支の符号のまま（店のプラス＝客の負け＝金色、店のマイナス＝
+  // 客の勝ち＝赤）で変えない。
   invert?: boolean;
 }
 
@@ -24,8 +25,9 @@ export function BreakdownList({ title, items, showChart, invert }: Props) {
         <>
           {showChart && <BarChart items={items} invert={invert} />}
           {items.map(it => {
-            const positive = invert ? it.storeProfit < 0 : it.storeProfit > 0;
-            const negative = invert ? it.storeProfit > 0 : it.storeProfit < 0;
+            const positive = it.storeProfit > 0;
+            const negative = it.storeProfit < 0;
+            const displayValue = invert ? -it.storeProfit : it.storeProfit;
             return (
               <div key={it.label} style={{
                 background: CARD, border: `1px solid ${BDR}`, borderRadius: 10, padding: '12px 14px', marginBottom: 8,
@@ -36,7 +38,7 @@ export function BreakdownList({ title, items, showChart, invert }: Props) {
                     fontSize: 15, fontWeight: 800, fontFamily: BRUSH,
                     color: positive ? GOLDB : negative ? REDB : SUB,
                   }}>
-                    {formatYen(it.storeProfit)}円
+                    {formatYen(displayValue)}円
                   </span>
                 </div>
                 <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH }}>
