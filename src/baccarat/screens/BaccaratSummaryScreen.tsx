@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import {
   getDealerSummary, getShuffleSummary, getCustomerSummary,
-  getYearSummary, getMonthSummary, getWeekSummary, getWeekdaySummary,
-  getRecordsForYear, getRecordsForMonth, getRecordsForWeek, getRecordsForWeekday,
+  getYearSummary, getMonthSummary, getDaySummary, getWeekdaySummary,
+  getRecordsForYear, getRecordsForMonth, getRecordsForDay, getRecordsForWeekday,
   getOverallSummary, formatYen,
 } from '../storage';
 import type { AggregateItem } from '../storage';
@@ -15,9 +15,9 @@ interface Props {
   refreshKey: number;
 }
 
-type Tab = 'dealer' | 'shuffle' | 'customer' | 'year' | 'month' | 'week' | 'weekday';
-type PeriodTab = 'year' | 'month' | 'week' | 'weekday';
-const PERIOD_TABS: PeriodTab[] = ['year', 'month', 'week', 'weekday'];
+type Tab = 'dealer' | 'shuffle' | 'customer' | 'year' | 'month' | 'day' | 'weekday';
+type PeriodTab = 'year' | 'month' | 'day' | 'weekday';
+const PERIOD_TABS: PeriodTab[] = ['year', 'month', 'day', 'weekday'];
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'dealer',   label: 'ディーラー別' },
@@ -25,7 +25,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'customer', label: '客別' },
   { id: 'year',     label: '年別' },
   { id: 'month',    label: '月別' },
-  { id: 'week',     label: '週別' },
+  { id: 'day',      label: '日別' },
   { id: 'weekday',  label: '曜日別' },
 ];
 
@@ -71,14 +71,14 @@ const SUMMARY_FNS: Record<Tab, () => AggregateItem[]> = {
   customer: getCustomerSummary,
   year: getYearSummary,
   month: getMonthSummary,
-  week: getWeekSummary,
+  day: getDaySummary,
   weekday: getWeekdaySummary,
 };
 
 const RECORDS_FOR_PERIOD: Record<PeriodTab, (label: string) => BaccaratRecord[]> = {
   year: getRecordsForYear,
   month: getRecordsForMonth,
-  week: getRecordsForWeek,
+  day: getRecordsForDay,
   weekday: getRecordsForWeekday,
 };
 

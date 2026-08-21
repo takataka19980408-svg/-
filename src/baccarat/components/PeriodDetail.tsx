@@ -3,7 +3,7 @@ import type { AggregateItem } from '../storage';
 import { getCustomerSummaryForRecords, getWeekdaySummaryForRecords, formatYen } from '../storage';
 import { GOLD, GOLDB, REDB, CARD, BDR, TEXT, SUB, BRUSH } from '../theme';
 
-type PeriodKind = 'year' | 'month' | 'week' | 'weekday';
+type PeriodKind = 'year' | 'month' | 'day' | 'weekday';
 
 interface Props {
   kind: PeriodKind;
@@ -46,7 +46,7 @@ function BreakdownList({ title, items }: { title: string; items: AggregateItem[]
 
 export function PeriodDetail({ kind, period, records, onBack }: Props) {
   const customerItems = getCustomerSummaryForRecords(records);
-  const weekdayItems = kind === 'weekday' ? null : getWeekdaySummaryForRecords(records);
+  const weekdayItems = kind === 'weekday' || kind === 'day' ? null : getWeekdaySummaryForRecords(records);
 
   return (
     <div>

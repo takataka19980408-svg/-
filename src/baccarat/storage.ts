@@ -130,19 +130,8 @@ function getMonthKey(date: string): string {
   return date.slice(0, 7).replace('-', '年') + '月';
 }
 
-function getMondayOf(date: string): Date {
-  const d = new Date(date + 'T00:00:00');
-  const day = d.getDay();
-  const diffToMonday = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + diffToMonday);
-  return d;
-}
-
-function getWeekKey(date: string): string {
-  const monday = getMondayOf(date);
-  const mm = String(monday.getMonth() + 1).padStart(2, '0');
-  const dd = String(monday.getDate()).padStart(2, '0');
-  return `${monday.getFullYear()}/${mm}/${dd}週`;
+function getDayKey(date: string): string {
+  return `${date.slice(0, 4)}年${date.slice(5, 7)}月${date.slice(8, 10)}日`;
 }
 
 const WEEKDAY_LABELS = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];
@@ -159,8 +148,8 @@ export function getMonthSummary(): AggregateItem[] {
   return aggregateBy(getRecords(), r => [getMonthKey(r.date)], (a, b) => a.label.localeCompare(b.label));
 }
 
-export function getWeekSummary(): AggregateItem[] {
-  return aggregateBy(getRecords(), r => [getWeekKey(r.date)], (a, b) => a.label.localeCompare(b.label));
+export function getDaySummary(): AggregateItem[] {
+  return aggregateBy(getRecords(), r => [getDayKey(r.date)], (a, b) => b.label.localeCompare(a.label));
 }
 
 export function getWeekdaySummary(): AggregateItem[] {
@@ -181,9 +170,9 @@ export function getRecordsForMonth(monthKey: string): BaccaratRecord[] {
     .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
 }
 
-export function getRecordsForWeek(weekKey: string): BaccaratRecord[] {
+export function getRecordsForDay(dayKey: string): BaccaratRecord[] {
   return getRecords()
-    .filter(r => getWeekKey(r.date) === weekKey)
+    .filter(r => getDayKey(r.date) === dayKey)
     .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
 }
 
