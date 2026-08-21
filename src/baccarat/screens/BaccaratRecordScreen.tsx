@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
-import { getMasters, addMasterItem, saveRecord, generateId, today, formatYen } from '../storage';
+import { getMasters, addMasterItem, saveRecord, updateRecord, generateId, today, formatYen } from '../storage';
+import type { BaccaratRecord } from '../types';
 import { MasterPicker } from '../components/MasterPicker';
 import { MultiMasterPicker } from '../components/MultiMasterPicker';
 import { AmountField } from '../components/AmountField';
@@ -7,19 +8,22 @@ import { GOLD, GOLDB, RED, REDB, BDR, TEXT, SUB, BRUSH, FELT, FELTD, NAV_H } fro
 
 interface Props {
   onSaved: () => void;
+  editRecord?: BaccaratRecord | null;
+  onCancel?: () => void;
 }
 
-export function BaccaratRecordScreen({ onSaved }: Props) {
+export function BaccaratRecordScreen({ onSaved, editRecord, onCancel }: Props) {
   const [masters, setMasters] = useState(getMasters);
-  const [date, setDate] = useState(today());
-  const [table, setTable] = useState('');
-  const [dealerIds, setDealerIds] = useState<string[]>([]);
-  const [shuffle, setShuffle] = useState('');
-  const [customerIds, setCustomerIds] = useState<string[]>([]);
-  const [customerProfits, setCustomerProfits] = useState<Record<string, string>>({});
-  const [startAmount, setStartAmount] = useState(0);
-  const [endAmount, setEndAmount] = useState(0);
-  const [memo, setMemo] = useState('');
+  const [date, setDate] = useState(editRecord?.date ?? today());
+  const [table, setTable] = useState(editRecord?.table ?? '');
+  const [dealerIds, setDealerIds] = useState<string[]>(editRecord?.dealerIds ?? []);
+  const [shuffle, setShuffle] = useState(editRecord?.shuffle ?? '');
+  const [customerIds, setCustomerIds] = useState<string[]>(editRecord?.customerIds ?? []);
+  const [customerProfits, setCustomerProfits] = useState<Record<string, string>>(() =>
+    Object.fromEntries(Object.entries(editRecord?.customerProfits ?? {}).map(([k, v]) => [k, String(v)])));
+  const [startAmount, setStartAmount] = useState(editRecord?.startAmount ?? 0);
+  const [endAmount, setEndAmount] = useState(editRecord?.endAmount ?? 0);
+  const [memo, setMemo] = useState(editRecord?.memo ?? '');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -41,20 +45,27 @@ export function BaccaratRecordScreen({ onSaved }: Props) {
       return;
     }
     setSaving(true);
-    saveRecord({
-      id: generateId(), date, table, dealerIds, shuffle,
+    const record: BaccaratRecord = {
+      id: editRecord?.id ?? generateId(), date, table, dealerIds, shuffle,
       customerIds: customerIds.length ? customerIds : undefined,
       customerProfits: customerIds.length > 1
         ? Object.fromEntries(customerIds.map(id => [id, Number(customerProfits[id])]))
         : undefined,
       startAmount, endAmount, profit: endAmount - startAmount,
       memo: memo.trim() || undefined,
-      createdAt: new Date().toISOString(),
-    });
+      createdAt: editRecord?.createdAt ?? new Date().toISOString(),
+    };
+    if (editRecord) {
+      updateRecord(record);
+    } else {
+      saveRecord(record);
+    }
     setTimeout(() => {
       setSaving(false);
-      setTable(''); setDealerIds([]); setShuffle(''); setCustomerIds([]); setCustomerProfits({});
-      setStartAmount(0); setEndAmount(0); setMemo('');
+      if (!editRecord) {
+        setTable(''); setDealerIds([]); setShuffle(''); setCustomerIds([]); setCustomerProfits({});
+        setStartAmount(0); setEndAmount(0); setMemo('');
+      }
       onSaved();
     }, 250);
   };
@@ -65,9 +76,19 @@ export function BaccaratRecordScreen({ onSaved }: Props) {
         <div style={{ height: 4, background: `linear-gradient(90deg,${FELT},${GOLD} 50%,${FELT})` }} />
         <div style={{ padding: '14px 20px 12px', textAlign: 'center' }}>
           <span style={{ fontSize: 17, fontWeight: 800, letterSpacing: '0.2em', color: GOLD, fontFamily: BRUSH }}>
-            バカラ卓 記録入力
+            {editRecord ? 'バカラ卓 記録編集' : 'バカラ卓 記録入力'}
           </span>
         </div>
+        {editRecord && onCancel && (
+          <div style={{ textAlign: 'center', paddingBottom: 10 }}>
+            <button onClick={onCancel} style={{
+              fontSize: 12, fontWeight: 700, color: SUB, fontFamily: BRUSH,
+              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+            }}>
+              ← 編集をキャンセルして履歴に戻る
+            </button>
+          </div>
+        )}
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: `16px 16px ${110 + NAV_H}px` }}>
@@ -184,7 +205,7 @@ export function BaccaratRecordScreen({ onSaved }: Props) {
             border: `1px solid ${GOLD}44`, pointerEvents: 'all', fontFamily: BRUSH, cursor: 'pointer',
           }}
         >
-          {saving ? '記録中...' : '◆ 記録する ◆'}
+          {saving ? (editRecord ? '更新中...' : '記録中...') : (editRecord ? '◆ 更新する ◆' : '◆ 記録する ◆')}
         </button>
       </div>
     </div>

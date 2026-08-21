@@ -38,6 +38,14 @@ export function updateRecordMemo(id: string, memo: string): void {
   localStorage.setItem(RECORDS_KEY, JSON.stringify(records));
 }
 
+export function updateRecord(record: BaccaratRecord): void {
+  const records = getRecords();
+  const idx = records.findIndex(r => r.id === record.id);
+  if (idx === -1) return;
+  records[idx] = record;
+  localStorage.setItem(RECORDS_KEY, JSON.stringify(records));
+}
+
 // ── Masters ──────────────────────────────────────────────────
 export function getMasters(): BaccaratMasters {
   try {

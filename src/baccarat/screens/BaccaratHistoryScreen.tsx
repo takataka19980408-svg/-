@@ -6,6 +6,7 @@ import { GOLD, GOLDB, REDB, CARD, BDR, SUB, BRUSH, FELTD, NAV_H } from '../theme
 interface Props {
   refreshKey: number;
   onDataChange: () => void;
+  onEdit: (record: BaccaratRecord) => void;
 }
 
 interface DayGroup {
@@ -38,7 +39,7 @@ function formatTime(createdAt: string): string {
 
 const DAY_PAGE_SIZE = 14;
 
-export function BaccaratHistoryScreen({ refreshKey, onDataChange }: Props) {
+export function BaccaratHistoryScreen({ refreshKey, onDataChange, onEdit }: Props) {
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [visibleDayCount, setVisibleDayCount] = useState(DAY_PAGE_SIZE);
   const allGroups = groupByDay(getRecords());
@@ -123,9 +124,14 @@ export function BaccaratHistoryScreen({ refreshKey, onDataChange }: Props) {
                         }}>取消</button>
                       </div>
                     ) : (
-                      <button onClick={() => setConfirmId(r.id)} style={{
-                        fontSize: 11, color: SUB, background: 'none', border: 'none', fontFamily: BRUSH, cursor: 'pointer',
-                      }}>削除</button>
+                      <div style={{ display: 'flex', gap: 12 }}>
+                        <button onClick={() => onEdit(r)} style={{
+                          fontSize: 11, color: GOLD, background: 'none', border: 'none', fontFamily: BRUSH, cursor: 'pointer',
+                        }}>編集</button>
+                        <button onClick={() => setConfirmId(r.id)} style={{
+                          fontSize: 11, color: SUB, background: 'none', border: 'none', fontFamily: BRUSH, cursor: 'pointer',
+                        }}>削除</button>
+                      </div>
                     )}
                   </div>
                 </div>
