@@ -7,13 +7,14 @@ interface Props {
   value: string;
   onChange: (v: string) => void;
   onAdd: (v: string) => void;
-  placeholder?: string;
   optional?: boolean;
 }
 
-export function MasterPicker({ label, options, value, onChange, onAdd, placeholder, optional }: Props) {
+export function MasterPicker({ label, options, value, onChange, onAdd, optional }: Props) {
   const [showNew, setShowNew] = useState(options.length === 0);
   const [newVal, setNewVal] = useState('');
+
+  const select = (o: string) => onChange(value === o ? '' : o);
 
   const commitNew = () => {
     const v = newVal.trim();
@@ -29,6 +30,7 @@ export function MasterPicker({ label, options, value, onChange, onAdd, placehold
       <div style={{ fontSize: 11, fontWeight: 700, color: GOLD, letterSpacing: '0.1em', fontFamily: BRUSH, marginBottom: 6 }}>
         {label}{optional && <span style={{ color: SUB, fontWeight: 400 }}>（任意）</span>}
       </div>
+
       {options.length === 0 ? (
         <div style={{
           padding: '12px 14px', background: CARD, border: `1px solid ${BDR}`, borderRadius: 6,
@@ -37,22 +39,26 @@ export function MasterPicker({ label, options, value, onChange, onAdd, placehold
           まだ登録がありません。下の「＋」から追加してください
         </div>
       ) : (
-        <select
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          style={{
-            width: '100%', padding: '12px 10px', background: CARD,
-            border: `1px solid ${BDR}`, borderRadius: 6,
-            fontSize: 15, fontWeight: 600, color: value ? TEXT : SUB,
-            fontFamily: BRUSH, appearance: 'none', WebkitAppearance: 'none', colorScheme: 'dark',
-          }}
-        >
-          <option value="" style={{ background: '#0a0f0c' }}>{placeholder ?? '選択してください'}</option>
-          {options.map(o => (
-            <option key={o} value={o} style={{ background: '#0a0f0c' }}>{o}</option>
-          ))}
-        </select>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {options.map(o => {
+            const selected = value === o;
+            return (
+              <button
+                key={o}
+                onClick={() => select(o)}
+                style={{
+                  padding: '8px 14px', borderRadius: 16, fontSize: 13, fontWeight: 700, fontFamily: BRUSH,
+                  background: selected ? GOLD : CARD, border: `1px solid ${selected ? GOLD : BDR}`,
+                  color: selected ? '#0A0900' : TEXT, cursor: 'pointer',
+                }}
+              >
+                {selected ? '✓ ' : ''}{o}
+              </button>
+            );
+          })}
+        </div>
       )}
+
       <button
         onClick={() => setShowNew(v => !v)}
         style={{
@@ -62,6 +68,7 @@ export function MasterPicker({ label, options, value, onChange, onAdd, placehold
       >
         ＋ 新しい{label}を追加
       </button>
+
       {showNew && (
         <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
           <input

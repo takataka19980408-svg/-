@@ -4,7 +4,7 @@ import type { BaccaratRecord } from '../types';
 import { MasterPicker } from '../components/MasterPicker';
 import { MultiMasterPicker } from '../components/MultiMasterPicker';
 import { AmountField } from '../components/AmountField';
-import { GOLD, GOLDB, RED, REDB, BDR, TEXT, SUB, BRUSH, FELT, FELTD, NAV_H } from '../theme';
+import { GOLD, GOLDB, RED, REDB, BDR, TEXT, SUB, BRUSH, FELT, FELTD, NAV_SAFE_BOTTOM } from '../theme';
 
 interface Props {
   onSaved: () => void;
@@ -108,7 +108,7 @@ export function BaccaratRecordScreen({ onSaved, editRecord, onCancel }: Props) {
         )}
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: `16px 16px ${110 + NAV_H}px` }}>
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: `16px 16px calc(110px + ${NAV_SAFE_BOTTOM})` }}>
         <div style={{ marginBottom: 16 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: GOLD, letterSpacing: '0.1em', fontFamily: BRUSH, marginBottom: 6 }}>
             日付
@@ -224,7 +224,7 @@ export function BaccaratRecordScreen({ onSaved, editRecord, onCancel }: Props) {
       </div>
 
       <div style={{
-        position: 'fixed', bottom: NAV_H, left: 0, right: 0, margin: '0 auto',
+        position: 'fixed', bottom: NAV_SAFE_BOTTOM, left: 0, right: 0, margin: '0 auto',
         width: '100%', maxWidth: 480, padding: '14px 16px 14px',
         background: 'linear-gradient(transparent,#07100C 40%)', pointerEvents: 'none',
       }}>

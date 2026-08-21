@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { MasterKind } from '../types';
 import { MASTER_LABELS } from '../types';
 import { getMasters, addMasterItem, removeMasterItem, getRecords, clearRecords } from '../storage';
-import { GOLD, GOLDB, REDB, CARD, BDR, TEXT, SUB, BRUSH, FELTD, NAV_H } from '../theme';
+import { GOLD, GOLDB, REDB, CARD, BDR, TEXT, SUB, BRUSH, FELTD, NAV_H, NAV_SAFE_BOTTOM } from '../theme';
 
 interface Props {
   onDataChange: () => void;
@@ -226,7 +226,7 @@ export function BaccaratMastersScreen({ onDataChange }: Props) {
 
       {toast && (
         <div style={{
-          position: 'fixed', bottom: NAV_H + 16, left: '50%', transform: 'translateX(-50%)',
+          position: 'fixed', bottom: `calc(${NAV_SAFE_BOTTOM} + 16px)`, left: '50%', transform: 'translateX(-50%)',
           background: 'rgba(14,23,18,0.96)', border: `1px solid ${GOLD}44`, borderRadius: 8, padding: '10px 20px',
           fontSize: 13, fontFamily: BRUSH, color: GOLDB, zIndex: 500, whiteSpace: 'nowrap',
         }}>
