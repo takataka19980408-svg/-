@@ -213,6 +213,30 @@ export function getDayKey(date: string): string {
   return `${date.slice(0, 4)}年${date.slice(5, 7)}月${date.slice(8, 10)}日`;
 }
 
+// 各種の来店履歴・対応履歴一覧を日別に区切って表示するための共通処理。
+// 日付降順（直近が先頭）、各日の中はcreatedAt降順で並べる。
+export interface DayGroup {
+  date: string;
+  label: string;
+  records: BaccaratRecord[];
+}
+
+export function groupRecordsByDay(records: BaccaratRecord[]): DayGroup[] {
+  const map = new Map<string, BaccaratRecord[]>();
+  for (const r of records) {
+    const list = map.get(r.date) ?? [];
+    list.push(r);
+    map.set(r.date, list);
+  }
+  return Array.from(map.entries())
+    .sort((a, b) => b[0].localeCompare(a[0]))
+    .map(([date, recs]) => ({
+      date,
+      label: getDayKey(date),
+      records: recs.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    }));
+}
+
 const WEEKDAY_LABELS = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];
 
 function getWeekdayKey(date: string): string {
@@ -317,6 +341,10 @@ export function getThisMonthSummary(): MonthSummary {
     monthLabel, count: records.length, startSum, endSum, storeProfit,
     holdRate: startSum > 0 ? storeProfit / startSum : null,
   };
+}
+
+export function formatTime(createdAt: string): string {
+  return new Date(createdAt).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
 }
 
 export function formatYen(n: number): string {

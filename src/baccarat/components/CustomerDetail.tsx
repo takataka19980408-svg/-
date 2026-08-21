@@ -1,9 +1,11 @@
 import type { AggregateItem } from '../storage';
 import {
   getRecordsForCustomer, getDealerSummaryForRecords, getShuffleSummaryForRecords,
-  getCustomerSummaryForRecords, getCustomerProfitForRecord, formatYen,
+  getCustomerSummaryForRecords, getCustomerProfitForRecord,
+  groupRecordsByDay, formatTime, formatYen,
 } from '../storage';
 import { BarChart } from './BarChart';
+import { DayGroupHeader } from './DayGroupHeader';
 import { GOLD, GOLDB, REDB, CARD, BDR, TEXT, SUB, BRUSH } from '../theme';
 
 interface Props {
@@ -33,6 +35,7 @@ export function CustomerDetail({ customer, onBack }: Props) {
   const summary = getCustomerSummaryForRecords(records).find(it => it.label === customer.label) ?? customer;
   const dealerItems = getDealerSummaryForRecords(records);
   const shuffleItems = getShuffleSummaryForRecords(records);
+  const dayGroups = groupRecordsByDay(records);
 
   return (
     <div>
@@ -80,31 +83,41 @@ export function CustomerDetail({ customer, onBack }: Props) {
       <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, fontFamily: BRUSH, marginBottom: 8, letterSpacing: '0.05em' }}>
         来店履歴（{records.length}件）
       </div>
-      {records.map(r => {
-        const shared = (r.customerIds ?? []).length > 1;
-        const profit = getCustomerProfitForRecord(r, customer.label);
+      {dayGroups.map((group, gi) => {
+        const dayAmount = group.records.reduce((s, r) => s + getCustomerProfitForRecord(r, customer.label), 0);
         return (
-          <div key={r.id} style={{
-            background: CARD, border: `1px solid ${BDR}`, borderRadius: 10, padding: '12px 14px', marginBottom: 8,
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-              <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>{r.date}{r.table ? ` ${r.table}` : ''}</span>
-              <span style={{
-                fontSize: 14, fontWeight: 800, fontFamily: BRUSH,
-                color: profit > 0 ? GOLDB : profit < 0 ? REDB : SUB,
-              }}>
-                {formatYen(-profit)}円{shared && <span style={{ fontSize: 10, fontWeight: 400, color: SUB }}> （配分）</span>}
-              </span>
-            </div>
-            <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH }}>
-              {r.dealerIds.join('、')} / {r.shuffle}
-              {shared && ` / 他の客: ${(r.customerIds ?? []).filter(id => id !== customer.label).join('、')}`}
-            </div>
-            <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH }}>
-              スタート {r.startAmount.toLocaleString()} / エンド {r.endAmount.toLocaleString()}
-              {shared && `（店収支 ${formatYen(r.endAmount - r.startAmount)}円）`}
-            </div>
-            {r.memo && <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH, marginTop: 4 }}>{r.memo}</div>}
+          <div key={group.date} style={{ marginTop: gi === 0 ? 0 : 20 }}>
+            <DayGroupHeader label={group.label} count={group.records.length} amount={dayAmount} invert />
+            {group.records.map(r => {
+              const shared = (r.customerIds ?? []).length > 1;
+              const profit = getCustomerProfitForRecord(r, customer.label);
+              return (
+                <div key={r.id} style={{
+                  background: CARD, border: `1px solid ${BDR}`, borderRadius: 10, padding: '12px 14px', marginBottom: 8,
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                    <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>
+                      {formatTime(r.createdAt)}{r.table ? ` ・ ${r.table}` : ''}
+                    </span>
+                    <span style={{
+                      fontSize: 14, fontWeight: 800, fontFamily: BRUSH,
+                      color: profit > 0 ? GOLDB : profit < 0 ? REDB : SUB,
+                    }}>
+                      {formatYen(-profit)}円{shared && <span style={{ fontSize: 10, fontWeight: 400, color: SUB }}> （配分）</span>}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH }}>
+                    {r.dealerIds.join('、')} / {r.shuffle}
+                    {shared && ` / 他の客: ${(r.customerIds ?? []).filter(id => id !== customer.label).join('、')}`}
+                  </div>
+                  <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH }}>
+                    スタート {r.startAmount.toLocaleString()} / エンド {r.endAmount.toLocaleString()}
+                    {shared && `（店収支 ${formatYen(r.endAmount - r.startAmount)}円）`}
+                  </div>
+                  {r.memo && <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH, marginTop: 4 }}>{r.memo}</div>}
+                </div>
+              );
+            })}
           </div>
         );
       })}

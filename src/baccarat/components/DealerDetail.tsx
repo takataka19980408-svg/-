@@ -1,9 +1,10 @@
 import type { AggregateItem } from '../storage';
 import {
   getRecordsForDealer, getCustomerSummaryForRecords, getShuffleSummaryForRecords,
-  getDealerSummaryForRecords, formatYen,
+  getDealerSummaryForRecords, groupRecordsByDay, formatTime, formatYen,
 } from '../storage';
 import { BreakdownList } from './BreakdownList';
+import { DayGroupHeader } from './DayGroupHeader';
 import { GOLD, GOLDB, REDB, CARD, BDR, TEXT, SUB, BRUSH } from '../theme';
 
 interface Props {
@@ -18,6 +19,7 @@ export function DealerDetail({ dealer, onBack }: Props) {
   const summary = getDealerSummaryForRecords(records).find(it => it.label === dealer.label) ?? dealer;
   const customerItems = getCustomerSummaryForRecords(records);
   const shuffleItems = getShuffleSummaryForRecords(records);
+  const dayGroups = groupRecordsByDay(records);
 
   return (
     <div>
@@ -65,29 +67,39 @@ export function DealerDetail({ dealer, onBack }: Props) {
       <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, fontFamily: BRUSH, marginBottom: 8, letterSpacing: '0.05em' }}>
         対応履歴（{records.length}件）
       </div>
-      {records.map(r => {
-        const profit = r.endAmount - r.startAmount;
+      {dayGroups.map((group, gi) => {
+        const dayProfit = group.records.reduce((s, r) => s + (r.endAmount - r.startAmount), 0);
         return (
-          <div key={r.id} style={{
-            background: CARD, border: `1px solid ${BDR}`, borderRadius: 10, padding: '12px 14px', marginBottom: 8,
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-              <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>{r.date}{r.table ? ` ${r.table}` : ''}</span>
-              <span style={{
-                fontSize: 14, fontWeight: 800, fontFamily: BRUSH,
-                color: profit > 0 ? GOLDB : profit < 0 ? REDB : SUB,
-              }}>
-                {formatYen(profit)}円
-              </span>
-            </div>
-            <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH }}>
-              {r.shuffle}
-              {r.customerIds && r.customerIds.length > 0 && ` / ${r.customerIds.join('、')}`}
-            </div>
-            <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH }}>
-              スタート {r.startAmount.toLocaleString()} / エンド {r.endAmount.toLocaleString()}
-            </div>
-            {r.memo && <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH, marginTop: 4 }}>{r.memo}</div>}
+          <div key={group.date} style={{ marginTop: gi === 0 ? 0 : 20 }}>
+            <DayGroupHeader label={group.label} count={group.records.length} amount={dayProfit} />
+            {group.records.map(r => {
+              const profit = r.endAmount - r.startAmount;
+              return (
+                <div key={r.id} style={{
+                  background: CARD, border: `1px solid ${BDR}`, borderRadius: 10, padding: '12px 14px', marginBottom: 8,
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                    <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>
+                      {formatTime(r.createdAt)}{r.table ? ` ・ ${r.table}` : ''}
+                    </span>
+                    <span style={{
+                      fontSize: 14, fontWeight: 800, fontFamily: BRUSH,
+                      color: profit > 0 ? GOLDB : profit < 0 ? REDB : SUB,
+                    }}>
+                      {formatYen(profit)}円
+                    </span>
+                  </div>
+                  <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH }}>
+                    {r.shuffle}
+                    {r.customerIds && r.customerIds.length > 0 && ` / ${r.customerIds.join('、')}`}
+                  </div>
+                  <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH }}>
+                    スタート {r.startAmount.toLocaleString()} / エンド {r.endAmount.toLocaleString()}
+                  </div>
+                  {r.memo && <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH, marginTop: 4 }}>{r.memo}</div>}
+                </div>
+              );
+            })}
           </div>
         );
       })}

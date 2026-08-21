@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { getRecords, deleteRecord, formatYen, getDayKey } from '../storage';
+import { getRecords, deleteRecord, formatYen, formatTime, groupRecordsByDay } from '../storage';
 import type { BaccaratRecord } from '../types';
+import { DayGroupHeader } from '../components/DayGroupHeader';
 import { GOLD, GOLDB, REDB, CARD, BDR, SUB, BRUSH, FELTD, NAV_H } from '../theme';
 
 interface Props {
@@ -9,40 +10,12 @@ interface Props {
   onEdit: (record: BaccaratRecord) => void;
 }
 
-interface DayGroup {
-  date: string;
-  label: string;
-  storeProfit: number;
-  records: BaccaratRecord[];
-}
-
-function groupByDay(records: BaccaratRecord[]): DayGroup[] {
-  const map = new Map<string, BaccaratRecord[]>();
-  for (const r of records) {
-    const list = map.get(r.date) ?? [];
-    list.push(r);
-    map.set(r.date, list);
-  }
-  return Array.from(map.entries())
-    .sort((a, b) => b[0].localeCompare(a[0]))
-    .map(([date, recs]) => ({
-      date,
-      label: getDayKey(date),
-      storeProfit: recs.reduce((sum, r) => sum + (r.endAmount - r.startAmount), 0),
-      records: recs.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
-    }));
-}
-
-function formatTime(createdAt: string): string {
-  return new Date(createdAt).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-}
-
 const DAY_PAGE_SIZE = 14;
 
 export function BaccaratHistoryScreen({ refreshKey, onDataChange, onEdit }: Props) {
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [visibleDayCount, setVisibleDayCount] = useState(DAY_PAGE_SIZE);
-  const allGroups = groupByDay(getRecords());
+  const allGroups = groupRecordsByDay(getRecords());
   const groups = allGroups.slice(0, visibleDayCount);
   void refreshKey;
 
@@ -66,22 +39,11 @@ export function BaccaratHistoryScreen({ refreshKey, onDataChange, onEdit }: Prop
             まだ記録がありません
           </div>
         )}
-        {groups.map((group, gi) => (
+        {groups.map((group, gi) => {
+          const dayProfit = group.records.reduce((sum, r) => sum + (r.endAmount - r.startAmount), 0);
+          return (
           <div key={group.date} style={{ marginTop: gi === 0 ? 0 : 20 }}>
-            <div style={{
-              display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
-              marginBottom: 8, paddingBottom: 6, borderBottom: `1px solid ${BDR}`,
-            }}>
-              <span style={{ fontSize: 13, fontWeight: 800, color: GOLD, fontFamily: BRUSH, letterSpacing: '0.05em' }}>
-                {group.label}（{group.records.length}件）
-              </span>
-              <span style={{
-                fontSize: 15, fontWeight: 800, fontFamily: BRUSH,
-                color: group.storeProfit > 0 ? GOLDB : group.storeProfit < 0 ? REDB : SUB,
-              }}>
-                {formatYen(group.storeProfit)}円
-              </span>
-            </div>
+            <DayGroupHeader label={group.label} count={group.records.length} amount={dayProfit} />
 
             {group.records.map(r => {
               const storeProfit = r.endAmount - r.startAmount;
@@ -138,7 +100,8 @@ export function BaccaratHistoryScreen({ refreshKey, onDataChange, onEdit }: Prop
               );
             })}
           </div>
-        ))}
+          );
+        })}
         {allGroups.length > visibleDayCount && (
           <button
             onClick={() => setVisibleDayCount(v => v + DAY_PAGE_SIZE)}
