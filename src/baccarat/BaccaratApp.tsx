@@ -7,7 +7,7 @@ import { BaccaratSummaryScreen } from './screens/BaccaratSummaryScreen';
 import { BaccaratMastersScreen } from './screens/BaccaratMastersScreen';
 
 export function BaccaratApp() {
-  const [screen, setScreen] = useState<BaccaratScreen>('record');
+  const [screen, setScreen] = useState<BaccaratScreen>('summary');
   const [refreshKey, setRefreshKey] = useState(0);
   const [editingRecord, setEditingRecord] = useState<BaccaratRecord | null>(null);
 

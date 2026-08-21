@@ -86,7 +86,7 @@ const RECORDS_FOR_PERIOD: Record<PeriodTab, (label: string) => BaccaratRecord[]>
 };
 
 export function BaccaratSummaryScreen({ refreshKey }: Props) {
-  const [tab, setTab] = useState<Tab>('year');
+  const [tab, setTab] = useState<Tab>('customer');
   const [selectedCustomer, setSelectedCustomer] = useState<AggregateItem | null>(null);
   const [selectedDealer, setSelectedDealer] = useState<AggregateItem | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<{ kind: PeriodTab; item: AggregateItem } | null>(null);
