@@ -130,7 +130,7 @@ function getMonthKey(date: string): string {
   return date.slice(0, 7).replace('-', '年') + '月';
 }
 
-function getDayKey(date: string): string {
+export function getDayKey(date: string): string {
   return `${date.slice(0, 4)}年${date.slice(5, 7)}月${date.slice(8, 10)}日`;
 }
 
