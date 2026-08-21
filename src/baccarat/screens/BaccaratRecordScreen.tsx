@@ -21,8 +21,10 @@ export function BaccaratRecordScreen({ onSaved, editRecord, onCancel }: Props) {
   const [customerIds, setCustomerIds] = useState<string[]>(editRecord?.customerIds ?? []);
   const [customerProfits, setCustomerProfits] = useState<Record<string, string>>(() =>
     Object.fromEntries(Object.entries(editRecord?.customerProfits ?? {}).map(([k, v]) => [k, String(Math.abs(v))])));
+  // customerProfitsは店収支の符号で保存されるため、客の勝敗（＋＝客が勝った）に
+  // 直すには符号を反転させて復元する。
   const [customerProfitSigns, setCustomerProfitSigns] = useState<Record<string, '+' | '-'>>(() =>
-    Object.fromEntries(Object.entries(editRecord?.customerProfits ?? {}).map(([k, v]) => [k, v < 0 ? '-' : '+'])));
+    Object.fromEntries(Object.entries(editRecord?.customerProfits ?? {}).map(([k, v]) => [k, v < 0 ? '+' : '-'])));
   const [startAmount, setStartAmount] = useState(editRecord?.startAmount ?? 0);
   const [endAmount, setEndAmount] = useState(editRecord?.endAmount ?? 0);
   const [memo, setMemo] = useState(editRecord?.memo ?? '');
@@ -30,11 +32,13 @@ export function BaccaratRecordScreen({ onSaved, editRecord, onCancel }: Props) {
   const [saving, setSaving] = useState(false);
 
   const storeProfit = endAmount - startAmount;
-  const getSignedProfit = (id: string) => {
+  // 客の勝敗として入力（＋＝客が勝った）。店収支として保存する際は符号を反転する。
+  const getCustomerOwnAmount = (id: string) => {
     const mag = Number(customerProfits[id]) || 0;
     return customerProfitSigns[id] === '-' ? -mag : mag;
   };
-  const allocatedSum = customerIds.reduce((s, id) => s + getSignedProfit(id), 0);
+  const allocatedSum = customerIds.reduce((s, id) => s + getCustomerOwnAmount(id), 0);
+  const requiredSum = -storeProfit;
 
   const addStart = useCallback((n: number) => setStartAmount(v => v + n), []);
   const addEnd = useCallback((n: number) => setEndAmount(v => v + n), []);
@@ -51,8 +55,8 @@ export function BaccaratRecordScreen({ onSaved, editRecord, onCancel }: Props) {
         setError('客ごとの収支配分をすべて入力してください');
         return;
       }
-      if (allocatedSum !== storeProfit) {
-        setError(`客ごとの収支配分の合計（${formatYen(allocatedSum)}円）が店収支（${formatYen(storeProfit)}円）と一致していません`);
+      if (allocatedSum !== requiredSum) {
+        setError(`客の勝敗の合計（${formatYen(allocatedSum)}円）が店収支と符号反対の額（${formatYen(requiredSum)}円）と一致していません`);
         return;
       }
     }
@@ -61,7 +65,7 @@ export function BaccaratRecordScreen({ onSaved, editRecord, onCancel }: Props) {
       id: editRecord?.id ?? generateId(), date, table, dealerIds, shuffle,
       customerIds: customerIds.length ? customerIds : undefined,
       customerProfits: customerIds.length > 1
-        ? Object.fromEntries(customerIds.map(id => [id, getSignedProfit(id)]))
+        ? Object.fromEntries(customerIds.map(id => [id, -getCustomerOwnAmount(id)]))
         : undefined,
       startAmount, endAmount, profit: endAmount - startAmount,
       memo: memo.trim() || undefined,
@@ -131,7 +135,7 @@ export function BaccaratRecordScreen({ onSaved, editRecord, onCancel }: Props) {
         {customerIds.length > 1 && (
           <div style={{ marginBottom: 16 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: GOLD, letterSpacing: '0.1em', fontFamily: BRUSH, marginBottom: 6 }}>
-              客ごとの収支配分（手入力）
+              客ごとの勝敗（手入力・＋＝客の勝ち／－＝客の負け）
             </div>
             {customerIds.map(id => {
               const sign = customerProfitSigns[id] ?? '+';
@@ -171,10 +175,10 @@ export function BaccaratRecordScreen({ onSaved, editRecord, onCancel }: Props) {
             })}
             <div style={{
               fontSize: 11, fontFamily: BRUSH, textAlign: 'right',
-              color: allocatedSum === storeProfit ? SUB : REDB,
+              color: allocatedSum === requiredSum ? SUB : REDB,
             }}>
-              配分合計 {formatYen(allocatedSum)}円 ／ 店収支 {formatYen(storeProfit)}円
-              {allocatedSum !== storeProfit && '（一致するまで保存できません）'}
+              客の勝敗合計 {formatYen(allocatedSum)}円 ／ 必要な額 {formatYen(requiredSum)}円（店収支の符号反対）
+              {allocatedSum !== requiredSum && '（一致するまで保存できません）'}
             </div>
           </div>
         )}

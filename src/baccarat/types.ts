@@ -5,7 +5,8 @@ export interface BaccaratRecord {
   dealerIds: string[];
   shuffle: string;
   customerIds?: string[];
-  // 客が2人以上の場合のみ使用。客ID→その客への収支配分（手入力、円）。
+  // 客が2人以上の場合のみ使用。客ID→その客の対応における店収支への寄与
+  // （店から見た符号。客が勝った分はここでは負の値になる）。
   // 客が1人以下の場合は未使用（店収支がそのままその客の収支になる）。
   customerProfits?: Record<string, number>;
   startAmount: number;
