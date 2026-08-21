@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import {
-  getCustomerSummary,
+  getCustomerSummary, getDealerSummary,
   getYearSummary, getMonthSummary, getDaySummary,
   getRecordsForYear, getRecordsForMonth, getRecordsForDay,
   getOverallSummary, formatYen,
@@ -8,6 +8,7 @@ import {
 import type { AggregateItem } from '../storage';
 import type { BaccaratRecord } from '../types';
 import { CustomerDetail } from '../components/CustomerDetail';
+import { DealerDetail } from '../components/DealerDetail';
 import { PeriodDetail } from '../components/PeriodDetail';
 import { BarChart } from '../components/BarChart';
 import { GOLD, GOLDB, REDB, CARD, BDR, TEXT, SUB, BRUSH, FELTD, NAV_H } from '../theme';
@@ -17,15 +18,16 @@ interface Props {
 }
 
 type PeriodTab = 'year' | 'month' | 'day';
-type Tab = PeriodTab | 'customer';
+type Tab = PeriodTab | 'customer' | 'dealer';
 
-// ディーラー別・シャッフル別の収支は独立タブではなく、年別/月別/日別/客別の
-// 詳細画面内の内訳として表示する（ChartBreakdown in PeriodDetail/CustomerDetail）。
+// シャッフル別の収支は独立タブではなく、年別/月別/日別/客別/ディーラー別の
+// 詳細画面内の内訳として表示する（ChartBreakdown in PeriodDetail/CustomerDetail/DealerDetail）。
 const TABS: { id: Tab; label: string }[] = [
   { id: 'year',     label: '年別' },
   { id: 'month',    label: '月別' },
   { id: 'day',      label: '日別' },
   { id: 'customer', label: '客別' },
+  { id: 'dealer',   label: 'ディーラー別' },
 ];
 
 function List({ items, onSelect }: { items: AggregateItem[]; onSelect?: (item: AggregateItem) => void }) {
@@ -66,6 +68,7 @@ function List({ items, onSelect }: { items: AggregateItem[]; onSelect?: (item: A
 
 const SUMMARY_FNS: Record<Tab, () => AggregateItem[]> = {
   customer: getCustomerSummary,
+  dealer: getDealerSummary,
   year: getYearSummary,
   month: getMonthSummary,
   day: getDaySummary,
@@ -80,6 +83,7 @@ const RECORDS_FOR_PERIOD: Record<PeriodTab, (label: string) => BaccaratRecord[]>
 export function BaccaratSummaryScreen({ refreshKey }: Props) {
   const [tab, setTab] = useState<Tab>('year');
   const [selectedCustomer, setSelectedCustomer] = useState<AggregateItem | null>(null);
+  const [selectedDealer, setSelectedDealer] = useState<AggregateItem | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<{ kind: PeriodTab; item: AggregateItem } | null>(null);
   const [customerSearch, setCustomerSearch] = useState('');
   void refreshKey;
@@ -101,6 +105,8 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '16px', paddingBottom: NAV_H + 16 }}>
         {selectedCustomer ? (
           <CustomerDetail customer={selectedCustomer} onBack={() => setSelectedCustomer(null)} />
+        ) : selectedDealer ? (
+          <DealerDetail dealer={selectedDealer} onBack={() => setSelectedDealer(null)} />
         ) : selectedPeriod ? (
           <PeriodDetail
             kind={selectedPeriod.kind}
@@ -136,7 +142,7 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6, marginBottom: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6, marginBottom: 14 }}>
               {TABS.map(t => (
                 <button
                   key={t.id}
@@ -168,6 +174,11 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
                 />
                 <BarChart items={visibleItems} onSelect={setSelectedCustomer} />
                 <List items={visibleItems} onSelect={setSelectedCustomer} />
+              </>
+            ) : tab === 'dealer' ? (
+              <>
+                <BarChart items={items} onSelect={setSelectedDealer} />
+                <List items={items} onSelect={setSelectedDealer} />
               </>
             ) : (
               <>

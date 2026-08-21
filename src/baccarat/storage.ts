@@ -196,6 +196,13 @@ export function getRecordsForCustomer(customerId: string): BaccaratRecord[] {
     .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
 }
 
+// ── ディーラーごとの個別記録（ディーラー別画面用。単一のディーラーに絞り込んだ生データ） ──
+export function getRecordsForDealer(dealerId: string): BaccaratRecord[] {
+  return getRecords()
+    .filter(r => r.dealerIds.includes(dealerId))
+    .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
+}
+
 export interface OverallSummary {
   count: number;
   startSum: number;
