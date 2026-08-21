@@ -12,7 +12,7 @@ interface Props {
 }
 
 export function MasterPicker({ label, options, value, onChange, onAdd, placeholder, optional }: Props) {
-  const [showNew, setShowNew] = useState(false);
+  const [showNew, setShowNew] = useState(options.length === 0);
   const [newVal, setNewVal] = useState('');
 
   const commitNew = () => {
@@ -29,21 +29,30 @@ export function MasterPicker({ label, options, value, onChange, onAdd, placehold
       <div style={{ fontSize: 11, fontWeight: 700, color: GOLD, letterSpacing: '0.1em', fontFamily: BRUSH, marginBottom: 6 }}>
         {label}{optional && <span style={{ color: SUB, fontWeight: 400 }}>（任意）</span>}
       </div>
-      <select
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        style={{
-          width: '100%', padding: '12px 10px', background: CARD,
-          border: `1px solid ${BDR}`, borderRadius: 6,
-          fontSize: 15, fontWeight: 600, color: value ? TEXT : SUB,
-          fontFamily: BRUSH, appearance: 'none', WebkitAppearance: 'none', colorScheme: 'dark',
-        }}
-      >
-        <option value="" style={{ background: '#0a0f0c' }}>{placeholder ?? '選択してください'}</option>
-        {options.map(o => (
-          <option key={o} value={o} style={{ background: '#0a0f0c' }}>{o}</option>
-        ))}
-      </select>
+      {options.length === 0 ? (
+        <div style={{
+          padding: '12px 14px', background: CARD, border: `1px solid ${BDR}`, borderRadius: 6,
+          fontSize: 13, color: SUB, fontFamily: BRUSH,
+        }}>
+          まだ登録がありません。下の「＋」から追加してください
+        </div>
+      ) : (
+        <select
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          style={{
+            width: '100%', padding: '12px 10px', background: CARD,
+            border: `1px solid ${BDR}`, borderRadius: 6,
+            fontSize: 15, fontWeight: 600, color: value ? TEXT : SUB,
+            fontFamily: BRUSH, appearance: 'none', WebkitAppearance: 'none', colorScheme: 'dark',
+          }}
+        >
+          <option value="" style={{ background: '#0a0f0c' }}>{placeholder ?? '選択してください'}</option>
+          {options.map(o => (
+            <option key={o} value={o} style={{ background: '#0a0f0c' }}>{o}</option>
+          ))}
+        </select>
+      )}
       <button
         onClick={() => setShowNew(v => !v)}
         style={{

@@ -11,7 +11,7 @@ interface Props {
 }
 
 export function MultiMasterPicker({ label, options, values, onChange, onAdd, optional }: Props) {
-  const [showNew, setShowNew] = useState(false);
+  const [showNew, setShowNew] = useState(options.length === 0);
   const [newVal, setNewVal] = useState('');
 
   const toggle = (v: string) => {
