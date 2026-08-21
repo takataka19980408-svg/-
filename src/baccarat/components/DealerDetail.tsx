@@ -2,27 +2,12 @@ import type { AggregateItem } from '../storage';
 import {
   getRecordsForDealer, getCustomerSummaryForRecords, getShuffleSummaryForRecords, formatYen,
 } from '../storage';
-import { BarChart } from './BarChart';
+import { BreakdownList } from './BreakdownList';
 import { GOLD, GOLDB, REDB, CARD, BDR, TEXT, SUB, BRUSH } from '../theme';
 
 interface Props {
   dealer: AggregateItem;
   onBack: () => void;
-}
-
-function ChartBreakdown({ title, items }: { title: string; items: AggregateItem[] }) {
-  return (
-    <>
-      <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, fontFamily: BRUSH, margin: '16px 0 8px', letterSpacing: '0.05em' }}>
-        {title}（{items.length}）
-      </div>
-      {items.length === 0 ? (
-        <div style={{ textAlign: 'center', color: SUB, fontFamily: BRUSH, fontSize: 13, padding: '16px 0' }}>データがありません</div>
-      ) : (
-        <BarChart items={items} />
-      )}
-    </>
-  );
 }
 
 export function DealerDetail({ dealer, onBack }: Props) {
@@ -70,8 +55,8 @@ export function DealerDetail({ dealer, onBack }: Props) {
         </div>
       </div>
 
-      <ChartBreakdown title="客別内訳" items={customerItems} />
-      <ChartBreakdown title="シャッフル別内訳" items={shuffleItems} />
+      <BreakdownList title="客別内訳" items={customerItems} showChart />
+      <BreakdownList title="シャッフル別内訳" items={shuffleItems} showChart />
 
       <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, fontFamily: BRUSH, marginBottom: 8, letterSpacing: '0.05em' }}>
         対応履歴（{records.length}件）
