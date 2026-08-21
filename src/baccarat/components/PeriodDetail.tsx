@@ -78,7 +78,7 @@ export function PeriodDetail({ kind, period, records, onBack }: Props) {
         </div>
       </div>
 
-      <BreakdownList title="客別内訳" items={customerItems} />
+      <BreakdownList title="客別内訳" items={customerItems} invert />
       <ChartBreakdown title="ディーラー別内訳" items={dealerItems} />
       <ChartBreakdown title="シャッフル別内訳" items={shuffleItems} />
       {weekdayItems && <BreakdownList title="曜日別内訳" items={weekdayItems} />}

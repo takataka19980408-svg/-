@@ -63,7 +63,7 @@ export function CustomerDetail({ customer, onBack }: Props) {
           <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>店収支合計</span>
           <span style={{
             fontSize: 16, fontWeight: 800, fontFamily: BRUSH,
-            color: customer.storeProfit > 0 ? GOLDB : customer.storeProfit < 0 ? REDB : SUB,
+            color: customer.storeProfit < 0 ? GOLDB : customer.storeProfit > 0 ? REDB : SUB,
           }}>
             {formatYen(customer.storeProfit)}円
             {customer.holdRate !== null && ` （${(customer.holdRate * 100).toFixed(1)}%）`}
@@ -88,7 +88,7 @@ export function CustomerDetail({ customer, onBack }: Props) {
               <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>{r.date}{r.table ? ` ${r.table}` : ''}</span>
               <span style={{
                 fontSize: 14, fontWeight: 800, fontFamily: BRUSH,
-                color: profit > 0 ? GOLDB : profit < 0 ? REDB : SUB,
+                color: profit < 0 ? GOLDB : profit > 0 ? REDB : SUB,
               }}>
                 {formatYen(profit)}円{shared && <span style={{ fontSize: 10, fontWeight: 400, color: SUB }}> （配分）</span>}
               </span>

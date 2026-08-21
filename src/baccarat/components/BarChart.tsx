@@ -5,17 +5,21 @@ import { GOLD, GOLDB, RED, REDB, BDR, TEXT, SUB, BRUSH } from '../theme';
 interface Props {
   items: AggregateItem[];
   onSelect?: (item: AggregateItem) => void;
+  // trueのとき色の意味を反転する（客別: 客が勝った＝店がマイナス＝金色、
+  // 客が負けた＝店がプラス＝赤）。店・ディーラー・シャッフル・期間別は
+  // 通常どおり店収支プラス＝金色のまま。
+  invert?: boolean;
 }
 
-export function BarChart({ items, onSelect }: Props) {
+export function BarChart({ items, onSelect, invert }: Props) {
   if (items.length === 0) return null;
   const maxAbs = Math.max(1, ...items.map(it => Math.abs(it.storeProfit)));
 
   return (
     <div style={{ marginBottom: 16 }}>
       {items.map(it => {
-        const positive = it.storeProfit > 0;
-        const negative = it.storeProfit < 0;
+        const positive = invert ? it.storeProfit < 0 : it.storeProfit > 0;
+        const negative = invert ? it.storeProfit > 0 : it.storeProfit < 0;
         const color = positive ? GOLD : negative ? RED : BDR;
         const colorB = positive ? GOLDB : negative ? REDB : SUB;
         const widthPct = (Math.abs(it.storeProfit) / maxAbs) * 100;
