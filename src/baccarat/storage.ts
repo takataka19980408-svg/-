@@ -152,12 +152,7 @@ export function getDaySummary(): AggregateItem[] {
   return aggregateBy(getRecords(), r => [getDayKey(r.date)], (a, b) => b.label.localeCompare(a.label));
 }
 
-export function getWeekdaySummary(): AggregateItem[] {
-  return aggregateBy(getRecords(), r => [getWeekdayKey(r.date)],
-    (a, b) => WEEKDAY_LABELS.indexOf(a.label) - WEEKDAY_LABELS.indexOf(b.label));
-}
-
-// ── 年／月／週／曜日の期間ごとの個別記録（期間の来店履歴・内訳表用） ──
+// ── 年／月／日の期間ごとの個別記録（期間の来店履歴・内訳表用） ──
 export function getRecordsForYear(yearKey: string): BaccaratRecord[] {
   return getRecords()
     .filter(r => getYearKey(r.date) === yearKey)
@@ -173,12 +168,6 @@ export function getRecordsForMonth(monthKey: string): BaccaratRecord[] {
 export function getRecordsForDay(dayKey: string): BaccaratRecord[] {
   return getRecords()
     .filter(r => getDayKey(r.date) === dayKey)
-    .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
-}
-
-export function getRecordsForWeekday(weekdayLabel: string): BaccaratRecord[] {
-  return getRecords()
-    .filter(r => getWeekdayKey(r.date) === weekdayLabel)
     .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
 }
 

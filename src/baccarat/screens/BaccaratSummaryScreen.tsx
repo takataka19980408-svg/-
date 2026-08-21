@@ -1,23 +1,25 @@
 import { useState } from 'react';
 import {
   getDealerSummary, getShuffleSummary, getCustomerSummary,
-  getYearSummary, getMonthSummary, getDaySummary, getWeekdaySummary,
-  getRecordsForYear, getRecordsForMonth, getRecordsForDay, getRecordsForWeekday,
+  getYearSummary, getMonthSummary, getDaySummary,
+  getRecordsForYear, getRecordsForMonth, getRecordsForDay,
   getOverallSummary, formatYen,
 } from '../storage';
 import type { AggregateItem } from '../storage';
 import type { BaccaratRecord } from '../types';
 import { CustomerDetail } from '../components/CustomerDetail';
 import { PeriodDetail } from '../components/PeriodDetail';
+import { BarChart } from '../components/BarChart';
 import { GOLD, GOLDB, REDB, CARD, BDR, TEXT, SUB, BRUSH, FELTD, NAV_H } from '../theme';
 
 interface Props {
   refreshKey: number;
 }
 
-type Tab = 'dealer' | 'shuffle' | 'customer' | 'year' | 'month' | 'day' | 'weekday';
-type PeriodTab = 'year' | 'month' | 'day' | 'weekday';
-const PERIOD_TABS: PeriodTab[] = ['year', 'month', 'day', 'weekday'];
+type Tab = 'dealer' | 'shuffle' | 'customer' | 'year' | 'month' | 'day';
+type PeriodTab = 'year' | 'month' | 'day';
+const PERIOD_TABS: PeriodTab[] = ['year', 'month', 'day'];
+const CHART_TABS: Tab[] = ['dealer', 'shuffle', 'customer', 'day'];
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'dealer',   label: 'ディーラー別' },
@@ -26,7 +28,6 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'year',     label: '年別' },
   { id: 'month',    label: '月別' },
   { id: 'day',      label: '日別' },
-  { id: 'weekday',  label: '曜日別' },
 ];
 
 function List({ items, onSelect }: { items: AggregateItem[]; onSelect?: (item: AggregateItem) => void }) {
@@ -72,14 +73,12 @@ const SUMMARY_FNS: Record<Tab, () => AggregateItem[]> = {
   year: getYearSummary,
   month: getMonthSummary,
   day: getDaySummary,
-  weekday: getWeekdaySummary,
 };
 
 const RECORDS_FOR_PERIOD: Record<PeriodTab, (label: string) => BaccaratRecord[]> = {
   year: getRecordsForYear,
   month: getRecordsForMonth,
   day: getRecordsForDay,
-  weekday: getRecordsForWeekday,
 };
 
 export function BaccaratSummaryScreen({ refreshKey }: Props) {
@@ -171,12 +170,21 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
                     fontSize: 13, color: TEXT, fontFamily: BRUSH, outline: 'none', boxSizing: 'border-box',
                   }}
                 />
+                {CHART_TABS.includes(tab) && <BarChart items={visibleItems} onSelect={setSelectedCustomer} />}
                 <List items={visibleItems} onSelect={setSelectedCustomer} />
               </>
             ) : PERIOD_TABS.includes(tab as PeriodTab) ? (
-              <List items={items} onSelect={it => setSelectedPeriod({ kind: tab as PeriodTab, item: it })} />
+              <>
+                {CHART_TABS.includes(tab) && (
+                  <BarChart items={items} onSelect={it => setSelectedPeriod({ kind: tab as PeriodTab, item: it })} />
+                )}
+                <List items={items} onSelect={it => setSelectedPeriod({ kind: tab as PeriodTab, item: it })} />
+              </>
             ) : (
-              <List items={items} />
+              <>
+                {CHART_TABS.includes(tab) && <BarChart items={items} />}
+                <List items={items} />
+              </>
             )}
           </>
         )}
