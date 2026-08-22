@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { getMasters, addMasterItem, saveRecord, updateRecord, generateId, today, formatYen } from '../storage';
 import type { BaccaratRecord } from '../types';
 import { MasterPicker } from '../components/MasterPicker';
@@ -39,9 +39,6 @@ export function BaccaratRecordScreen({ onSaved, editRecord, onCancel }: Props) {
   };
   const allocatedSum = customerIds.reduce((s, id) => s + getCustomerOwnAmount(id), 0);
   const requiredSum = -storeProfit;
-
-  const addStart = useCallback((n: number) => setStartAmount(v => v + n), []);
-  const addEnd = useCallback((n: number) => setEndAmount(v => v + n), []);
 
   const refreshMasters = () => setMasters(getMasters());
 
@@ -184,8 +181,8 @@ export function BaccaratRecordScreen({ onSaved, editRecord, onCancel }: Props) {
           </div>
         )}
 
-        <AmountField label="スタート（店の開始額）" amount={startAmount} onAdd={addStart} onReset={() => setStartAmount(0)} accent={GOLD} />
-        <AmountField label="エンド（店の終了額）" amount={endAmount} onAdd={addEnd} onReset={() => setEndAmount(0)} accent="#00C896" />
+        <AmountField label="スタート（店の開始額）" amount={startAmount} onChange={setStartAmount} accent={GOLD} />
+        <AmountField label="エンド（店の終了額）" amount={endAmount} onChange={setEndAmount} accent="#00C896" />
 
         <div style={{
           padding: '13px 16px', borderRadius: 8, marginBottom: 20, textAlign: 'center',
