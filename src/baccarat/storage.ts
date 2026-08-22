@@ -47,10 +47,23 @@ export function updateRecord(record: BaccaratRecord): void {
 }
 
 // ── Masters ──────────────────────────────────────────────────
+// 数字は1,2,3…の数値順、アルファベットはa,b,c…の順で並ぶ自然順ソート。
+const masterCollator = new Intl.Collator('ja', { numeric: true, sensitivity: 'base' });
+
+function sortMasterList(values: string[]): string[] {
+  return values.slice().sort(masterCollator.compare);
+}
+
 export function getMasters(): BaccaratMasters {
   try {
     const d = localStorage.getItem(MASTERS_KEY);
-    return d ? { ...DEFAULT_MASTERS, ...JSON.parse(d) } : { ...DEFAULT_MASTERS };
+    const raw: BaccaratMasters = d ? { ...DEFAULT_MASTERS, ...JSON.parse(d) } : { ...DEFAULT_MASTERS };
+    return {
+      dealers: sortMasterList(raw.dealers),
+      shuffles: sortMasterList(raw.shuffles),
+      tables: sortMasterList(raw.tables),
+      customers: sortMasterList(raw.customers),
+    };
   } catch { return { ...DEFAULT_MASTERS }; }
 }
 
