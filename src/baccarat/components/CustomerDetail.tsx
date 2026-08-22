@@ -2,7 +2,7 @@ import type { AggregateItem } from '../storage';
 import {
   getRecordsForCustomer, getDealerSummaryForRecords, getShuffleSummaryForRecords,
   getCustomerSummaryForRecords, getCustomerProfitForRecord,
-  groupRecordsByDay, formatYen,
+  groupRecordsByDay, getShootNumbers, formatYen,
 } from '../storage';
 import { BarChart } from './BarChart';
 import { DayGroupHeader } from './DayGroupHeader';
@@ -36,6 +36,7 @@ export function CustomerDetail({ customer, onBack }: Props) {
   const dealerItems = getDealerSummaryForRecords(records);
   const shuffleItems = getShuffleSummaryForRecords(records);
   const dayGroups = groupRecordsByDay(records);
+  const shootNumbers = getShootNumbers();
 
   return (
     <div>
@@ -82,7 +83,7 @@ export function CustomerDetail({ customer, onBack }: Props) {
         return (
           <div key={group.date} style={{ marginTop: gi === 0 ? 0 : 20 }}>
             <DayGroupHeader label={group.label} count={group.records.length} amount={dayAmount} invert />
-            {group.records.map((r, ri) => {
+            {group.records.map(r => {
               const shared = (r.customerIds ?? []).length > 1;
               const profit = getCustomerProfitForRecord(r, customer.label);
               return (
@@ -91,7 +92,7 @@ export function CustomerDetail({ customer, onBack }: Props) {
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                     <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>
-                      {ri + 1}シュート{r.table ? ` ・ ${r.table}` : ''}
+                      {shootNumbers.get(r.id)}シュート{r.table ? ` ・ ${r.table}` : ''}
                     </span>
                     <span style={{
                       fontSize: 14, fontWeight: 800, fontFamily: BRUSH,

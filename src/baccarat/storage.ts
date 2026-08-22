@@ -255,6 +255,16 @@ export function groupRecordsByDay(records: BaccaratRecord[]): DayGroup[] {
     }));
 }
 
+// 記録IDから「その日の何シュート目か」を引けるようにする。客別・ディーラー別
+// などで絞り込んだ一覧でも、履歴画面と同じシュート番号で表示するために使う。
+export function getShootNumbers(): Map<string, number> {
+  const map = new Map<string, number>();
+  for (const group of groupRecordsByDay(getRecords())) {
+    group.records.forEach((r, i) => map.set(r.id, i + 1));
+  }
+  return map;
+}
+
 const WEEKDAY_LABELS = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];
 
 function getWeekdayKey(date: string): string {

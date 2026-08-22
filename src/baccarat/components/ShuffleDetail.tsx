@@ -1,7 +1,7 @@
 import type { AggregateItem } from '../storage';
 import {
   getRecordsForShuffle, getCustomerSummaryForRecords, getShuffleSummaryForRecords,
-  getDealerSummaryForRecords, groupRecordsByDay, formatYen,
+  getDealerSummaryForRecords, groupRecordsByDay, getShootNumbers, formatYen,
 } from '../storage';
 import { BreakdownList } from './BreakdownList';
 import { DayGroupHeader } from './DayGroupHeader';
@@ -20,6 +20,7 @@ export function ShuffleDetail({ shuffle, onBack }: Props) {
   const customerItems = getCustomerSummaryForRecords(records);
   const dealerItems = getDealerSummaryForRecords(records);
   const dayGroups = groupRecordsByDay(records);
+  const shootNumbers = getShootNumbers();
 
   return (
     <div>
@@ -66,7 +67,7 @@ export function ShuffleDetail({ shuffle, onBack }: Props) {
         return (
           <div key={group.date} style={{ marginTop: gi === 0 ? 0 : 20 }}>
             <DayGroupHeader label={group.label} count={group.records.length} amount={dayProfit} />
-            {group.records.map((r, ri) => {
+            {group.records.map(r => {
               const profit = r.endAmount - r.startAmount;
               return (
                 <div key={r.id} style={{
@@ -74,7 +75,7 @@ export function ShuffleDetail({ shuffle, onBack }: Props) {
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                     <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>
-                      {ri + 1}シュート{r.table ? ` ・ ${r.table}` : ''}
+                      {shootNumbers.get(r.id)}シュート{r.table ? ` ・ ${r.table}` : ''}
                     </span>
                     <span style={{
                       fontSize: 14, fontWeight: 800, fontFamily: BRUSH,
