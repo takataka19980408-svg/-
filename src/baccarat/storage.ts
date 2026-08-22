@@ -152,12 +152,17 @@ function aggregateBy(
 ): AggregateItem[] {
   const map = new Map<string, { count: number; startSum: number; endSum: number }>();
   for (const r of records) {
-    for (const k of keysFn(r)) {
-      if (!k) continue;
+    const keys = keysFn(r).filter(k => k);
+    if (keys.length === 0) continue;
+    // 1つの記録に複数キーが該当する場合（ディーラー2人選択時など）は、
+    // 収支（プラスもマイナスも）を人数で均等に按分する（重複計上を防ぐ）。
+    // 対応回数はそれぞれ1回分としてそのままカウントする。
+    const share = 1 / keys.length;
+    for (const k of keys) {
       const e = map.get(k) ?? { count: 0, startSum: 0, endSum: 0 };
       e.count += 1;
-      e.startSum += r.startAmount;
-      e.endSum += r.endAmount;
+      e.startSum += r.startAmount * share;
+      e.endSum += r.endAmount * share;
       map.set(k, e);
     }
   }
@@ -216,6 +221,12 @@ export function getCustomerProfitForRecord(r: BaccaratRecord, customerId: string
   const ids = r.customerIds ?? [];
   if (ids.length <= 1) return r.endAmount - r.startAmount;
   return r.customerProfits?.[customerId] ?? 0;
+}
+
+// ある対応（記録）における1人あたりのディーラー収支。ディーラーが2人以上
+// 選択されている場合は店収支（プラスもマイナスも）を人数で均等按分する。
+export function getDealerProfitForRecord(r: BaccaratRecord): number {
+  return (r.endAmount - r.startAmount) / r.dealerIds.length;
 }
 
 // ── 日付ベースの集計（年別／月別／週別／曜日別） ─────────────

@@ -1,7 +1,7 @@
 import type { AggregateItem } from '../storage';
 import {
   getRecordsForDealer, getCustomerSummaryForRecords, getShuffleSummaryForRecords,
-  getDealerSummaryForRecords, groupRecordsByDay, getShootNumbers, formatYen,
+  getDealerSummaryForRecords, getDealerProfitForRecord, groupRecordsByDay, getShootNumbers, formatYen,
 } from '../storage';
 import { BreakdownList } from './BreakdownList';
 import { DayGroupHeader } from './DayGroupHeader';
@@ -63,12 +63,13 @@ export function DealerDetail({ dealer, onBack }: Props) {
         対応履歴（{records.length}シュート）
       </div>
       {dayGroups.map((group, gi) => {
-        const dayProfit = group.records.reduce((s, r) => s + (r.endAmount - r.startAmount), 0);
+        const dayProfit = group.records.reduce((s, r) => s + getDealerProfitForRecord(r), 0);
         return (
           <div key={group.date} style={{ marginTop: gi === 0 ? 0 : 20 }}>
             <DayGroupHeader label={group.label} count={group.records.length} amount={dayProfit} />
             {group.records.map(r => {
-              const profit = r.endAmount - r.startAmount;
+              const shared = r.dealerIds.length > 1;
+              const profit = getDealerProfitForRecord(r);
               return (
                 <div key={r.id} style={{
                   background: CARD, border: `1px solid ${BDR}`, borderRadius: 10, padding: '12px 14px', marginBottom: 8,
@@ -81,15 +82,17 @@ export function DealerDetail({ dealer, onBack }: Props) {
                       fontSize: 14, fontWeight: 800, fontFamily: BRUSH,
                       color: profit > 0 ? GOLDB : profit < 0 ? REDB : SUB,
                     }}>
-                      {formatYen(profit)}円
+                      {formatYen(profit)}円{shared && <span style={{ fontSize: 10, fontWeight: 400, color: SUB }}> （配分）</span>}
                     </span>
                   </div>
                   <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH }}>
                     {r.shuffle}
+                    {shared && ` / 他のディーラー: ${r.dealerIds.filter(id => id !== dealer.label).join('、')}`}
                     {r.customerIds && r.customerIds.length > 0 && ` / ${r.customerIds.join('、')}`}
                   </div>
                   <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH }}>
                     スタート {r.startAmount.toLocaleString()} / エンド {r.endAmount.toLocaleString()}
+                    {shared && `（店収支 ${formatYen(r.endAmount - r.startAmount)}円）`}
                   </div>
                   {r.memo && <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH, marginTop: 4 }}>{r.memo}</div>}
                 </div>
