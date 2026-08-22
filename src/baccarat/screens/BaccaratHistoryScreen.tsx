@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { getRecords, deleteRecord, formatYen, formatTime, groupRecordsByDay } from '../storage';
+import { getRecords, deleteRecord, formatYen, groupRecordsByDay } from '../storage';
 import type { BaccaratRecord } from '../types';
 import { DayGroupHeader } from '../components/DayGroupHeader';
 import { GOLD, GOLDB, REDB, CARD, BDR, SUB, BRUSH, FELTD, NAV_SAFE_BOTTOM } from '../theme';
@@ -45,7 +45,7 @@ export function BaccaratHistoryScreen({ refreshKey, onDataChange, onEdit }: Prop
           <div key={group.date} style={{ marginTop: gi === 0 ? 0 : 20 }}>
             <DayGroupHeader label={group.label} count={group.records.length} amount={dayProfit} />
 
-            {group.records.map(r => {
+            {group.records.map((r, ri) => {
               const storeProfit = r.endAmount - r.startAmount;
               return (
                 <div key={r.id} style={{
@@ -53,7 +53,7 @@ export function BaccaratHistoryScreen({ refreshKey, onDataChange, onEdit }: Prop
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                     <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>
-                      {formatTime(r.createdAt)}{r.table ? ` ・ ${r.table}` : ''}
+                      {ri + 1}シュート{r.table ? ` ・ ${r.table}` : ''}
                     </span>
                     <span style={{
                       fontSize: 15, fontWeight: 800, fontFamily: BRUSH,

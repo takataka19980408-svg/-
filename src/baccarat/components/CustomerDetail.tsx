@@ -2,7 +2,7 @@ import type { AggregateItem } from '../storage';
 import {
   getRecordsForCustomer, getDealerSummaryForRecords, getShuffleSummaryForRecords,
   getCustomerSummaryForRecords, getCustomerProfitForRecord,
-  groupRecordsByDay, formatTime, formatYen,
+  groupRecordsByDay, formatYen,
 } from '../storage';
 import { BarChart } from './BarChart';
 import { DayGroupHeader } from './DayGroupHeader';
@@ -59,12 +59,6 @@ export function CustomerDetail({ customer, onBack }: Props) {
           <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>来店回数</span>
           <span style={{ fontSize: 13, color: TEXT, fontFamily: BRUSH }}>{summary.count.toLocaleString()}回</span>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-          <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>スタート合計 / エンド合計</span>
-          <span style={{ fontSize: 13, color: TEXT, fontFamily: BRUSH }}>
-            {summary.startSum.toLocaleString()} / {summary.endSum.toLocaleString()}
-          </span>
-        </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>客の収支合計</span>
           <span style={{
@@ -81,14 +75,14 @@ export function CustomerDetail({ customer, onBack }: Props) {
       <ChartBreakdown title="シャッフル別内訳" items={shuffleItems} />
 
       <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, fontFamily: BRUSH, marginBottom: 8, letterSpacing: '0.05em' }}>
-        来店履歴（{records.length}件）
+        来店履歴（{records.length}シュート）
       </div>
       {dayGroups.map((group, gi) => {
         const dayAmount = group.records.reduce((s, r) => s + getCustomerProfitForRecord(r, customer.label), 0);
         return (
           <div key={group.date} style={{ marginTop: gi === 0 ? 0 : 20 }}>
             <DayGroupHeader label={group.label} count={group.records.length} amount={dayAmount} invert />
-            {group.records.map(r => {
+            {group.records.map((r, ri) => {
               const shared = (r.customerIds ?? []).length > 1;
               const profit = getCustomerProfitForRecord(r, customer.label);
               return (
@@ -97,7 +91,7 @@ export function CustomerDetail({ customer, onBack }: Props) {
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                     <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>
-                      {formatTime(r.createdAt)}{r.table ? ` ・ ${r.table}` : ''}
+                      {ri + 1}シュート{r.table ? ` ・ ${r.table}` : ''}
                     </span>
                     <span style={{
                       fontSize: 14, fontWeight: 800, fontFamily: BRUSH,

@@ -18,7 +18,7 @@ export function DayGroupHeader({ label, count, amount, invert }: Props) {
       marginBottom: 8, paddingBottom: 6, borderBottom: `1px solid ${BDR}`,
     }}>
       <span style={{ fontSize: 13, fontWeight: 800, color: GOLD, fontFamily: BRUSH, letterSpacing: '0.05em' }}>
-        {label}（{count}件）
+        {label}（{count}シュート）
       </span>
       <span style={{
         fontSize: 15, fontWeight: 800, fontFamily: BRUSH,

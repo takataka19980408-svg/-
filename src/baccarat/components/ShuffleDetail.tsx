@@ -1,7 +1,7 @@
 import type { AggregateItem } from '../storage';
 import {
   getRecordsForShuffle, getCustomerSummaryForRecords, getShuffleSummaryForRecords,
-  getDealerSummaryForRecords, groupRecordsByDay, formatTime, formatYen,
+  getDealerSummaryForRecords, groupRecordsByDay, formatYen,
 } from '../storage';
 import { BreakdownList } from './BreakdownList';
 import { DayGroupHeader } from './DayGroupHeader';
@@ -43,12 +43,6 @@ export function ShuffleDetail({ shuffle, onBack }: Props) {
           <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>対応回数</span>
           <span style={{ fontSize: 13, color: TEXT, fontFamily: BRUSH }}>{summary.count.toLocaleString()}回</span>
         </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-          <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>スタート合計 / エンド合計</span>
-          <span style={{ fontSize: 13, color: TEXT, fontFamily: BRUSH }}>
-            {summary.startSum.toLocaleString()} / {summary.endSum.toLocaleString()}
-          </span>
-        </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>店収支合計</span>
           <span style={{
@@ -65,14 +59,14 @@ export function ShuffleDetail({ shuffle, onBack }: Props) {
       <BreakdownList title="ディーラー別内訳" items={dealerItems} showChart />
 
       <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, fontFamily: BRUSH, margin: '16px 0 8px', letterSpacing: '0.05em' }}>
-        対応履歴（{records.length}件）
+        対応履歴（{records.length}シュート）
       </div>
       {dayGroups.map((group, gi) => {
         const dayProfit = group.records.reduce((s, r) => s + (r.endAmount - r.startAmount), 0);
         return (
           <div key={group.date} style={{ marginTop: gi === 0 ? 0 : 20 }}>
             <DayGroupHeader label={group.label} count={group.records.length} amount={dayProfit} />
-            {group.records.map(r => {
+            {group.records.map((r, ri) => {
               const profit = r.endAmount - r.startAmount;
               return (
                 <div key={r.id} style={{
@@ -80,7 +74,7 @@ export function ShuffleDetail({ shuffle, onBack }: Props) {
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                     <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>
-                      {formatTime(r.createdAt)}{r.table ? ` ・ ${r.table}` : ''}
+                      {ri + 1}シュート{r.table ? ` ・ ${r.table}` : ''}
                     </span>
                     <span style={{
                       fontSize: 14, fontWeight: 800, fontFamily: BRUSH,

@@ -113,8 +113,13 @@ export function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
 
+// 営業日は「正午」に切り替わる（深夜〜正午前の記録は前日扱い）。
 export function today(): string {
-  return new Date().toISOString().split('T')[0];
+  const shifted = new Date(Date.now() - 12 * 60 * 60 * 1000);
+  const y = shifted.getFullYear();
+  const m = String(shifted.getMonth() + 1).padStart(2, '0');
+  const d = String(shifted.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 // ── Aggregations (単一次元のみ。客×ディーラー等の掛け合わせは行わない) ──
@@ -214,7 +219,7 @@ export function getDayKey(date: string): string {
 }
 
 // 各種の来店履歴・対応履歴一覧を日別に区切って表示するための共通処理。
-// 日付降順（直近が先頭）、各日の中はcreatedAt降順で並べる。
+// 日付降順（直近が先頭）、各日の中はcreatedAt昇順（入力順＝1シュート目から）で並べる。
 export interface DayGroup {
   date: string;
   label: string;
@@ -233,7 +238,7 @@ export function groupRecordsByDay(records: BaccaratRecord[]): DayGroup[] {
     .map(([date, recs]) => ({
       date,
       label: getDayKey(date),
-      records: recs.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+      records: recs.slice().sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
     }));
 }
 
@@ -348,10 +353,6 @@ export function getThisMonthSummary(): MonthSummary {
     monthLabel, count: records.length, startSum, endSum, storeProfit,
     holdRate: startSum > 0 ? storeProfit / startSum : null,
   };
-}
-
-export function formatTime(createdAt: string): string {
-  return new Date(createdAt).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
 }
 
 export function formatYen(n: number): string {

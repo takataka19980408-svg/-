@@ -137,12 +137,6 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
                 <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>記録件数</span>
                 <span style={{ fontSize: 13, color: TEXT, fontFamily: BRUSH }}>{thisMonth.count.toLocaleString()}件</span>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>スタート合計 / エンド合計</span>
-                <span style={{ fontSize: 13, color: TEXT, fontFamily: BRUSH }}>
-                  {thisMonth.startSum.toLocaleString()} / {thisMonth.endSum.toLocaleString()}
-                </span>
-              </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>店収支合計</span>
                 <span style={{
