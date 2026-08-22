@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import type { MasterKind } from '../types';
 import { MASTER_LABELS } from '../types';
 import {
-  getMasters, addMasterItem, removeMasterItem, getRecords, clearRecords,
+  getMasters, addMasterItem, removeMasterItem,
   getBackupJson, exportBackup, restoreBackup,
 } from '../storage';
 import { GOLD, GOLDB, RED, REDB, CARD, BDR, TEXT, SUB, BRUSH, FELTD, NAV_SAFE_BOTTOM } from '../theme';
@@ -73,20 +73,12 @@ function MasterList({ kind, values, onChange }: { kind: MasterKind; values: stri
 export function BaccaratMastersScreen({ onDataChange }: Props) {
   const [masters, setMasters] = useState(getMasters);
   const [toast, setToast] = useState<string | null>(null);
-  const [clearConfirm, setClearConfirm] = useState(false);
   const [restoreConfirm, setRestoreConfirm] = useState(false);
   const backupImportRef = useRef<HTMLInputElement>(null);
 
   const refresh = () => { setMasters(getMasters()); onDataChange(); };
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2200); };
-
-  const handleClear = () => {
-    clearRecords();
-    setClearConfirm(false);
-    refresh();
-    showToast('記録を全て削除しました');
-  };
 
   const canShare = typeof navigator !== 'undefined' && 'share' in navigator && 'canShare' in navigator;
 
@@ -232,35 +224,6 @@ export function BaccaratMastersScreen({ onDataChange }: Props) {
             </div>
           )}
           <input ref={backupImportRef} type="file" accept=".json" style={{ display: 'none' }} onChange={handleImportBackup} />
-        </div>
-
-        <div style={{ background: CARD, border: `1px solid ${BDR}`, borderRadius: 10, padding: '14px 16px', marginBottom: 16 }}>
-          <div style={{ fontSize: 12, color: SUB, fontFamily: BRUSH, lineHeight: 1.7, marginBottom: 10 }}>
-            現在の記録件数：{getRecords().length.toLocaleString()}件
-          </div>
-          <button onClick={() => setClearConfirm(true)} style={{
-            width: '100%', padding: '11px', borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: BRUSH,
-            background: 'transparent', border: `1px solid ${BDR}`, color: SUB, cursor: 'pointer',
-          }}>
-            記録を全て削除
-          </button>
-          {clearConfirm && (
-            <div style={{ marginTop: 10, padding: 12, background: `${REDB}14`, border: `1px solid ${REDB}44`, borderRadius: 8 }}>
-              <div style={{ fontSize: 12, color: REDB, fontFamily: BRUSH, marginBottom: 10, lineHeight: 1.7 }}>
-                記録を全て削除します（マスタ一覧は残ります）。元に戻せません。
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={handleClear} style={{
-                  flex: 1, padding: '9px', borderRadius: 6, fontSize: 12, fontWeight: 700, fontFamily: BRUSH,
-                  background: REDB, color: '#fff', border: 'none', cursor: 'pointer',
-                }}>削除する</button>
-                <button onClick={() => setClearConfirm(false)} style={{
-                  padding: '9px 16px', borderRadius: 6, fontSize: 12, fontFamily: BRUSH,
-                  background: 'transparent', color: SUB, border: `1px solid ${BDR}`, cursor: 'pointer',
-                }}>取消</button>
-              </div>
-            </div>
-          )}
         </div>
 
         {KINDS.map(kind => (

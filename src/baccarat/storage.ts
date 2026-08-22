@@ -22,10 +22,6 @@ export function saveRecords(newRecords: BaccaratRecord[]): void {
   localStorage.setItem(RECORDS_KEY, JSON.stringify([...getRecords(), ...newRecords]));
 }
 
-export function clearRecords(): void {
-  localStorage.setItem(RECORDS_KEY, JSON.stringify([]));
-}
-
 export function deleteRecord(id: string): void {
   localStorage.setItem(RECORDS_KEY, JSON.stringify(getRecords().filter(r => r.id !== id)));
 }
