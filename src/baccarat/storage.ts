@@ -309,6 +309,14 @@ export function getRecordsForDay(dayKey: string): BaccaratRecord[] {
     .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
 }
 
+// その日の最後（createdAtが最新）の記録のエンド額。同じ日は前のシュートの
+// エンドが次のシュートのスタートに繋がるため、入力画面の初期値に使う。
+export function getLastEndAmountForDate(date: string): number | null {
+  const dayRecords = getRecords().filter(r => r.date === date);
+  if (dayRecords.length === 0) return null;
+  return dayRecords.reduce((a, b) => (a.createdAt > b.createdAt ? a : b)).endAmount;
+}
+
 // 特定の記録群（期間で絞り込み済み）内での内訳。ディーラー／シャッフルとは掛け合わせない。
 export function getCustomerSummaryForRecords(records: BaccaratRecord[]): AggregateItem[] {
   return aggregateCustomers(records);

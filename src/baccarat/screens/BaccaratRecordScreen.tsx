@@ -1,5 +1,8 @@
 import { useState } from 'react';
-import { getMasters, addMasterItem, saveRecord, updateRecord, generateId, today, formatYen } from '../storage';
+import {
+  getMasters, addMasterItem, saveRecord, updateRecord, generateId, today,
+  getLastEndAmountForDate, formatYen,
+} from '../storage';
 import type { BaccaratRecord } from '../types';
 import { MasterPicker } from '../components/MasterPicker';
 import { MultiMasterPicker } from '../components/MultiMasterPicker';
@@ -25,7 +28,10 @@ export function BaccaratRecordScreen({ onSaved, editRecord, onCancel }: Props) {
   // 直すには符号を反転させて復元する。
   const [customerProfitSigns, setCustomerProfitSigns] = useState<Record<string, '+' | '-'>>(() =>
     Object.fromEntries(Object.entries(editRecord?.customerProfits ?? {}).map(([k, v]) => [k, v < 0 ? '+' : '-'])));
-  const [startAmount, setStartAmount] = useState(editRecord?.startAmount ?? 0);
+  // 同じ日はシュートが繋がっているため、新規入力時はその日の最後のエンド額を
+  // スタート額の初期値として引き継ぐ（編集時は元の値をそのまま使う）。
+  const [startAmount, setStartAmount] = useState(() =>
+    editRecord ? editRecord.startAmount : (getLastEndAmountForDate(date) ?? 0));
   const [endAmount, setEndAmount] = useState(editRecord?.endAmount ?? 0);
   const [memo, setMemo] = useState(editRecord?.memo ?? '');
   const [error, setError] = useState('');
@@ -39,6 +45,13 @@ export function BaccaratRecordScreen({ onSaved, editRecord, onCancel }: Props) {
   };
   const allocatedSum = customerIds.reduce((s, id) => s + getCustomerOwnAmount(id), 0);
   const requiredSum = -storeProfit;
+
+  const handleDateChange = (newDate: string) => {
+    setDate(newDate);
+    // 日付を変更したら、その日の最後のエンド額にスタートを繋ぎ直す
+    // （新規入力時のみ。編集時は元の値をそのまま使う）。
+    if (!editRecord) setStartAmount(getLastEndAmountForDate(newDate) ?? 0);
+  };
 
   const refreshMasters = () => setMasters(getMasters());
 
@@ -78,7 +91,8 @@ export function BaccaratRecordScreen({ onSaved, editRecord, onCancel }: Props) {
       if (!editRecord) {
         setTable(''); setDealerIds([]); setShuffle(''); setCustomerIds([]);
         setCustomerProfits({}); setCustomerProfitSigns({});
-        setStartAmount(0); setEndAmount(0); setMemo('');
+        // 次のシュートは今保存したエンド額から繋げる。
+        setStartAmount(endAmount); setEndAmount(0); setMemo('');
       }
       onSaved();
     }, 250);
@@ -111,7 +125,7 @@ export function BaccaratRecordScreen({ onSaved, editRecord, onCancel }: Props) {
             日付
           </div>
           <input
-            type="date" value={date} onChange={e => setDate(e.target.value)}
+            type="date" value={date} onChange={e => handleDateChange(e.target.value)}
             style={{
               width: '100%', maxWidth: '100%', padding: '12px 10px', background: '#0E1712',
               border: `1px solid ${BDR}`, borderRadius: 6, fontSize: 15, color: TEXT,
