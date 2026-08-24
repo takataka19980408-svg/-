@@ -309,12 +309,44 @@ export function getRecordsForDay(dayKey: string): BaccaratRecord[] {
     .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
 }
 
+// その日（date）の記録をシュートの並び順（createdAt昇順）で取得する。
+export function getRecordsForDateSorted(date: string): BaccaratRecord[] {
+  return getRecords()
+    .filter(r => r.date === date)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+}
+
 // その日の最後（createdAtが最新）の記録のエンド額。同じ日は前のシュートの
 // エンドが次のシュートのスタートに繋がるため、入力画面の初期値に使う。
 export function getLastEndAmountForDate(date: string): number | null {
-  const dayRecords = getRecords().filter(r => r.date === date);
+  const dayRecords = getRecordsForDateSorted(date);
   if (dayRecords.length === 0) return null;
-  return dayRecords.reduce((a, b) => (a.createdAt > b.createdAt ? a : b)).endAmount;
+  return dayRecords[dayRecords.length - 1].endAmount;
+}
+
+// 指定した記録（anchorId）より後（同じ日でcreatedAtが後）の記録のスタート額を、
+// 直前の記録のエンド額に合わせて連鎖的に補正する。抜けていたシュートを後から
+// 挿入・編集しても、その日のシュートの繋がりが自動で保たれるようにする。
+export function reflowDay(date: string, anchorId: string): void {
+  const all = getRecords();
+  const dayRecords = all
+    .filter(r => r.date === date)
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  const anchorIdx = dayRecords.findIndex(r => r.id === anchorId);
+  if (anchorIdx === -1) return;
+  let changed = false;
+  for (let i = anchorIdx + 1; i < dayRecords.length; i++) {
+    const prev = dayRecords[i - 1];
+    const cur = dayRecords[i];
+    if (cur.startAmount !== prev.endAmount) {
+      cur.startAmount = prev.endAmount;
+      cur.profit = cur.endAmount - cur.startAmount;
+      changed = true;
+    }
+  }
+  if (!changed) return;
+  const byId = new Map(dayRecords.map(r => [r.id, r]));
+  localStorage.setItem(RECORDS_KEY, JSON.stringify(all.map(r => byId.get(r.id) ?? r)));
 }
 
 // 特定の記録群（期間で絞り込み済み）内での内訳。ディーラー／シャッフルとは掛け合わせない。

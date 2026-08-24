@@ -26,6 +26,7 @@ export function BaccaratApp() {
           editRecord={editingRecord}
           onCancel={editingRecord ? () => { setEditingRecord(null); setScreen('history'); } : undefined}
           onSaved={() => { handleDataChange(); setEditingRecord(null); setScreen('history'); }}
+          onEditRecord={record => setEditingRecord(record)}
         />
       )}
       {screen === 'history' && (

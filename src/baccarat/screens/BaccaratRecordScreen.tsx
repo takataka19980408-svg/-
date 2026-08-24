@@ -1,21 +1,22 @@
 import { useState } from 'react';
 import {
   getMasters, addMasterItem, saveRecord, updateRecord, generateId, today,
-  getLastEndAmountForDate, formatYen,
+  getLastEndAmountForDate, getRecordsForDateSorted, reflowDay, formatYen,
 } from '../storage';
 import type { BaccaratRecord } from '../types';
 import { MasterPicker } from '../components/MasterPicker';
 import { MultiMasterPicker } from '../components/MultiMasterPicker';
 import { AmountField } from '../components/AmountField';
-import { GOLD, GOLDB, RED, REDB, BDR, TEXT, SUB, BRUSH, FELT, FELTD, NAV_SAFE_BOTTOM } from '../theme';
+import { GOLD, GOLDB, RED, REDB, CARD, BDR, TEXT, SUB, BRUSH, FELT, FELTD, NAV_SAFE_BOTTOM } from '../theme';
 
 interface Props {
   onSaved: () => void;
   editRecord?: BaccaratRecord | null;
   onCancel?: () => void;
+  onEditRecord?: (record: BaccaratRecord) => void;
 }
 
-export function BaccaratRecordScreen({ onSaved, editRecord, onCancel }: Props) {
+export function BaccaratRecordScreen({ onSaved, editRecord, onCancel, onEditRecord }: Props) {
   const [masters, setMasters] = useState(getMasters);
   const [date, setDate] = useState(editRecord?.date ?? today());
   const [table, setTable] = useState(editRecord?.table ?? '');
@@ -36,6 +37,12 @@ export function BaccaratRecordScreen({ onSaved, editRecord, onCancel }: Props) {
   const [memo, setMemo] = useState(editRecord?.memo ?? '');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  // 抜けていたシュートを後から挿入する位置（新規入力時のみ）。'end'＝最後に
+  // 追加、'start'＝先頭に挿入、それ以外はそのIDのシュートの直後に挿入する。
+  const [insertAfter, setInsertAfter] = useState('end');
+
+  const dayRecords = getRecordsForDateSorted(date);
+  const otherDayRecords = dayRecords.filter(r => r.id !== editRecord?.id);
 
   const storeProfit = endAmount - startAmount;
   // 客の勝敗として入力（＋＝客が勝った）。店収支として保存する際は符号を反転する。
@@ -50,7 +57,31 @@ export function BaccaratRecordScreen({ onSaved, editRecord, onCancel }: Props) {
     setDate(newDate);
     // 日付を変更したら、その日の最後のエンド額にスタートを繋ぎ直す
     // （新規入力時のみ。編集時は元の値をそのまま使う）。
-    if (!editRecord) setStartAmount(getLastEndAmountForDate(newDate) ?? 0);
+    if (!editRecord) {
+      setInsertAfter('end');
+      setStartAmount(getLastEndAmountForDate(newDate) ?? 0);
+    }
+  };
+
+  const handleInsertAfterChange = (val: string) => {
+    setInsertAfter(val);
+    if (val === 'start') { setStartAmount(0); return; }
+    if (val === 'end') { setStartAmount(dayRecords.length ? dayRecords[dayRecords.length - 1].endAmount : 0); return; }
+    setStartAmount(dayRecords.find(r => r.id === val)?.endAmount ?? 0);
+  };
+
+  // 新規シュートのcreatedAtを、選んだ挿入位置に応じてその日の並びの中に
+  // 収まるよう計算する（既存シュートのcreatedAtの間の時刻にする）。
+  const computeInsertedCreatedAt = (): string => {
+    if (dayRecords.length === 0 || insertAfter === 'end') return new Date().toISOString();
+    if (insertAfter === 'start') {
+      return new Date(new Date(dayRecords[0].createdAt).getTime() - 1000).toISOString();
+    }
+    const idx = dayRecords.findIndex(r => r.id === insertAfter);
+    if (idx === -1 || idx === dayRecords.length - 1) return new Date().toISOString();
+    const prevT = new Date(dayRecords[idx].createdAt).getTime();
+    const nextT = new Date(dayRecords[idx + 1].createdAt).getTime();
+    return new Date((prevT + nextT) / 2).toISOString();
   };
 
   const refreshMasters = () => setMasters(getMasters());
@@ -79,18 +110,22 @@ export function BaccaratRecordScreen({ onSaved, editRecord, onCancel }: Props) {
         : undefined,
       startAmount, endAmount, profit: endAmount - startAmount,
       memo: memo.trim() || undefined,
-      createdAt: editRecord?.createdAt ?? new Date().toISOString(),
+      createdAt: editRecord?.createdAt ?? computeInsertedCreatedAt(),
     };
     if (editRecord) {
       updateRecord(record);
     } else {
       saveRecord(record);
     }
+    // 抜けの挿入・エンド額の修正などで、この記録より後ろのシュートのスタート
+    // 額がずれていれば連鎖的に繋ぎ直す。
+    reflowDay(date, record.id);
     setTimeout(() => {
       setSaving(false);
       if (!editRecord) {
         setTable(''); setDealerIds([]); setShuffle(''); setCustomerIds([]);
         setCustomerProfits({}); setCustomerProfitSigns({});
+        setInsertAfter('end');
         // 次のシュートは今保存したエンド額から繋げる。
         setStartAmount(endAmount); setEndAmount(0); setMemo('');
       }
@@ -195,6 +230,45 @@ export function BaccaratRecordScreen({ onSaved, editRecord, onCancel }: Props) {
           </div>
         )}
 
+        {!editRecord && dayRecords.length > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: GOLD, letterSpacing: '0.1em', fontFamily: BRUSH, marginBottom: 6 }}>
+              挿入位置（抜けていたシュートを後から入れる場合）
+            </div>
+            <select
+              value={insertAfter} onChange={e => handleInsertAfterChange(e.target.value)}
+              style={{
+                width: '100%', padding: '10px 12px', background: '#0E1712', border: `1px solid ${BDR}`,
+                borderRadius: 6, fontSize: 13, color: TEXT, fontFamily: BRUSH, outline: 'none',
+                boxSizing: 'border-box', marginBottom: 10,
+              }}
+            >
+              <option value="end">最後に追加（{dayRecords.length}シュートの後）</option>
+              <option value="start">先頭に挿入（1シュートより前）</option>
+              {dayRecords.map((r, i) => (
+                i < dayRecords.length - 1 &&
+                <option key={r.id} value={r.id}>{i + 1}シュートの後に挿入</option>
+              ))}
+            </select>
+            <DayShootList records={dayRecords} />
+            <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH, marginTop: 6, lineHeight: 1.6 }}>
+              挿入すると、後ろのシュートのスタート額はこの記録のエンド額に自動で繋ぎ直されます。
+            </div>
+          </div>
+        )}
+
+        {editRecord && otherDayRecords.length > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: GOLD, letterSpacing: '0.1em', fontFamily: BRUSH, marginBottom: 6 }}>
+              この日の他のシュート
+            </div>
+            <DayShootList records={dayRecords} currentId={editRecord.id} onEditRecord={onEditRecord} />
+            <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH, marginTop: 6, lineHeight: 1.6 }}>
+              このシュートを更新すると、後ろのシュートのスタート額は自動で繋ぎ直されます。他のシュートをタップすると編集できます。
+            </div>
+          </div>
+        )}
+
         <AmountField label="スタート（店の開始額）" amount={startAmount} onChange={setStartAmount} accent={GOLD} />
         <AmountField label="エンド（店の終了額）" amount={endAmount} onChange={setEndAmount} accent="#00C896" />
 
@@ -254,6 +328,44 @@ export function BaccaratRecordScreen({ onSaved, editRecord, onCancel }: Props) {
           {saving ? (editRecord ? '更新中...' : '記録中...') : (editRecord ? '◆ 更新する ◆' : '◆ 記録する ◆')}
         </button>
       </div>
+    </div>
+  );
+}
+
+function DayShootList({ records, currentId, onEditRecord }: {
+  records: BaccaratRecord[];
+  currentId?: string;
+  onEditRecord?: (record: BaccaratRecord) => void;
+}) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      {records.map((r, i) => {
+        const profit = r.endAmount - r.startAmount;
+        const isCurrent = r.id === currentId;
+        const clickable = !isCurrent && !!onEditRecord;
+        return (
+          <div
+            key={r.id}
+            onClick={clickable ? () => onEditRecord(r) : undefined}
+            style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8,
+              padding: '8px 10px', borderRadius: 6, fontSize: 12, fontFamily: BRUSH,
+              background: isCurrent ? `${GOLD}14` : CARD, border: `1px solid ${isCurrent ? GOLD : BDR}`,
+              cursor: clickable ? 'pointer' : 'default',
+            }}
+          >
+            <span style={{ color: isCurrent ? GOLDB : TEXT, flexShrink: 0 }}>
+              {i + 1}シュート{isCurrent && '（編集中）'}
+            </span>
+            <span style={{ color: SUB, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {r.startAmount.toLocaleString()} → {r.endAmount.toLocaleString()}
+            </span>
+            <span style={{ color: profit > 0 ? GOLDB : profit < 0 ? REDB : SUB, fontWeight: 700, flexShrink: 0 }}>
+              {formatYen(profit)}円
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }
