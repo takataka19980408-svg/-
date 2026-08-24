@@ -139,6 +139,9 @@ export interface AggregateItem {
   endSum: number;
   storeProfit: number; // 店の収支 = endSum - startSum
   holdRate: number | null;
+  // 該当する記録に登場した客ID（重複なし）の人数。年別/月別/日別/曜日別のような
+  // 期間集計でのみ意味を持つため、それ以外（客別など）では未設定。
+  customerCount?: number;
 }
 
 function aggregateBy(
@@ -146,7 +149,7 @@ function aggregateBy(
   keysFn: (r: BaccaratRecord) => string[],
   sortFn: (a: AggregateItem, b: AggregateItem) => number = (a, b) => b.storeProfit - a.storeProfit,
 ): AggregateItem[] {
-  const map = new Map<string, { count: number; startSum: number; endSum: number }>();
+  const map = new Map<string, { count: number; startSum: number; endSum: number; customers: Set<string> }>();
   for (const r of records) {
     const keys = keysFn(r).filter(k => k);
     if (keys.length === 0) continue;
@@ -155,10 +158,11 @@ function aggregateBy(
     // 対応回数はそれぞれ1回分としてそのままカウントする。
     const share = 1 / keys.length;
     for (const k of keys) {
-      const e = map.get(k) ?? { count: 0, startSum: 0, endSum: 0 };
+      const e = map.get(k) ?? { count: 0, startSum: 0, endSum: 0, customers: new Set<string>() };
       e.count += 1;
       e.startSum += r.startAmount * share;
       e.endSum += r.endAmount * share;
+      for (const id of r.customerIds ?? []) e.customers.add(id);
       map.set(k, e);
     }
   }
@@ -167,6 +171,7 @@ function aggregateBy(
     return {
       label, count: e.count, startSum: e.startSum, endSum: e.endSum, storeProfit,
       holdRate: e.startSum > 0 ? storeProfit / e.startSum : null,
+      customerCount: e.customers.size,
     };
   }).sort(sortFn);
 }
@@ -270,6 +275,15 @@ export function getShootNumbers(): Map<string, number> {
     group.records.forEach((r, i) => map.set(r.id, i + 1));
   }
   return map;
+}
+
+// 記録群に登場する客ID（重複なし）の人数。3シュート遊んだ客も1人と数える。
+export function getUniqueCustomerCount(records: BaccaratRecord[]): number {
+  const set = new Set<string>();
+  for (const r of records) {
+    for (const id of r.customerIds ?? []) set.add(id);
+  }
+  return set.size;
 }
 
 const WEEKDAY_LABELS = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];

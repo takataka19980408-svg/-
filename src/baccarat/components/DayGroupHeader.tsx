@@ -8,9 +8,11 @@ interface Props {
   amount: number;
   // trueのとき表示する数値だけ符号を反転する（客の勝敗表示など）。
   invert?: boolean;
+  // その日に登場した客ID（重複なし）の人数。渡された場合のみ表示する。
+  customerCount?: number;
 }
 
-export function DayGroupHeader({ label, count, amount, invert }: Props) {
+export function DayGroupHeader({ label, count, amount, invert, customerCount }: Props) {
   const displayValue = invert ? -amount : amount;
   return (
     <div style={{
@@ -18,7 +20,7 @@ export function DayGroupHeader({ label, count, amount, invert }: Props) {
       marginBottom: 8, paddingBottom: 6, borderBottom: `1px solid ${BDR}`,
     }}>
       <span style={{ fontSize: 13, fontWeight: 800, color: GOLD, fontFamily: BRUSH, letterSpacing: '0.05em' }}>
-        {label}（{count}シュート）
+        {label}（{count}シュート{customerCount !== undefined && `・入客${customerCount}人`}）
       </span>
       <span style={{
         fontSize: 15, fontWeight: 800, fontFamily: BRUSH,

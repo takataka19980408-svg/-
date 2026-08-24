@@ -3,7 +3,7 @@ import type { AggregateItem } from '../storage';
 import {
   getCustomerSummaryForRecords, getWeekdaySummaryForRecords,
   getDealerSummaryForRecords, getShuffleSummaryForRecords,
-  groupRecordsByDay, formatYen,
+  groupRecordsByDay, getUniqueCustomerCount, formatYen,
 } from '../storage';
 import { BarChart } from './BarChart';
 import { BreakdownList } from './BreakdownList';
@@ -63,6 +63,12 @@ export function PeriodDetail({ kind, period, records, onBack }: Props) {
           <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>記録件数</span>
           <span style={{ fontSize: 13, color: TEXT, fontFamily: BRUSH }}>{period.count.toLocaleString()}件</span>
         </div>
+        {period.customerCount !== undefined && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+            <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>入客数</span>
+            <span style={{ fontSize: 13, color: TEXT, fontFamily: BRUSH }}>{period.customerCount.toLocaleString()}人</span>
+          </div>
+        )}
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>店収支合計</span>
           <span style={{
@@ -87,7 +93,10 @@ export function PeriodDetail({ kind, period, records, onBack }: Props) {
         const dayProfit = group.records.reduce((s, r) => s + (r.endAmount - r.startAmount), 0);
         return (
           <div key={group.date} style={{ marginTop: gi === 0 ? 0 : 20 }}>
-            <DayGroupHeader label={group.label} count={group.records.length} amount={dayProfit} />
+            <DayGroupHeader
+              label={group.label} count={group.records.length} amount={dayProfit}
+              customerCount={getUniqueCustomerCount(group.records)}
+            />
             {group.records.map((r, ri) => {
               const profit = r.endAmount - r.startAmount;
               return (

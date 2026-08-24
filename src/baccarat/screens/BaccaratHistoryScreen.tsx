@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { getRecords, deleteRecord, formatYen, groupRecordsByDay } from '../storage';
+import { getRecords, deleteRecord, formatYen, groupRecordsByDay, getUniqueCustomerCount } from '../storage';
 import type { BaccaratRecord } from '../types';
 import { DayGroupHeader } from '../components/DayGroupHeader';
 import { GOLD, GOLDB, REDB, CARD, BDR, SUB, BRUSH, FELTD, NAV_SAFE_BOTTOM } from '../theme';
@@ -43,7 +43,10 @@ export function BaccaratHistoryScreen({ refreshKey, onDataChange, onEdit }: Prop
           const dayProfit = group.records.reduce((sum, r) => sum + (r.endAmount - r.startAmount), 0);
           return (
           <div key={group.date} style={{ marginTop: gi === 0 ? 0 : 20 }}>
-            <DayGroupHeader label={group.label} count={group.records.length} amount={dayProfit} />
+            <DayGroupHeader
+              label={group.label} count={group.records.length} amount={dayProfit}
+              customerCount={getUniqueCustomerCount(group.records)}
+            />
 
             {group.records.map((r, ri) => {
               const storeProfit = r.endAmount - r.startAmount;

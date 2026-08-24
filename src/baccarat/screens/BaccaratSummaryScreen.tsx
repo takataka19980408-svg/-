@@ -34,7 +34,9 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'shuffle',  label: 'シャッフル別' },
 ];
 
-function List({ items, onSelect, invert }: { items: AggregateItem[]; onSelect?: (item: AggregateItem) => void; invert?: boolean }) {
+function List({ items, onSelect, invert, showCustomerCount }: {
+  items: AggregateItem[]; onSelect?: (item: AggregateItem) => void; invert?: boolean; showCustomerCount?: boolean;
+}) {
   if (items.length === 0) {
     return <div style={{ textAlign: 'center', color: SUB, fontFamily: BRUSH, fontSize: 13, padding: '30px 0' }}>データがありません</div>;
   }
@@ -67,6 +69,7 @@ function List({ items, onSelect, invert }: { items: AggregateItem[]; onSelect?: 
             <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH }}>
               対応 {it.count}回 スタート {it.startSum.toLocaleString()} エンド {it.endSum.toLocaleString()}
               {it.holdRate !== null && ` ホールド率 ${(it.holdRate * 100).toFixed(1)}%`}
+              {showCustomerCount && it.customerCount !== undefined && ` 入客 ${it.customerCount}人`}
             </div>
           </div>
         );
@@ -203,7 +206,7 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
                 {tab === 'day' && (
                   <BarChart items={items} onSelect={it => setSelectedPeriod({ kind: tab, item: it })} />
                 )}
-                <List items={items} onSelect={it => setSelectedPeriod({ kind: tab as PeriodTab, item: it })} />
+                <List items={items} onSelect={it => setSelectedPeriod({ kind: tab as PeriodTab, item: it })} showCustomerCount />
               </>
             )}
           </>
