@@ -17,7 +17,11 @@ interface Props {
 }
 
 export function BaccaratRecordScreen({ onSaved, editRecord, onCancel, onEditRecord }: Props) {
-  const [masters, setMasters] = useState(getMasters);
+  // 入力画面は他画面に切り替えてもマウントされたままになるため、マスタは
+  // useStateにキャッシュせず毎回読み直す（マスタ画面での追加を即反映する）。
+  // masterVersionはこの画面自身でマスタを追加したときの再描画用。
+  const [, setMasterVersion] = useState(0);
+  const masters = getMasters();
   const [date, setDate] = useState(editRecord?.date ?? today());
   const [table, setTable] = useState(editRecord?.table ?? '');
   const [dealerIds, setDealerIds] = useState<string[]>(editRecord?.dealerIds ?? []);
@@ -84,7 +88,7 @@ export function BaccaratRecordScreen({ onSaved, editRecord, onCancel, onEditReco
     return new Date((prevT + nextT) / 2).toISOString();
   };
 
-  const refreshMasters = () => setMasters(getMasters());
+  const refreshMasters = () => setMasterVersion(v => v + 1);
 
   const handleSave = () => {
     setError('');

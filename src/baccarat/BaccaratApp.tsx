@@ -13,14 +13,13 @@ export function BaccaratApp() {
 
   const handleDataChange = () => setRefreshKey(k => k + 1);
 
-  const handleNavChange = (s: BaccaratScreen) => {
-    if (s !== 'record') setEditingRecord(null);
-    setScreen(s);
-  };
+  // 入力画面は他の画面に切り替えても入力途中の内容を消さないため、タブ移動
+  // だけではeditingRecordをクリアしない（保存・キャンセル時のみクリアする）。
+  const handleNavChange = (s: BaccaratScreen) => setScreen(s);
 
   return (
     <>
-      {screen === 'record'  && (
+      <div style={{ display: screen === 'record' ? 'block' : 'none' }}>
         <BaccaratRecordScreen
           key={editingRecord?.id ?? 'new'}
           editRecord={editingRecord}
@@ -28,7 +27,7 @@ export function BaccaratApp() {
           onSaved={() => { handleDataChange(); setEditingRecord(null); setScreen('history'); }}
           onEditRecord={record => setEditingRecord(record)}
         />
-      )}
+      </div>
       {screen === 'history' && (
         <BaccaratHistoryScreen
           refreshKey={refreshKey}
