@@ -5,6 +5,7 @@ import {
 } from '../storage';
 import { BreakdownList } from './BreakdownList';
 import { DayGroupHeader } from './DayGroupHeader';
+import { useSwipeBack } from '../hooks/useSwipeBack';
 import { GOLD, GOLDB, REDB, CARD, BDR, TEXT, SUB, BRUSH } from '../theme';
 
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function DealerDetail({ dealer, onBack }: Props) {
+  useSwipeBack(onBack);
   const records = getRecordsForDealer(dealer.label);
   // 呼び出し元のdealerは今月分などスコープが絞られている場合があるため、
   // ここで取得した全期間のrecordsから改めて集計し直して表示する。
@@ -56,7 +58,7 @@ export function DealerDetail({ dealer, onBack }: Props) {
         </div>
       </div>
 
-      <BreakdownList title="客別内訳" items={customerItems} showChart invert />
+      <BreakdownList title="客別内訳" items={customerItems} showChart invert showAmounts={false} />
       <BreakdownList title="シャッフル別内訳" items={shuffleItems} showChart />
 
       <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, fontFamily: BRUSH, marginBottom: 8, letterSpacing: '0.05em' }}>

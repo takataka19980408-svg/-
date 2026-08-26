@@ -5,6 +5,7 @@ import {
 } from '../storage';
 import { BreakdownList } from './BreakdownList';
 import { DayGroupHeader } from './DayGroupHeader';
+import { useSwipeBack } from '../hooks/useSwipeBack';
 import { GOLD, GOLDB, REDB, CARD, BDR, TEXT, SUB, BRUSH } from '../theme';
 
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function ShuffleDetail({ shuffle, onBack }: Props) {
+  useSwipeBack(onBack);
   const records = getRecordsForShuffle(shuffle.label);
   // 呼び出し元のshuffleは今月分などスコープが絞られている場合があるため、
   // ここで取得した全期間のrecordsから改めて集計し直して表示する。
@@ -56,7 +58,7 @@ export function ShuffleDetail({ shuffle, onBack }: Props) {
         </div>
       </div>
 
-      <BreakdownList title="客別内訳" items={customerItems} showChart invert />
+      <BreakdownList title="客別内訳" items={customerItems} showChart invert showAmounts={false} />
       <BreakdownList title="ディーラー別内訳" items={dealerItems} showChart />
 
       <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, fontFamily: BRUSH, margin: '16px 0 8px', letterSpacing: '0.05em' }}>

@@ -6,6 +6,7 @@ import {
 } from '../storage';
 import { BarChart } from './BarChart';
 import { DayGroupHeader } from './DayGroupHeader';
+import { useSwipeBack } from '../hooks/useSwipeBack';
 import { GOLD, GOLDB, REDB, CARD, BDR, TEXT, SUB, BRUSH } from '../theme';
 
 interface Props {
@@ -31,6 +32,7 @@ function ChartBreakdown({ title, items }: { title: string; items: AggregateItem[
 }
 
 export function CustomerDetail({ customer, onBack }: Props) {
+  useSwipeBack(onBack);
   const records = getRecordsForCustomer(customer.label);
   // 呼び出し元のcustomerは今月分などスコープが絞られている場合があるため、
   // ここで取得した全期間のrecordsから改めて集計し直して表示する。

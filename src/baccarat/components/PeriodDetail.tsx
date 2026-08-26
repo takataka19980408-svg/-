@@ -8,6 +8,7 @@ import {
 import { BarChart } from './BarChart';
 import { BreakdownList } from './BreakdownList';
 import { DayGroupHeader } from './DayGroupHeader';
+import { useSwipeBack } from '../hooks/useSwipeBack';
 import { GOLD, GOLDB, REDB, CARD, BDR, TEXT, SUB, BRUSH } from '../theme';
 
 type PeriodKind = 'year' | 'month' | 'day';
@@ -35,6 +36,7 @@ function ChartBreakdown({ title, items }: { title: string; items: AggregateItem[
 }
 
 export function PeriodDetail({ kind, period, records, onBack }: Props) {
+  useSwipeBack(onBack);
   const customerItems = getCustomerSummaryForRecords(records);
   const dealerItems = getDealerSummaryForRecords(records);
   const shuffleItems = getShuffleSummaryForRecords(records);
@@ -81,7 +83,7 @@ export function PeriodDetail({ kind, period, records, onBack }: Props) {
         </div>
       </div>
 
-      <BreakdownList title="客別内訳" items={customerItems} invert />
+      <BreakdownList title="客別内訳" items={customerItems} invert showAmounts={false} />
       <ChartBreakdown title="ディーラー別内訳" items={dealerItems} />
       <ChartBreakdown title="シャッフル別内訳" items={shuffleItems} />
       {weekdayItems && <BreakdownList title="曜日別内訳" items={weekdayItems} />}
