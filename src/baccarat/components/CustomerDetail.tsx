@@ -1,6 +1,6 @@
 import type { AggregateItem } from '../storage';
 import {
-  getRecordsForCustomer, getDealerSummaryForRecords, getShuffleSummaryForRecords,
+  getRecordsForCustomer, getDealerSummaryForCustomer, getShuffleSummaryForCustomer,
   getCustomerSummaryForRecords, getCustomerProfitForRecord,
   groupRecordsByDay, getShootNumbers, formatYen,
 } from '../storage';
@@ -13,6 +13,8 @@ interface Props {
   onBack: () => void;
 }
 
+// 客個人の収支での内訳（店収支ではなく、その客自身の勝敗）。色は店収支の
+// 符号のまま、表示数値だけ反転する（他画面のinvertと同じ考え方）。
 function ChartBreakdown({ title, items }: { title: string; items: AggregateItem[] }) {
   return (
     <>
@@ -22,7 +24,7 @@ function ChartBreakdown({ title, items }: { title: string; items: AggregateItem[
       {items.length === 0 ? (
         <div style={{ textAlign: 'center', color: SUB, fontFamily: BRUSH, fontSize: 13, padding: '16px 0' }}>データがありません</div>
       ) : (
-        <BarChart items={items} />
+        <BarChart items={items} invert />
       )}
     </>
   );
@@ -33,8 +35,8 @@ export function CustomerDetail({ customer, onBack }: Props) {
   // 呼び出し元のcustomerは今月分などスコープが絞られている場合があるため、
   // ここで取得した全期間のrecordsから改めて集計し直して表示する。
   const summary = getCustomerSummaryForRecords(records).find(it => it.label === customer.label) ?? customer;
-  const dealerItems = getDealerSummaryForRecords(records);
-  const shuffleItems = getShuffleSummaryForRecords(records);
+  const dealerItems = getDealerSummaryForCustomer(records, customer.label);
+  const shuffleItems = getShuffleSummaryForCustomer(records, customer.label);
   const dayGroups = groupRecordsByDay(records);
   const shootNumbers = getShootNumbers();
 
