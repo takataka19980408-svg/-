@@ -1,5 +1,8 @@
 import { useState } from 'react';
-import { getRecords, deleteRecord, formatYen, groupRecordsByDay, getUniqueCustomerCount } from '../storage';
+import {
+  getRecords, deleteRecord, getCustomerProfitForRecord,
+  formatYen, groupRecordsByDay, getUniqueCustomerCount,
+} from '../storage';
 import type { BaccaratRecord } from '../types';
 import { DayGroupHeader } from '../components/DayGroupHeader';
 import { GOLD, GOLDB, REDB, CARD, BDR, SUB, BRUSH, FELTD, NAV_SAFE_BOTTOM } from '../theme';
@@ -68,7 +71,14 @@ export function BaccaratHistoryScreen({ refreshKey, onDataChange, onEdit }: Prop
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: r.memo ? 6 : 0 }}>
                     {r.dealerIds.map(d => <Tag key={d}>{d}</Tag>)}
                     <Tag>{r.shuffle}</Tag>
-                    {(r.customerIds ?? []).map(c => <Tag key={c}>{c}</Tag>)}
+                    {(r.customerIds ?? []).length <= 1
+                      ? (r.customerIds ?? []).map(c => <Tag key={c}>{c}</Tag>)
+                      : (r.customerIds ?? []).map(c => {
+                          const profit = getCustomerProfitForRecord(r, c);
+                          return (
+                            <CustomerProfitTag key={c} name={c} profit={profit} />
+                          );
+                        })}
                   </div>
                   {r.memo && (
                     <div style={{ fontSize: 12, color: SUB, fontFamily: BRUSH, marginBottom: 6 }}>{r.memo}</div>
@@ -128,6 +138,21 @@ function Tag({ children }: { children: React.ReactNode }) {
       background: `${GOLD}14`, border: `1px solid ${GOLD}33`, color: GOLD, fontFamily: BRUSH,
     }}>
       {children}
+    </span>
+  );
+}
+
+// 客が2人以上のシュートで、その客個人の収支を併記するタグ。
+// 色は店収支の符号のまま（プラス＝客の負け＝金色、マイナス＝客の勝ち＝赤）、
+// 表示額だけ客視点に反転する。
+function CustomerProfitTag({ name, profit }: { name: string; profit: number }) {
+  const color = profit > 0 ? GOLDB : profit < 0 ? REDB : SUB;
+  return (
+    <span style={{
+      fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 10,
+      background: `${GOLD}14`, border: `1px solid ${GOLD}33`, color: GOLD, fontFamily: BRUSH,
+    }}>
+      {name} <span style={{ color }}>{formatYen(-profit)}円</span>
     </span>
   );
 }

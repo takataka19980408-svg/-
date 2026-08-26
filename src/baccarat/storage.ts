@@ -393,7 +393,9 @@ function aggregateByForCustomer(
   for (const r of records) {
     const keys = keysFn(r).filter(k => k);
     if (keys.length === 0) continue;
-    const profit = getCustomerProfitForRecord(r, customerId);
+    // 1つの記録が複数キーに該当する場合（ディーラー2人選択時など）は、
+    // 客の収支を人数で均等按分する（重複計上を防ぐ）。
+    const profit = getCustomerProfitForRecord(r, customerId) / keys.length;
     for (const k of keys) {
       const e = map.get(k) ?? { count: 0, profitSum: 0 };
       e.count += 1;
