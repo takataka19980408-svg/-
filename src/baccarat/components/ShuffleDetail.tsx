@@ -14,7 +14,7 @@ interface Props {
 }
 
 export function ShuffleDetail({ shuffle, onBack }: Props) {
-  useSwipeBack(onBack);
+  const swipeStyle = useSwipeBack(onBack);
   const records = getRecordsForShuffle(shuffle.label);
   // 呼び出し元のshuffleは今月分などスコープが絞られている場合があるため、
   // ここで取得した全期間のrecordsから改めて集計し直して表示する。
@@ -25,7 +25,7 @@ export function ShuffleDetail({ shuffle, onBack }: Props) {
   const shootNumbers = getShootNumbers();
 
   return (
-    <div>
+    <div style={swipeStyle}>
       <button
         onClick={onBack}
         style={{

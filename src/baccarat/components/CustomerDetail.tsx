@@ -32,7 +32,7 @@ function ChartBreakdown({ title, items }: { title: string; items: AggregateItem[
 }
 
 export function CustomerDetail({ customer, onBack }: Props) {
-  useSwipeBack(onBack);
+  const swipeStyle = useSwipeBack(onBack);
   const records = getRecordsForCustomer(customer.label);
   // 呼び出し元のcustomerは今月分などスコープが絞られている場合があるため、
   // ここで取得した全期間のrecordsから改めて集計し直して表示する。
@@ -43,7 +43,7 @@ export function CustomerDetail({ customer, onBack }: Props) {
   const shootNumbers = getShootNumbers();
 
   return (
-    <div>
+    <div style={swipeStyle}>
       <button
         onClick={onBack}
         style={{

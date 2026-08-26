@@ -36,7 +36,7 @@ function ChartBreakdown({ title, items }: { title: string; items: AggregateItem[
 }
 
 export function PeriodDetail({ kind, period, records, onBack }: Props) {
-  useSwipeBack(onBack);
+  const swipeStyle = useSwipeBack(onBack);
   const customerItems = getCustomerSummaryForRecords(records);
   const dealerItems = getDealerSummaryForRecords(records);
   const shuffleItems = getShuffleSummaryForRecords(records);
@@ -44,7 +44,7 @@ export function PeriodDetail({ kind, period, records, onBack }: Props) {
   const dayGroups = groupRecordsByDay(records);
 
   return (
-    <div>
+    <div style={swipeStyle}>
       <button
         onClick={onBack}
         style={{
