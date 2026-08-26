@@ -7,7 +7,8 @@ import { useEffect, useRef, useState } from 'react';
 // 指の動きに合わせて画面をリアルタイムに追従させ、離したときに戻る／
 // 元の位置へ戻るをスムーズにアニメーションさせる。
 const SWIPE_THRESHOLD = 80; // 戻る判定に必要な右方向の移動量
-const HORIZONTAL_RATIO = 1.5; // 横方向の移動が縦方向の何倍以上あれば「横スワイプ」とみなすか
+const HORIZONTAL_RATIO = 3; // 横方向の移動が縦方向の何倍以上あれば「横スワイプ」とみなすか（厳しめ）
+const MAX_VERTICAL = 40; // これを超えて縦にずれたら、確定後でも横スワイプ扱いをやめる
 const CONFIRM_DISTANCE = 10; // 横スワイプかどうかを確定させるまでの遊び（この間は追従しない）
 const ANIM_MS = 220;
 
@@ -30,6 +31,18 @@ export function useSwipeBack(onBack: () => void) {
       state.startY = t.clientY;
     };
 
+    const cancelDrag = () => {
+      state.tracking = false;
+      state.confirmed = false;
+      state.busy = true;
+      setTransitioning(true);
+      setDragX(0);
+      setTimeout(() => { setTransitioning(false); state.busy = false; }, ANIM_MS);
+    };
+
+    const isHorizontal = (dx: number, dy: number) =>
+      dx > 0 && Math.abs(dy) <= MAX_VERTICAL && dx > Math.abs(dy) * HORIZONTAL_RATIO;
+
     const handleTouchMove = (e: TouchEvent) => {
       if (!state.tracking) return;
       const t = e.touches[0];
@@ -37,11 +50,15 @@ export function useSwipeBack(onBack: () => void) {
       const dy = t.clientY - state.startY;
       if (!state.confirmed) {
         if (Math.abs(dx) < CONFIRM_DISTANCE && Math.abs(dy) < CONFIRM_DISTANCE) return;
-        if (dx <= 0 || dx <= Math.abs(dy) * HORIZONTAL_RATIO) {
+        if (!isHorizontal(dx, dy)) {
           state.tracking = false; // 縦方向優勢 → スクロールに譲る
           return;
         }
         state.confirmed = true;
+      } else if (!isHorizontal(dx, dy)) {
+        // 確定後に縦方向へそれたら、追従をやめて元の位置に戻す
+        cancelDrag();
+        return;
       }
       setDragX(Math.min(Math.max(0, dx), width()));
     };
