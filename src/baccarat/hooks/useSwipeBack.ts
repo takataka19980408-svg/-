@@ -60,6 +60,9 @@ export function useSwipeBack(onBack: () => void) {
         cancelDrag();
         return;
       }
+      // 横スワイプ確定後はデフォルトのスクロールを止め、縦方向には一切
+      // 動かず左右のみに追従させる。
+      e.preventDefault();
       setDragX(Math.min(Math.max(0, dx), width()));
     };
 
@@ -86,7 +89,8 @@ export function useSwipeBack(onBack: () => void) {
     const handleTouchCancel = () => release(-1);
 
     document.addEventListener('touchstart', handleTouchStart, { passive: true });
-    document.addEventListener('touchmove', handleTouchMove, { passive: true });
+    // 横スワイプ確定後にpreventDefault()でスクロールを止めるためpassive:false。
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
     document.addEventListener('touchend', handleTouchEnd, { passive: true });
     document.addEventListener('touchcancel', handleTouchCancel, { passive: true });
     return () => {
