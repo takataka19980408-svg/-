@@ -43,7 +43,7 @@ export function ShuffleDetail({ shuffle, onBack }: Props) {
           {shuffle.label} の成績
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-          <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>対応回数</span>
+          <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>シュート数</span>
           <span style={{ fontSize: 13, color: TEXT, fontFamily: BRUSH }}>{summary.count.toLocaleString()}回</span>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>

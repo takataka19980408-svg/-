@@ -68,7 +68,7 @@ function List({ items, onSelect, invert, showCustomerCount, showAmounts = true }
               </span>
             </div>
             <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH }}>
-              対応 {it.count}回
+              シュート数 {it.count}回
               {showAmounts && ` スタート ${it.startSum.toLocaleString()} エンド ${it.endSum.toLocaleString()}`}
               {it.holdRate !== null && ` ホールド率 ${(it.holdRate * 100).toFixed(1)}%`}
               {showCustomerCount && it.customerCount !== undefined && ` 入客 ${it.customerCount}人`}

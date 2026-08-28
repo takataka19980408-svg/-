@@ -11,7 +11,7 @@ interface Props {
   // 店収支の符号のまま（店のプラス＝客の負け＝金色、店のマイナス＝
   // 客の勝ち＝赤）で変えない。
   invert?: boolean;
-  // falseのとき「対応N回 スタートX エンドY」のスタート/エンド部分を隠す。
+  // falseのとき「シュート数N回 スタートX エンドY」のスタート/エンド部分を隠す。
   // 客別内訳はスタート/エンド合計に意味がないため使う。
   showAmounts?: boolean;
 }
@@ -45,7 +45,7 @@ export function BreakdownList({ title, items, showChart, invert, showAmounts = t
                   </span>
                 </div>
                 <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH }}>
-                  対応 {it.count}回
+                  シュート数 {it.count}回
                   {showAmounts && ` スタート ${it.startSum.toLocaleString()} エンド ${it.endSum.toLocaleString()}`}
                 </div>
               </div>
