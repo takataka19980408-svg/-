@@ -11,7 +11,7 @@ interface Props {
   onDataChange: () => void;
 }
 
-const KINDS: MasterKind[] = ['dealers', 'shuffles', 'tables', 'customers'];
+const KINDS: MasterKind[] = ['shuffles', 'dealers', 'tables', 'customers'];
 
 function MasterList({ kind, values, onChange }: { kind: MasterKind; values: string[]; onChange: () => void }) {
   const [newVal, setNewVal] = useState('');

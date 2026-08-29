@@ -76,8 +76,8 @@ export function CustomerDetail({ customer, onBack }: Props) {
         </div>
       </div>
 
-      <ChartBreakdown title="ディーラー別内訳" items={dealerItems} />
       <ChartBreakdown title="シャッフル別内訳" items={shuffleItems} />
+      <ChartBreakdown title="ディーラー別内訳" items={dealerItems} />
 
       <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, fontFamily: BRUSH, marginBottom: 8, letterSpacing: '0.05em' }}>
         来店履歴（{records.length}シュート）
@@ -106,7 +106,7 @@ export function CustomerDetail({ customer, onBack }: Props) {
                     </span>
                   </div>
                   <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH }}>
-                    {r.dealerIds.join('、')} / {r.shuffle}
+                    {r.shuffle} / {r.dealerIds.join('、')}
                     {shared && ` / 他の客: ${(r.customerIds ?? []).filter(id => id !== customer.label).join('、')}`}
                   </div>
                   <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH }}>

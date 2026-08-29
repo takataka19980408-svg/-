@@ -69,8 +69,8 @@ export function BaccaratHistoryScreen({ refreshKey, onDataChange, onEdit }: Prop
                     </span>
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: r.memo ? 6 : 0 }}>
-                    {r.dealerIds.map(d => <Tag key={d}>{d}</Tag>)}
                     <Tag>{r.shuffle}</Tag>
+                    {r.dealerIds.map(d => <Tag key={d}>{d}</Tag>)}
                     {(r.customerIds ?? []).length <= 1
                       ? (r.customerIds ?? []).map(c => <Tag key={c}>{c}</Tag>)
                       : (r.customerIds ?? []).map(c => {

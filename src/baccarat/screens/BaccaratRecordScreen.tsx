@@ -176,10 +176,10 @@ export function BaccaratRecordScreen({ onSaved, editRecord, onCancel, onEditReco
 
         <MasterPicker label="卓" options={masters.tables} value={table}
           onChange={setTable} onAdd={v => { addMasterItem('tables', v); refreshMasters(); }} />
-        <MultiMasterPicker label="ディーラー" options={masters.dealers} values={dealerIds}
-          onChange={setDealerIds} onAdd={v => { addMasterItem('dealers', v); refreshMasters(); }} />
         <MasterPicker label="シャッフル方式" options={masters.shuffles} value={shuffle}
           onChange={setShuffle} onAdd={v => { addMasterItem('shuffles', v); refreshMasters(); }} />
+        <MultiMasterPicker label="ディーラー" options={masters.dealers} values={dealerIds}
+          onChange={setDealerIds} onAdd={v => { addMasterItem('dealers', v); refreshMasters(); }} />
         <MultiMasterPicker label="客ID" options={masters.customers} values={customerIds} optional
           onChange={setCustomerIds} onAdd={v => { addMasterItem('customers', v); refreshMasters(); }} />
 

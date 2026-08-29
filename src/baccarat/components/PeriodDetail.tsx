@@ -84,8 +84,8 @@ export function PeriodDetail({ kind, period, records, onBack }: Props) {
       </div>
 
       <BreakdownList title="客別内訳" items={customerItems} invert showAmounts={false} />
-      <ChartBreakdown title="ディーラー別内訳" items={dealerItems} />
       <ChartBreakdown title="シャッフル別内訳" items={shuffleItems} />
+      <ChartBreakdown title="ディーラー別内訳" items={dealerItems} />
       {weekdayItems && <BreakdownList title="曜日別内訳" items={weekdayItems} />}
 
       <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, fontFamily: BRUSH, margin: '16px 0 8px', letterSpacing: '0.05em' }}>
@@ -117,7 +117,7 @@ export function PeriodDetail({ kind, period, records, onBack }: Props) {
                     </span>
                   </div>
                   <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH }}>
-                    {r.dealerIds.join('、')} / {r.shuffle}
+                    {r.shuffle} / {r.dealerIds.join('、')}
                     {r.customerIds && r.customerIds.length > 0 && ` / ${r.customerIds.join('、')}`}
                   </div>
                   <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH }}>

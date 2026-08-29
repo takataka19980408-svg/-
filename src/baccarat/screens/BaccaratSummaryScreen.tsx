@@ -30,8 +30,8 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'month',    label: '月別' },
   { id: 'day',      label: '日別' },
   { id: 'customer', label: '客別' },
-  { id: 'dealer',   label: 'ディーラー別' },
   { id: 'shuffle',  label: 'シャッフル別' },
+  { id: 'dealer',   label: 'ディーラー別' },
 ];
 
 function List({ items, onSelect, invert, showCustomerCount, showAmounts = true }: {
