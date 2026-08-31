@@ -1,7 +1,7 @@
 import type { AggregateItem } from '../storage';
 import {
   getRecordsForShuffle, getCustomerSummaryForRecords, getShuffleSummaryForRecords,
-  getDealerSummaryForRecords, groupRecordsByDay, getShootNumbers, formatYen,
+  getDealerSummaryForRecords, groupRecordsByDay, getShootNumbers, getShortDayKey, formatYen,
 } from '../storage';
 import { BreakdownList } from './BreakdownList';
 import { DayGroupHeader } from './DayGroupHeader';
@@ -77,7 +77,7 @@ export function ShuffleDetail({ shuffle, onBack }: Props) {
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                     <span style={{ fontSize: 12, color: SUB, fontFamily: BRUSH }}>
-                      {shootNumbers.get(r.id)}シュート{r.table ? ` ・ ${r.table}` : ''}
+                      {getShortDayKey(r.date)} ・ {shootNumbers.get(r.id)}シュート{r.table ? ` ・ ${r.table}` : ''}
                     </span>
                     <span style={{
                       fontSize: 14, fontWeight: 800, fontFamily: BRUSH,

@@ -243,6 +243,11 @@ export function getDayKey(date: string): string {
   return `${date.slice(0, 4)}年${date.slice(5, 7)}月${date.slice(8, 10)}日`;
 }
 
+// シュート単位の履歴カードに添える短い日付表示（例: 8/11）。
+export function getShortDayKey(date: string): string {
+  return `${Number(date.slice(5, 7))}/${Number(date.slice(8, 10))}`;
+}
+
 // 各種の来店履歴・対応履歴一覧を日別に区切って表示するための共通処理。
 // 日付降順（直近が先頭）、各日の中はcreatedAt昇順（入力順＝1シュート目から）で並べる。
 export interface DayGroup {
