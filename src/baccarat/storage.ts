@@ -376,6 +376,40 @@ export function getShuffleSummaryForRecords(records: BaccaratRecord[]): Aggregat
   return aggregateBy(records, r => [r.shuffle]);
 }
 
+// ディーラー別詳細画面の客別内訳用。このディーラー自身の店収支合計
+// （ディーラー人数で按分済み）と一致するよう、客個人の収支
+// （getCustomerProfitForRecord）をさらにディーラー人数で按分して集計する。
+export function getCustomerSummaryForDealer(records: BaccaratRecord[]): AggregateItem[] {
+  const map = new Map<string, { count: number; profitSum: number }>();
+  for (const r of records) {
+    for (const id of r.customerIds ?? []) {
+      const e = map.get(id) ?? { count: 0, profitSum: 0 };
+      e.count += 1;
+      e.profitSum += getCustomerProfitForRecord(r, id) / r.dealerIds.length;
+      map.set(id, e);
+    }
+  }
+  return Array.from(map.entries())
+    .map(([label, e]) => ({ label, count: e.count, startSum: 0, endSum: 0, storeProfit: e.profitSum, holdRate: null }))
+    .sort((a, b) => b.storeProfit - a.storeProfit);
+}
+
+// ディーラー別詳細画面のシャッフル別内訳用。シャッフルは1記録につき常に
+// 1つのため重複計上は起きないが、店収支はディーラー人数で按分する。
+export function getShuffleSummaryForDealer(records: BaccaratRecord[]): AggregateItem[] {
+  const map = new Map<string, { count: number; profitSum: number }>();
+  for (const r of records) {
+    if (!r.shuffle) continue;
+    const e = map.get(r.shuffle) ?? { count: 0, profitSum: 0 };
+    e.count += 1;
+    e.profitSum += getDealerProfitForRecord(r);
+    map.set(r.shuffle, e);
+  }
+  return Array.from(map.entries())
+    .map(([label, e]) => ({ label, count: e.count, startSum: 0, endSum: 0, storeProfit: e.profitSum, holdRate: null }))
+    .sort((a, b) => b.storeProfit - a.storeProfit);
+}
+
 export function getWeekdaySummaryForRecords(records: BaccaratRecord[]): AggregateItem[] {
   return aggregateBy(records, r => [getWeekdayKey(r.date)],
     (a, b) => WEEKDAY_LABELS.indexOf(a.label) - WEEKDAY_LABELS.indexOf(b.label));

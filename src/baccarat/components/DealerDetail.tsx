@@ -1,6 +1,6 @@
 import type { AggregateItem } from '../storage';
 import {
-  getRecordsForDealer, getCustomerSummaryForRecords, getShuffleSummaryForRecords,
+  getRecordsForDealer, getCustomerSummaryForDealer, getShuffleSummaryForDealer,
   getDealerSummaryForRecords, getDealerProfitForRecord, groupRecordsByDay, getShootNumbers, formatYen,
 } from '../storage';
 import { BreakdownList } from './BreakdownList';
@@ -19,8 +19,8 @@ export function DealerDetail({ dealer, onBack }: Props) {
   // 呼び出し元のdealerは今月分などスコープが絞られている場合があるため、
   // ここで取得した全期間のrecordsから改めて集計し直して表示する。
   const summary = getDealerSummaryForRecords(records).find(it => it.label === dealer.label) ?? dealer;
-  const customerItems = getCustomerSummaryForRecords(records);
-  const shuffleItems = getShuffleSummaryForRecords(records);
+  const customerItems = getCustomerSummaryForDealer(records);
+  const shuffleItems = getShuffleSummaryForDealer(records);
   const dayGroups = groupRecordsByDay(records);
   const shootNumbers = getShootNumbers();
 
