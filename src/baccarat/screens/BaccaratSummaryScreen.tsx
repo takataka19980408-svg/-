@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  getCustomerSummary, getDealerSummary, getShuffleSummary,
   getCustomerSummaryForRecords, getDealerSummaryForRecords, getShuffleSummaryForRecords,
   getYearSummary, getMonthSummary, getDaySummary,
   getRecordsForYear, getRecordsForMonth, getRecordsForDay, getRecordsForThisMonth,
@@ -19,11 +20,13 @@ interface Props {
 }
 
 type PeriodTab = 'year' | 'month' | 'day';
-type Tab = PeriodTab | 'customer' | 'dealer' | 'shuffle';
+type ScopedTab = 'customer' | 'dealer' | 'shuffle';
+type Tab = PeriodTab | ScopedTab;
+type Scope = 'month' | 'total';
 
-// 客別・ディーラー別・シャッフル別は今月分のみを集計する（全期間分は
-// 年別/月別/日別タブや、各詳細画面内の内訳から確認できる）。
-const MONTHLY_TABS: Tab[] = ['customer', 'dealer', 'shuffle'];
+// 客別・ディーラー別・シャッフル別は「今月」「トータル」を切り替えて見られる
+// （全期間の内訳は年別/月別/日別タブや、各詳細画面内の内訳からも確認できる）。
+const SCOPED_TABS: ScopedTab[] = ['customer', 'dealer', 'shuffle'];
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'year',     label: '年別' },
@@ -80,10 +83,13 @@ function List({ items, onSelect, invert, showCustomerCount, showAmounts = true }
   );
 }
 
-const SUMMARY_FNS: Record<Tab, () => AggregateItem[]> = {
-  customer: () => getCustomerSummaryForRecords(getRecordsForThisMonth()),
-  dealer: () => getDealerSummaryForRecords(getRecordsForThisMonth()),
-  shuffle: () => getShuffleSummaryForRecords(getRecordsForThisMonth()),
+const SCOPED_SUMMARY_FNS: Record<ScopedTab, Record<Scope, () => AggregateItem[]>> = {
+  customer: { month: () => getCustomerSummaryForRecords(getRecordsForThisMonth()), total: getCustomerSummary },
+  dealer: { month: () => getDealerSummaryForRecords(getRecordsForThisMonth()), total: getDealerSummary },
+  shuffle: { month: () => getShuffleSummaryForRecords(getRecordsForThisMonth()), total: getShuffleSummary },
+};
+
+const PERIOD_SUMMARY_FNS: Record<PeriodTab, () => AggregateItem[]> = {
   year: getYearSummary,
   month: getMonthSummary,
   day: getDaySummary,
@@ -97,6 +103,7 @@ const RECORDS_FOR_PERIOD: Record<PeriodTab, (label: string) => BaccaratRecord[]>
 
 export function BaccaratSummaryScreen({ refreshKey }: Props) {
   const [tab, setTab] = useState<Tab>('customer');
+  const [scope, setScope] = useState<Scope>('month');
   const [selectedCustomer, setSelectedCustomer] = useState<AggregateItem | null>(null);
   const [selectedDealer, setSelectedDealer] = useState<AggregateItem | null>(null);
   const [selectedShuffle, setSelectedShuffle] = useState<AggregateItem | null>(null);
@@ -105,7 +112,8 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
   void refreshKey;
 
   const thisMonth = getThisMonthSummary();
-  const items = SUMMARY_FNS[tab]();
+  const isScopedTab = (SCOPED_TABS as Tab[]).includes(tab);
+  const items = isScopedTab ? SCOPED_SUMMARY_FNS[tab as ScopedTab][scope]() : PERIOD_SUMMARY_FNS[tab as PeriodTab]();
   const visibleItems = tab === 'customer' && customerSearch.trim()
     ? items.filter(it => it.label.toLowerCase().includes(customerSearch.trim().toLowerCase()))
     : items;
@@ -171,9 +179,25 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
               ))}
             </div>
 
-            {MONTHLY_TABS.includes(tab) && (
-              <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH, marginBottom: 10 }}>
-                {thisMonth.monthLabel}分のみ集計（全期間は年別/月別/日別、または各詳細画面の内訳から確認できます）
+            {isScopedTab && (
+              <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+                {([
+                  { id: 'month' as Scope, label: `今月（${thisMonth.monthLabel}）` },
+                  { id: 'total' as Scope, label: 'トータル（全期間）' },
+                ]).map(s => (
+                  <button
+                    key={s.id}
+                    onClick={() => setScope(s.id)}
+                    style={{
+                      flex: 1, padding: '8px 0', borderRadius: 6, fontSize: 12, fontWeight: 700, fontFamily: BRUSH,
+                      background: scope === s.id ? `${GOLD}18` : 'transparent',
+                      border: `1px solid ${scope === s.id ? GOLD : BDR}`,
+                      color: scope === s.id ? GOLDB : SUB, cursor: 'pointer',
+                    }}
+                  >
+                    {s.label}
+                  </button>
+                ))}
               </div>
             )}
 
