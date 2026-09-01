@@ -58,7 +58,7 @@ export function DealerDetail({ dealer, onBack }: Props) {
         </div>
       </div>
 
-      <BreakdownList title="客別内訳" items={customerItems} showChart invert showAmounts={false} />
+      <BreakdownList title="客別内訳" items={customerItems} showChart invert />
       <BreakdownList title="シャッフル別内訳" items={shuffleItems} showChart />
 
       <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, fontFamily: BRUSH, marginBottom: 8, letterSpacing: '0.05em' }}>

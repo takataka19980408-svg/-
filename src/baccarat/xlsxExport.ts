@@ -35,17 +35,15 @@ function logSheet(): XLSX.WorkSheet {
 }
 
 function summaryDimSheet(title: string, items: ReturnType<typeof getDealerSummary>): XLSX.WorkSheet {
-  const header = [title, '対応件数', 'スタート合計', 'エンド合計', '店収支合計', 'ホールド率'];
-  const body = items.map(i => [i.label, i.count, i.startSum, i.endSum, i.storeProfit, i.holdRate ?? '']);
+  const header = [title, '対応件数', '店収支合計', 'ホールド率'];
+  const body = items.map(i => [i.label, i.count, i.storeProfit, i.holdRate ?? '']);
   const ws = XLSX.utils.aoa_to_sheet([header, ...body]);
   ws['!cols'] = autoWidths([header, ...body]);
   ws['!views'] = [{ state: 'frozen', ySplit: 1 }];
   for (let r = 0; r < body.length; r++) {
-    for (const c of [2, 3, 4]) {
-      const cell = ws[XLSX.utils.encode_cell({ r: r + 1, c })];
-      if (cell) cell.z = YEN_FMT;
-    }
-    const rateCell = ws[XLSX.utils.encode_cell({ r: r + 1, c: 5 })];
+    const cell = ws[XLSX.utils.encode_cell({ r: r + 1, c: 2 })];
+    if (cell) cell.z = YEN_FMT;
+    const rateCell = ws[XLSX.utils.encode_cell({ r: r + 1, c: 3 })];
     if (rateCell && typeof rateCell.v === 'number') rateCell.z = '0.0%';
   }
   return ws;
@@ -56,18 +54,14 @@ function overallSheet(): XLSX.WorkSheet {
   const rows: (string | number)[][] = [
     ['項目', '値'],
     ['記録件数', o.count],
-    ['スタート合計', o.startSum],
-    ['エンド合計', o.endSum],
     ['店収支合計', o.storeProfit],
     ['ホールド率', o.holdRate ?? ''],
   ];
   const ws = XLSX.utils.aoa_to_sheet(rows);
   ws['!cols'] = autoWidths(rows);
-  for (const r of [1, 2, 3]) {
-    const cell = ws[XLSX.utils.encode_cell({ r, c: 1 })];
-    if (cell) cell.z = YEN_FMT;
-  }
-  const rateCell = ws[XLSX.utils.encode_cell({ r: 4, c: 1 })];
+  const cell = ws[XLSX.utils.encode_cell({ r: 2, c: 1 })];
+  if (cell) cell.z = YEN_FMT;
+  const rateCell = ws[XLSX.utils.encode_cell({ r: 3, c: 1 })];
   if (rateCell && typeof rateCell.v === 'number') rateCell.z = '0.0%';
   return ws;
 }
