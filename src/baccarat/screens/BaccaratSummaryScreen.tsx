@@ -72,7 +72,6 @@ function List({ items, onSelect, invert, showCustomerCount }: {
             </div>
             <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH }}>
               シュート数 {it.count}回
-              {it.holdRate !== null && ` ホールド率 ${(it.holdRate * 100).toFixed(1)}%`}
               {showCustomerCount && it.customerCount !== undefined && ` 入客 ${it.customerCount}人`}
             </div>
           </div>
@@ -156,7 +155,6 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
                   color: thisMonth.storeProfit > 0 ? GOLDB : thisMonth.storeProfit < 0 ? REDB : SUB,
                 }}>
                   {formatYen(thisMonth.storeProfit)}円
-                  {thisMonth.holdRate !== null && ` （${(thisMonth.holdRate * 100).toFixed(1)}%）`}
                 </span>
               </div>
             </div>

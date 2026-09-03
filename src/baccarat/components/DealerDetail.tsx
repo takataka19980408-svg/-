@@ -53,7 +53,6 @@ export function DealerDetail({ dealer, onBack }: Props) {
             color: summary.storeProfit > 0 ? GOLDB : summary.storeProfit < 0 ? REDB : SUB,
           }}>
             {formatYen(summary.storeProfit)}円
-            {summary.holdRate !== null && ` （${(summary.holdRate * 100).toFixed(1)}%）`}
           </span>
         </div>
       </div>

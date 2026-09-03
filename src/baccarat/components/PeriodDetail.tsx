@@ -78,7 +78,6 @@ export function PeriodDetail({ kind, period, records, onBack }: Props) {
             color: period.storeProfit > 0 ? GOLDB : period.storeProfit < 0 ? REDB : SUB,
           }}>
             {formatYen(period.storeProfit)}円
-            {period.holdRate !== null && ` （${(period.holdRate * 100).toFixed(1)}%）`}
           </span>
         </div>
       </div>
