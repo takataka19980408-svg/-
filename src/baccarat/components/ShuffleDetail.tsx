@@ -1,7 +1,8 @@
+import { useEffect, useRef, useState } from 'react';
 import type { AggregateItem } from '../storage';
 import {
   getRecordsForShuffle, getCustomerSummaryForRecords, getShuffleSummaryForRecords,
-  getDealerSummaryForRecords, getWeekdaySummaryForRecords, groupRecordsByDay, getShootNumbers, getShortDayKey, formatYen,
+  getDealerSummaryForRecords, getWeekdaySummaryForRecords, getWeekdayKey, groupRecordsByDay, getShootNumbers, getShortDayKey, formatYen,
 } from '../storage';
 import { BreakdownList } from './BreakdownList';
 import { DayGroupHeader } from './DayGroupHeader';
@@ -15,6 +16,8 @@ interface Props {
 
 export function ShuffleDetail({ shuffle, onBack }: Props) {
   const swipeStyle = useSwipeBack(onBack);
+  const [weekdayFilter, setWeekdayFilter] = useState<string | null>(null);
+  const historyRef = useRef<HTMLDivElement>(null);
   const records = getRecordsForShuffle(shuffle.label);
   // 呼び出し元のshuffleは今月分などスコープが絞られている場合があるため、
   // ここで取得した全期間のrecordsから改めて集計し直して表示する。
@@ -22,8 +25,13 @@ export function ShuffleDetail({ shuffle, onBack }: Props) {
   const customerItems = getCustomerSummaryForRecords(records);
   const dealerItems = getDealerSummaryForRecords(records);
   const weekdayItems = getWeekdaySummaryForRecords(records);
-  const dayGroups = groupRecordsByDay(records);
+  const historyRecords = weekdayFilter ? records.filter(r => getWeekdayKey(r.date) === weekdayFilter) : records;
+  const dayGroups = groupRecordsByDay(historyRecords);
   const shootNumbers = getShootNumbers();
+
+  useEffect(() => {
+    if (weekdayFilter) historyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [weekdayFilter]);
 
   return (
     <div style={swipeStyle}>
@@ -60,10 +68,27 @@ export function ShuffleDetail({ shuffle, onBack }: Props) {
 
       <BreakdownList title="客別内訳" items={customerItems} showChart invert />
       <BreakdownList title="ディーラー別内訳" items={dealerItems} showChart />
-      <BreakdownList title="曜日別内訳" items={weekdayItems} showChart />
+      <BreakdownList
+        title="曜日別内訳" items={weekdayItems} selected={weekdayFilter}
+        onSelect={label => setWeekdayFilter(cur => (cur === label ? null : label))}
+      />
 
-      <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, fontFamily: BRUSH, margin: '16px 0 8px', letterSpacing: '0.05em' }}>
-        対応履歴（{records.length}シュート）
+      <div ref={historyRef} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '16px 0 8px' }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: GOLD, fontFamily: BRUSH, letterSpacing: '0.05em' }}>
+          対応履歴（{historyRecords.length}シュート）
+        </span>
+        {weekdayFilter && (
+          <button
+            onClick={() => setWeekdayFilter(null)}
+            style={{
+              fontSize: 11, fontWeight: 700, fontFamily: BRUSH, color: GOLDB,
+              background: `${GOLD}18`, border: `1px solid ${GOLD}`, borderRadius: 6,
+              padding: '4px 8px', cursor: 'pointer',
+            }}
+          >
+            {weekdayFilter}のみ ×
+          </button>
+        )}
       </div>
       {dayGroups.map((group, gi) => {
         const dayProfit = group.records.reduce((s, r) => s + (r.endAmount - r.startAmount), 0);

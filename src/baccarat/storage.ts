@@ -293,7 +293,7 @@ export function getUniqueCustomerCount(records: BaccaratRecord[]): number {
 
 const WEEKDAY_LABELS = ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'];
 
-function getWeekdayKey(date: string): string {
+export function getWeekdayKey(date: string): string {
   return WEEKDAY_LABELS[new Date(date + 'T00:00:00').getDay()];
 }
 
