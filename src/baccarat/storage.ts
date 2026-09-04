@@ -399,20 +399,35 @@ export function getCustomerSummaryForDealer(records: BaccaratRecord[]): Aggregat
     .sort((a, b) => b.storeProfit - a.storeProfit);
 }
 
-// ディーラー別詳細画面のシャッフル別内訳用。シャッフルは1記録につき常に
-// 1つのため重複計上は起きないが、店収支はディーラー人数で按分する。
-export function getShuffleSummaryForDealer(records: BaccaratRecord[]): AggregateItem[] {
+// ディーラー別詳細画面のシャッフル別・曜日別内訳用の共通処理。どちらも
+// 1記録につき常に単一キーのため重複計上は起きないが、店収支はディーラー
+// 人数で按分する。
+function aggregateByForDealer(
+  records: BaccaratRecord[],
+  keyFn: (r: BaccaratRecord) => string,
+  sortFn: (a: AggregateItem, b: AggregateItem) => number = (a, b) => b.storeProfit - a.storeProfit,
+): AggregateItem[] {
   const map = new Map<string, { count: number; profitSum: number }>();
   for (const r of records) {
-    if (!r.shuffle) continue;
-    const e = map.get(r.shuffle) ?? { count: 0, profitSum: 0 };
+    const key = keyFn(r);
+    if (!key) continue;
+    const e = map.get(key) ?? { count: 0, profitSum: 0 };
     e.count += 1;
     e.profitSum += getDealerProfitForRecord(r);
-    map.set(r.shuffle, e);
+    map.set(key, e);
   }
   return Array.from(map.entries())
     .map(([label, e]) => ({ label, count: e.count, startSum: 0, endSum: 0, storeProfit: e.profitSum, holdRate: null }))
-    .sort((a, b) => b.storeProfit - a.storeProfit);
+    .sort(sortFn);
+}
+
+export function getShuffleSummaryForDealer(records: BaccaratRecord[]): AggregateItem[] {
+  return aggregateByForDealer(records, r => r.shuffle);
+}
+
+export function getWeekdaySummaryForDealer(records: BaccaratRecord[]): AggregateItem[] {
+  return aggregateByForDealer(records, r => getWeekdayKey(r.date),
+    (a, b) => WEEKDAY_LABELS.indexOf(a.label) - WEEKDAY_LABELS.indexOf(b.label));
 }
 
 export function getWeekdaySummaryForRecords(records: BaccaratRecord[]): AggregateItem[] {
@@ -427,6 +442,7 @@ function aggregateByForCustomer(
   records: BaccaratRecord[],
   customerId: string,
   keysFn: (r: BaccaratRecord) => string[],
+  sortFn: (a: AggregateItem, b: AggregateItem) => number = (a, b) => b.storeProfit - a.storeProfit,
 ): AggregateItem[] {
   const map = new Map<string, { count: number; profitSum: number }>();
   for (const r of records) {
@@ -444,7 +460,7 @@ function aggregateByForCustomer(
   }
   return Array.from(map.entries())
     .map(([label, e]) => ({ label, count: e.count, startSum: 0, endSum: 0, storeProfit: e.profitSum, holdRate: null }))
-    .sort((a, b) => b.storeProfit - a.storeProfit);
+    .sort(sortFn);
 }
 
 export function getDealerSummaryForCustomer(records: BaccaratRecord[], customerId: string): AggregateItem[] {
@@ -453,6 +469,11 @@ export function getDealerSummaryForCustomer(records: BaccaratRecord[], customerI
 
 export function getShuffleSummaryForCustomer(records: BaccaratRecord[], customerId: string): AggregateItem[] {
   return aggregateByForCustomer(records, customerId, r => [r.shuffle]);
+}
+
+export function getWeekdaySummaryForCustomer(records: BaccaratRecord[], customerId: string): AggregateItem[] {
+  return aggregateByForCustomer(records, customerId, r => [getWeekdayKey(r.date)],
+    (a, b) => WEEKDAY_LABELS.indexOf(a.label) - WEEKDAY_LABELS.indexOf(b.label));
 }
 
 // ── 客ごとの個別記録（客のピックアップ表用。単一の客に絞り込んだ生データ） ──

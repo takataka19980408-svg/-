@@ -1,6 +1,6 @@
 import type { AggregateItem } from '../storage';
 import {
-  getRecordsForDealer, getCustomerSummaryForDealer, getShuffleSummaryForDealer,
+  getRecordsForDealer, getCustomerSummaryForDealer, getShuffleSummaryForDealer, getWeekdaySummaryForDealer,
   getDealerSummaryForRecords, getDealerProfitForRecord, groupRecordsByDay, getShootNumbers, getShortDayKey, formatYen,
 } from '../storage';
 import { BreakdownList } from './BreakdownList';
@@ -21,6 +21,7 @@ export function DealerDetail({ dealer, onBack }: Props) {
   const summary = getDealerSummaryForRecords(records).find(it => it.label === dealer.label) ?? dealer;
   const customerItems = getCustomerSummaryForDealer(records);
   const shuffleItems = getShuffleSummaryForDealer(records);
+  const weekdayItems = getWeekdaySummaryForDealer(records);
   const dayGroups = groupRecordsByDay(records);
   const shootNumbers = getShootNumbers();
 
@@ -59,6 +60,7 @@ export function DealerDetail({ dealer, onBack }: Props) {
 
       <BreakdownList title="客別内訳" items={customerItems} showChart invert />
       <BreakdownList title="シャッフル別内訳" items={shuffleItems} showChart />
+      <BreakdownList title="曜日別内訳" items={weekdayItems} showChart />
 
       <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, fontFamily: BRUSH, marginBottom: 8, letterSpacing: '0.05em' }}>
         対応履歴（{records.length}シュート）
