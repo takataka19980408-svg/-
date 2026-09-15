@@ -22,9 +22,9 @@ export function DealerDetail({ dealer, onBack }: Props) {
   // 呼び出し元のdealerは今月分などスコープが絞られている場合があるため、
   // ここで取得した全期間のrecordsから改めて集計し直して表示する。
   const summary = getDealerSummaryForRecords(records).find(it => it.label === dealer.label) ?? dealer;
-  const customerItems = getCustomerSummaryForDealer(records);
-  const shuffleItems = getShuffleSummaryForDealer(records);
-  const weekdayItems = getWeekdaySummaryForDealer(records);
+  const customerItems = getCustomerSummaryForDealer(records, dealer.label);
+  const shuffleItems = getShuffleSummaryForDealer(records, dealer.label);
+  const weekdayItems = getWeekdaySummaryForDealer(records, dealer.label);
   const historyRecords = weekdayFilter ? records.filter(r => getWeekdayKey(r.date) === weekdayFilter) : records;
   const dayGroups = groupRecordsByDay(historyRecords);
   const shootNumbers = getShootNumbers();
@@ -91,13 +91,13 @@ export function DealerDetail({ dealer, onBack }: Props) {
         )}
       </div>
       {dayGroups.map((group, gi) => {
-        const dayProfit = group.records.reduce((s, r) => s + getDealerProfitForRecord(r), 0);
+        const dayProfit = group.records.reduce((s, r) => s + getDealerProfitForRecord(r, dealer.label), 0);
         return (
           <div key={group.date} style={{ marginTop: gi === 0 ? 0 : 20 }}>
             <DayGroupHeader label={group.label} count={group.records.length} amount={dayProfit} />
             {group.records.map(r => {
               const shared = r.dealerIds.length > 1;
-              const profit = getDealerProfitForRecord(r);
+              const profit = getDealerProfitForRecord(r, dealer.label);
               return (
                 <div key={r.id} style={{
                   background: CARD, border: `1px solid ${BDR}`, borderRadius: 10, padding: '12px 14px', marginBottom: 8,

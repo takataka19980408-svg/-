@@ -144,33 +144,45 @@ export interface AggregateItem {
   customerCount?: number;
 }
 
+// 1つの記録の店収支を複数人（主にディーラー）で均等に按分する際、1円単位
+// ではなく千円単位で分配する。ちょうど割り切れない場合は余りの千円を
+// 配列の先頭側から順に1人1000円ずつ多く割り当てる（合計は必ず一致する）。
+function splitProfitByThousands(profit: number, n: number): number[] {
+  if (n <= 1) return [profit];
+  const totalUnits = Math.round(profit / 1000);
+  const base = Math.floor(totalUnits / n);
+  const remainder = totalUnits - base * n; // 0以上n未満（負の合計でも常に非負）
+  return Array.from({ length: n }, (_, i) => (base + (i < remainder ? 1 : 0)) * 1000);
+}
+
 function aggregateBy(
   records: BaccaratRecord[],
   keysFn: (r: BaccaratRecord) => string[],
   sortFn: (a: AggregateItem, b: AggregateItem) => number = (a, b) => b.storeProfit - a.storeProfit,
 ): AggregateItem[] {
-  const map = new Map<string, { count: number; startSum: number; endSum: number; customers: Set<string> }>();
+  const map = new Map<string, { count: number; startSum: number; endSum: number; profitSum: number; customers: Set<string> }>();
   for (const r of records) {
     const keys = keysFn(r).filter(k => k);
     if (keys.length === 0) continue;
     // 1つの記録に複数キーが該当する場合（ディーラー2人選択時など）は、
-    // 収支（プラスもマイナスも）を人数で均等に按分する（重複計上を防ぐ）。
-    // 対応回数はそれぞれ1回分としてそのままカウントする。
+    // 店収支（プラスもマイナスも）を千円単位で均等に按分する（重複計上を
+    // 防ぐ）。対応回数はそれぞれ1回分としてそのままカウントする。
     const share = 1 / keys.length;
-    for (const k of keys) {
-      const e = map.get(k) ?? { count: 0, startSum: 0, endSum: 0, customers: new Set<string>() };
+    const shares = keys.length > 1 ? splitProfitByThousands(r.endAmount - r.startAmount, keys.length) : null;
+    keys.forEach((k, i) => {
+      const e = map.get(k) ?? { count: 0, startSum: 0, endSum: 0, profitSum: 0, customers: new Set<string>() };
       e.count += 1;
       e.startSum += r.startAmount * share;
       e.endSum += r.endAmount * share;
+      e.profitSum += shares ? shares[i] : r.endAmount - r.startAmount;
       for (const id of r.customerIds ?? []) e.customers.add(id);
       map.set(k, e);
-    }
+    });
   }
   return Array.from(map.entries()).map(([label, e]) => {
-    const storeProfit = e.endSum - e.startSum;
     return {
-      label, count: e.count, startSum: e.startSum, endSum: e.endSum, storeProfit,
-      holdRate: e.startSum > 0 ? storeProfit / e.startSum : null,
+      label, count: e.count, startSum: e.startSum, endSum: e.endSum, storeProfit: e.profitSum,
+      holdRate: e.startSum > 0 ? e.profitSum / e.startSum : null,
       customerCount: e.customers.size,
     };
   }).sort(sortFn);
@@ -225,9 +237,14 @@ export function getCustomerProfitForRecord(r: BaccaratRecord, customerId: string
 }
 
 // ある対応（記録）における1人あたりのディーラー収支。ディーラーが2人以上
-// 選択されている場合は店収支（プラスもマイナスも）を人数で均等按分する。
-export function getDealerProfitForRecord(r: BaccaratRecord): number {
-  return (r.endAmount - r.startAmount) / r.dealerIds.length;
+// 選択されている場合は店収支（プラスもマイナスも）を千円単位で均等按分する
+// （余りは記録に登録された順で先頭のディーラーから1000円ずつ多くなる）。
+export function getDealerProfitForRecord(r: BaccaratRecord, dealerId: string): number {
+  const profit = r.endAmount - r.startAmount;
+  if (r.dealerIds.length <= 1) return profit;
+  const idx = r.dealerIds.indexOf(dealerId);
+  if (idx < 0) return profit;
+  return splitProfitByThousands(profit, r.dealerIds.length)[idx];
 }
 
 // ── 日付ベースの集計（年別／月別／週別／曜日別） ─────────────
@@ -383,14 +400,17 @@ export function getShuffleSummaryForRecords(records: BaccaratRecord[]): Aggregat
 
 // ディーラー別詳細画面の客別内訳用。このディーラー自身の店収支合計
 // （ディーラー人数で按分済み）と一致するよう、客個人の収支
-// （getCustomerProfitForRecord）をさらにディーラー人数で按分して集計する。
-export function getCustomerSummaryForDealer(records: BaccaratRecord[]): AggregateItem[] {
+// （getCustomerProfitForRecord）をさらにディーラー人数で千円単位按分して
+// 集計する。
+export function getCustomerSummaryForDealer(records: BaccaratRecord[], dealerId: string): AggregateItem[] {
   const map = new Map<string, { count: number; profitSum: number }>();
   for (const r of records) {
+    const idx = r.dealerIds.indexOf(dealerId);
+    if (idx < 0) continue;
     for (const id of r.customerIds ?? []) {
       const e = map.get(id) ?? { count: 0, profitSum: 0 };
       e.count += 1;
-      e.profitSum += getCustomerProfitForRecord(r, id) / r.dealerIds.length;
+      e.profitSum += splitProfitByThousands(getCustomerProfitForRecord(r, id), r.dealerIds.length)[idx];
       map.set(id, e);
     }
   }
@@ -401,9 +421,10 @@ export function getCustomerSummaryForDealer(records: BaccaratRecord[]): Aggregat
 
 // ディーラー別詳細画面のシャッフル別・曜日別内訳用の共通処理。どちらも
 // 1記録につき常に単一キーのため重複計上は起きないが、店収支はディーラー
-// 人数で按分する。
+// 人数で千円単位按分する。
 function aggregateByForDealer(
   records: BaccaratRecord[],
+  dealerId: string,
   keyFn: (r: BaccaratRecord) => string,
   sortFn: (a: AggregateItem, b: AggregateItem) => number = (a, b) => b.storeProfit - a.storeProfit,
 ): AggregateItem[] {
@@ -413,7 +434,7 @@ function aggregateByForDealer(
     if (!key) continue;
     const e = map.get(key) ?? { count: 0, profitSum: 0 };
     e.count += 1;
-    e.profitSum += getDealerProfitForRecord(r);
+    e.profitSum += getDealerProfitForRecord(r, dealerId);
     map.set(key, e);
   }
   return Array.from(map.entries())
@@ -421,12 +442,12 @@ function aggregateByForDealer(
     .sort(sortFn);
 }
 
-export function getShuffleSummaryForDealer(records: BaccaratRecord[]): AggregateItem[] {
-  return aggregateByForDealer(records, r => r.shuffle);
+export function getShuffleSummaryForDealer(records: BaccaratRecord[], dealerId: string): AggregateItem[] {
+  return aggregateByForDealer(records, dealerId, r => r.shuffle);
 }
 
-export function getWeekdaySummaryForDealer(records: BaccaratRecord[]): AggregateItem[] {
-  return aggregateByForDealer(records, r => getWeekdayKey(r.date),
+export function getWeekdaySummaryForDealer(records: BaccaratRecord[], dealerId: string): AggregateItem[] {
+  return aggregateByForDealer(records, dealerId, r => getWeekdayKey(r.date),
     (a, b) => WEEKDAY_LABELS.indexOf(a.label) - WEEKDAY_LABELS.indexOf(b.label));
 }
 
