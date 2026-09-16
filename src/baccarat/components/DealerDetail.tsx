@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { AggregateItem } from '../storage';
 import {
   getRecordsForDealer, getCustomerSummaryForDealer, getShuffleSummaryForDealer, getWeekdaySummaryForDealer,
-  getDealerSummaryForRecords, getDealerProfitForRecord, getWeekdayKey, groupRecordsByDay, getShootNumbers, getShortDayKey, formatYen,
+  getDealerSummaryForRecords, getDealerProfitForRecord, getDaySummary, getWeekdayKey, groupRecordsByDay, getShootNumbers, getShortDayKey, formatYen,
 } from '../storage';
 import { BreakdownList } from './BreakdownList';
 import { DayGroupHeader } from './DayGroupHeader';
@@ -28,6 +28,8 @@ export function DealerDetail({ dealer, onBack }: Props) {
   const historyRecords = weekdayFilter ? records.filter(r => getWeekdayKey(r.date) === weekdayFilter) : records;
   const dayGroups = groupRecordsByDay(historyRecords);
   const shootNumbers = getShootNumbers();
+  // このディーラーに絞らない、その日全体の店収支合計（対応履歴の日別見出しに併記する）。
+  const dayTotals = new Map(getDaySummary().map(it => [it.label, it.storeProfit]));
 
   useEffect(() => {
     if (weekdayFilter) historyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -94,7 +96,10 @@ export function DealerDetail({ dealer, onBack }: Props) {
         const dayProfit = group.records.reduce((s, r) => s + getDealerProfitForRecord(r, dealer.label), 0);
         return (
           <div key={group.date} style={{ marginTop: gi === 0 ? 0 : 20 }}>
-            <DayGroupHeader label={group.label} count={group.records.length} amount={dayProfit} />
+            <DayGroupHeader
+              label={group.label} count={group.records.length} amount={dayProfit}
+              dayTotal={dayTotals.get(group.label)}
+            />
             {group.records.map(r => {
               const shared = r.dealerIds.length > 1;
               const profit = getDealerProfitForRecord(r, dealer.label);

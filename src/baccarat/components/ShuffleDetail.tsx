@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { AggregateItem } from '../storage';
 import {
   getRecordsForShuffle, getCustomerSummaryForRecords, getShuffleSummaryForRecords,
-  getDealerSummaryForRecords, getWeekdaySummaryForRecords, getWeekdayKey, groupRecordsByDay, getShootNumbers, getShortDayKey, formatYen,
+  getDealerSummaryForRecords, getWeekdaySummaryForRecords, getDaySummary, getWeekdayKey, groupRecordsByDay, getShootNumbers, getShortDayKey, formatYen,
 } from '../storage';
 import { BreakdownList } from './BreakdownList';
 import { DayGroupHeader } from './DayGroupHeader';
@@ -28,6 +28,8 @@ export function ShuffleDetail({ shuffle, onBack }: Props) {
   const historyRecords = weekdayFilter ? records.filter(r => getWeekdayKey(r.date) === weekdayFilter) : records;
   const dayGroups = groupRecordsByDay(historyRecords);
   const shootNumbers = getShootNumbers();
+  // このシャッフルに絞らない、その日全体の店収支合計（対応履歴の日別見出しに併記する）。
+  const dayTotals = new Map(getDaySummary().map(it => [it.label, it.storeProfit]));
 
   useEffect(() => {
     if (weekdayFilter) historyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -94,7 +96,10 @@ export function ShuffleDetail({ shuffle, onBack }: Props) {
         const dayProfit = group.records.reduce((s, r) => s + (r.endAmount - r.startAmount), 0);
         return (
           <div key={group.date} style={{ marginTop: gi === 0 ? 0 : 20 }}>
-            <DayGroupHeader label={group.label} count={group.records.length} amount={dayProfit} />
+            <DayGroupHeader
+              label={group.label} count={group.records.length} amount={dayProfit}
+              dayTotal={dayTotals.get(group.label)}
+            />
             {group.records.map(r => {
               const profit = r.endAmount - r.startAmount;
               return (
