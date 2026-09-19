@@ -1,5 +1,7 @@
 import { useRef, useState } from 'react';
-import { signOut } from 'firebase/auth';
+import {
+  signOut, EmailAuthProvider, reauthenticateWithCredential, updateEmail, updatePassword,
+} from 'firebase/auth';
 import type { MasterKind } from '../types';
 import { MASTER_LABELS } from '../types';
 import {
@@ -68,6 +70,111 @@ function MasterList({ kind, values, onChange }: { kind: MasterKind; values: stri
           background: GOLD, color: '#0A0900', border: 'none', cursor: 'pointer',
         }}>追加</button>
       </div>
+    </div>
+  );
+}
+
+function LoginInfoEditor({ showToast }: { showToast: (msg: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    const user = auth.currentUser;
+    if (!user?.email) return;
+    if (!newEmail.trim() && !newPassword.trim()) {
+      setError('メールアドレスかパスワードのどちらかを入力してください');
+      return;
+    }
+    if (newPassword.trim() && newPassword.trim().length < 6) {
+      setError('新しいパスワードは6文字以上にしてください');
+      return;
+    }
+    setSaving(true);
+    try {
+      const cred = EmailAuthProvider.credential(user.email, currentPassword);
+      await reauthenticateWithCredential(user, cred);
+      if (newEmail.trim()) await updateEmail(user, newEmail.trim());
+      if (newPassword.trim()) await updatePassword(user, newPassword.trim());
+      setCurrentPassword('');
+      setNewEmail('');
+      setNewPassword('');
+      setOpen(false);
+      showToast('ログイン情報を変更しました');
+    } catch {
+      setError('変更できませんでした（現在のパスワードが違うか、通信エラーです）');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)} style={{
+        width: '100%', padding: '12px', borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: BRUSH,
+        background: 'transparent', border: `1px solid ${BDR}`, color: SUB, cursor: 'pointer', marginBottom: 10,
+      }}>
+        ログイン情報を変更
+      </button>
+    );
+  }
+
+  return (
+    <div style={{ background: CARD, border: `1px solid ${BDR}`, borderRadius: 10, padding: '14px 16px', marginBottom: 10 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: GOLD, fontFamily: BRUSH, marginBottom: 10 }}>
+        ログイン情報の変更
+      </div>
+      <form onSubmit={handleSave}>
+        <input
+          type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)}
+          placeholder="現在のパスワード" autoComplete="current-password" required
+          style={{
+            width: '100%', padding: '10px 12px', marginBottom: 8, background: '#0a0f0c', border: `1px solid ${BDR}`,
+            borderRadius: 6, fontSize: 13, color: TEXT, fontFamily: BRUSH, outline: 'none', boxSizing: 'border-box',
+          }}
+        />
+        <input
+          type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)}
+          placeholder="新しいメールアドレス（変えない場合は空欄）" autoComplete="username"
+          style={{
+            width: '100%', padding: '10px 12px', marginBottom: 8, background: '#0a0f0c', border: `1px solid ${BDR}`,
+            borderRadius: 6, fontSize: 13, color: TEXT, fontFamily: BRUSH, outline: 'none', boxSizing: 'border-box',
+          }}
+        />
+        <input
+          type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)}
+          placeholder="新しいパスワード（変えない場合は空欄）" autoComplete="new-password"
+          style={{
+            width: '100%', padding: '10px 12px', marginBottom: 8, background: '#0a0f0c', border: `1px solid ${BDR}`,
+            borderRadius: 6, fontSize: 13, color: TEXT, fontFamily: BRUSH, outline: 'none', boxSizing: 'border-box',
+          }}
+        />
+        {error && <div style={{ color: REDB, fontSize: 12, fontFamily: BRUSH, marginBottom: 8 }}>{error}</div>}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button type="submit" disabled={saving} style={{
+            flex: 1, padding: '10px', borderRadius: 6, fontSize: 13, fontWeight: 700, fontFamily: BRUSH,
+            background: GOLD, color: '#0A0900', border: 'none', cursor: saving ? 'default' : 'pointer',
+            opacity: saving ? 0.6 : 1,
+          }}>
+            {saving ? '変更中…' : '変更する'}
+          </button>
+          <button
+            type="button"
+            onClick={() => { setOpen(false); setError(''); setCurrentPassword(''); setNewEmail(''); setNewPassword(''); }}
+            style={{
+              padding: '10px 16px', borderRadius: 6, fontSize: 13, fontFamily: BRUSH,
+              background: 'transparent', color: SUB, border: `1px solid ${BDR}`, cursor: 'pointer',
+            }}
+          >
+            取消
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
@@ -232,6 +339,8 @@ export function BaccaratMastersScreen({ onDataChange }: Props) {
         {KINDS.map(kind => (
           <MasterList key={kind} kind={kind} values={masters[kind]} onChange={refresh} />
         ))}
+
+        <LoginInfoEditor showToast={showToast} />
 
         <button onClick={() => signOut(auth)} style={{
           width: '100%', padding: '12px', borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: BRUSH,
