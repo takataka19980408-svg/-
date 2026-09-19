@@ -5,6 +5,7 @@ import { MASTER_LABELS } from '../types';
 import {
   getMasters, addMasterItem, removeMasterItem,
   getBackupJson, exportBackup, restoreBackup,
+  getLegacyLocalRecordCount, migrateLegacyLocalData,
 } from '../storage';
 import { auth } from '../firebase';
 import { GOLD, GOLDB, RED, REDB, CARD, BDR, TEXT, SUB, BRUSH, FELTD, NAV_SAFE_BOTTOM } from '../theme';
@@ -76,11 +77,21 @@ export function BaccaratMastersScreen({ onDataChange }: Props) {
   const [masters, setMasters] = useState(getMasters);
   const [toast, setToast] = useState<string | null>(null);
   const [restoreConfirm, setRestoreConfirm] = useState(false);
+  const [legacyCount, setLegacyCount] = useState(getLegacyLocalRecordCount);
+  const [migrating, setMigrating] = useState(false);
   const backupImportRef = useRef<HTMLInputElement>(null);
 
   const refresh = () => { setMasters(getMasters()); onDataChange(); };
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2200); };
+
+  const handleMigrateLegacy = () => {
+    setMigrating(true);
+    const count = migrateLegacyLocalData();
+    setLegacyCount(0);
+    setMigrating(false);
+    showToast(`${count}件の記録を復元しました`);
+  };
 
   const canShare = typeof navigator !== 'undefined' && 'share' in navigator && 'canShare' in navigator;
 
@@ -175,6 +186,24 @@ export function BaccaratMastersScreen({ onDataChange }: Props) {
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '16px', paddingBottom: `calc(${NAV_SAFE_BOTTOM} + 16px)` }}>
+        {legacyCount > 0 && (
+          <div style={{ background: `${GOLD}0D`, border: `1px solid ${GOLD}55`, borderRadius: 10, padding: '14px 16px', marginBottom: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: GOLDB, fontFamily: BRUSH, marginBottom: 6 }}>
+              この端末に以前のデータが残っています
+            </div>
+            <div style={{ fontSize: 12, color: SUB, fontFamily: BRUSH, lineHeight: 1.7, marginBottom: 10 }}>
+              サーバー保存に切り替える前の記録が{legacyCount}件、この端末に残っています。ボタンを押すとサーバーに復元されます（今のデータは消えず、追加されます）。
+            </div>
+            <button onClick={handleMigrateLegacy} disabled={migrating} style={{
+              width: '100%', padding: '11px', borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: BRUSH,
+              background: GOLD, color: '#0A0900', border: 'none', cursor: migrating ? 'default' : 'pointer',
+              opacity: migrating ? 0.6 : 1,
+            }}>
+              {migrating ? '復元中…' : `${legacyCount}件を復元する`}
+            </button>
+          </div>
+        )}
+
         <div style={{ background: CARD, border: `1px solid ${BDR}`, borderRadius: 10, padding: '14px 16px', marginBottom: 16 }}>
           <div style={{ fontSize: 12, color: SUB, fontFamily: BRUSH, lineHeight: 1.7, marginBottom: 10 }}>
             記録データをエクセルやバックアップ（.json）として{canShare ? 'AirDrop・LINE・メール等で送信' : '保存'}できます。

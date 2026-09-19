@@ -135,6 +135,43 @@ export function restoreBackup(json: string): void {
   void batch.commit();
 }
 
+// ── 旧localStorage版からの移行 ────────────────────────────────
+// Firestore切替前は同じ端末のlocalStorageに記録・マスタが残っている。
+// 削除はせず追加のみ（destroryせず既存のFirestoreデータとマージする）。
+const LEGACY_RECORDS_KEY = 'baccarat_records';
+const LEGACY_MASTERS_KEY = 'baccarat_masters';
+
+export function getLegacyLocalRecordCount(): number {
+  try {
+    const d = localStorage.getItem(LEGACY_RECORDS_KEY);
+    const records = d ? JSON.parse(d) : [];
+    return Array.isArray(records) ? records.length : 0;
+  } catch { return 0; }
+}
+
+export function migrateLegacyLocalData(): number {
+  let records: BaccaratRecord[];
+  let masters: Partial<BaccaratMasters> | null;
+  try {
+    const dr = localStorage.getItem(LEGACY_RECORDS_KEY);
+    records = dr ? JSON.parse(dr) : [];
+    const dm = localStorage.getItem(LEGACY_MASTERS_KEY);
+    masters = dm ? JSON.parse(dm) : null;
+  } catch { return 0; }
+  if (records.length === 0 && !masters) return 0;
+
+  const batch = writeBatch(db);
+  for (const r of records) batch.set(doc(db, RECORDS_COL, r.id), r);
+  if (masters) {
+    const merge = (kind: MasterKind) => Array.from(new Set([...mastersCache[kind], ...(masters?.[kind] ?? [])]));
+    batch.set(doc(db, MASTERS_DOC_PATH), {
+      dealers: merge('dealers'), shuffles: merge('shuffles'), tables: merge('tables'), customers: merge('customers'),
+    });
+  }
+  void batch.commit();
+  return records.length;
+}
+
 function triggerDownload(content: string, filename: string, mime: string): void {
   const blob = new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);
