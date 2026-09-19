@@ -132,6 +132,21 @@ export function SettingsScreen({ onDataChange }: Props) {
     }
   };
 
+  const handleShareXLSX = async () => {
+    const { exportXLSX, getXLSXFile } = await import('../xlsxExport');
+    const { blob, filename } = getXLSXFile();
+    const file = new File([blob], filename, { type: blob.type });
+    try {
+      if (canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: 'ゼニ帳データ' });
+      } else {
+        exportXLSX();
+      }
+    } catch {
+      exportXLSX();
+    }
+  };
+
   const handleImportCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -183,9 +198,21 @@ export function SettingsScreen({ onDataChange }: Props) {
         <SectionTitle label="データを共有" />
         <SettingsCard>
           <div style={{ fontSize: 12, color: SUB, fontFamily: BRUSH, lineHeight: 1.7, marginBottom: 12 }}>
-            バックアップやCSVを{canShare ? 'AirDrop・LINE・メール等で直接送信できます。' : 'ファイルとして保存できます。'}
+            バックアップやエクセル・CSVを{canShare ? 'AirDrop・LINE・メール等で直接送信できます。' : 'ファイルとして保存できます。'}
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+            <button
+              onClick={handleShareXLSX}
+              style={{
+                flex: 1, padding: '14px 8px', borderRadius: 8,
+                fontSize: 13, fontWeight: 700, fontFamily: BRUSH,
+                background: `linear-gradient(135deg,#1D6F42 0%,#2E9E5B 100%)`,
+                border: `1px solid #2E9E5B88`, color: '#EAFBF1',
+                cursor: 'pointer', letterSpacing: '0.05em',
+              }}
+            >
+              {canShare ? '📤 ' : '💾 '}エクセル{canShare ? '\n送信' : '保存'}
+            </button>
             <button
               onClick={handleShareBackup}
               style={{
@@ -210,6 +237,9 @@ export function SettingsScreen({ onDataChange }: Props) {
             >
               {canShare ? '📤 ' : '💾 '}CSV{canShare ? '\n送信' : '保存'}
             </button>
+          </div>
+          <div style={{ fontSize: 11, color: SUB, fontFamily: BRUSH, lineHeight: 1.7 }}>
+            エクセルは「サマリー」「記録」「店舗別」「種目別」「月別」の5シート構成で、そのままExcelやGoogleスプレッドシートで開けます。
           </div>
         </SettingsCard>
 
@@ -302,7 +332,7 @@ export function SettingsScreen({ onDataChange }: Props) {
             <div>② 店舗・IN金額・OUT金額を入力して保存</div>
             <div>③ 履歴タブで過去の記録を確認・メモ・削除</div>
             <div>④ 分析タブで月別・種目別・曜日別の集計を確認</div>
-            <div>⑤ 設定タブの「データを共有」で他端末へ転送</div>
+            <div>⑤ 設定タブの「データを共有」でエクセル・CSV・バックアップを他端末へ転送</div>
           </div>
         </SettingsCard>
 
