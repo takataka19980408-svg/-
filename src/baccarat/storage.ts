@@ -1,7 +1,7 @@
 import type { BaccaratRecord, BaccaratMasters, MasterKind } from './types';
 import { DEFAULT_MASTERS } from './types';
 import { db } from './firebase';
-import { collection, doc, onSnapshot, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, getDoc, onSnapshot, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 
 const RECORDS_COL = 'records';
 const MASTERS_DOC_PATH = 'masters/default';
@@ -133,6 +133,40 @@ export function restoreBackup(json: string): void {
   for (const id of existingIds) if (!newIds.has(id)) batch.delete(doc(db, RECORDS_COL, id));
   if (data.masters) batch.set(doc(db, MASTERS_DOC_PATH), { ...DEFAULT_MASTERS, ...data.masters });
   void batch.commit();
+}
+
+// ── 日次自動バックアップ ─────────────────────────────────────
+// 営業日（today()）が変わったタイミングで、直前の営業日分の記録を
+// backups/{date} に保存しておく（誤削除などからの復旧用の保険）。
+// backups/_meta に最後にバックアップした営業日を記録し、アプリ起動時に
+// 日付が変わっていたら1回だけ実行する。全履歴を毎回複製すると際限なく
+// 肥大化するため、その日の記録だけを保存する。
+const BACKUPS_COL = 'backups';
+const BACKUP_META_DOC = 'backups/_meta';
+let dailyBackupChecked = false;
+
+export async function checkAndRunDailyBackup(): Promise<void> {
+  // recordsCache/mastersCacheがまだ揃っていない状態で走らせると、その日の
+  // 記録を0件と誤判定してバックアップを取り損ねてしまうため、準備完了
+  // まで待つ（storeが揃うたびに呼ばれる想定なので、揃うまでは毎回戻る）。
+  if (dailyBackupChecked || !isStoreReady()) return;
+  dailyBackupChecked = true;
+  const metaSnap = await getDoc(doc(db, BACKUP_META_DOC));
+  const lastDate = metaSnap.exists() ? (metaSnap.data().lastBackupDate as string | undefined) : undefined;
+  const current = today();
+  if (lastDate === current) return;
+  if (lastDate) {
+    const dayRecords = recordsCache.filter(r => r.date === lastDate);
+    if (dayRecords.length > 0) {
+      await setDoc(doc(db, BACKUPS_COL, lastDate), {
+        date: lastDate,
+        createdAt: new Date().toISOString(),
+        records: dayRecords,
+        masters: mastersCache,
+      });
+    }
+  }
+  await setDoc(doc(db, BACKUP_META_DOC), { lastBackupDate: current });
 }
 
 function triggerDownload(content: string, filename: string, mime: string): void {

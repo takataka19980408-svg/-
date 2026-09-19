@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { onAuthStateChanged, signInWithEmailAndPassword, type User } from 'firebase/auth';
 import { auth } from './firebase';
-import { startStoreSync, isStoreReady, subscribeToStore } from './storage';
+import { startStoreSync, isStoreReady, subscribeToStore, checkAndRunDailyBackup } from './storage';
 import { GOLD, GOLDB, REDB, CARD, BDR, TEXT, SUB, BRUSH } from './theme';
 
 function LoadingScreen() {
@@ -94,7 +94,10 @@ export function BaccaratAuthGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!user) return;
-    return subscribeToStore(() => forceUpdate(n => n + 1));
+    return subscribeToStore(() => {
+      forceUpdate(n => n + 1);
+      void checkAndRunDailyBackup();
+    });
   }, [user]);
 
   if (user === undefined) return <LoadingScreen />;
