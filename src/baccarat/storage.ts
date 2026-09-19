@@ -1,45 +1,84 @@
 import type { BaccaratRecord, BaccaratMasters, MasterKind } from './types';
 import { DEFAULT_MASTERS } from './types';
+import { db } from './firebase';
+import { collection, doc, onSnapshot, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 
-const RECORDS_KEY = 'baccarat_records';
-const MASTERS_KEY = 'baccarat_masters';
+const RECORDS_COL = 'records';
+const MASTERS_DOC_PATH = 'masters/default';
+
+// ── Firestore同期キャッシュ ──────────────────────────────────
+// 集計ロジック側は全て同期関数（getRecords()等）に依存しているため、
+// Firestoreの購読（onSnapshot）で更新され続けるメモリ上のキャッシュを介して
+// 同期アクセスを提供する。書き込みはFirestoreへ直接送り、購読が自分を含む
+// 全端末のキャッシュを自動更新する（他端末の変更も即座に反映される）。
+let recordsCache: BaccaratRecord[] = [];
+let mastersCache: BaccaratMasters = { ...DEFAULT_MASTERS };
+let recordsReady = false;
+let mastersReady = false;
+let listening = false;
+const storeListeners = new Set<() => void>();
+
+function notifyStoreListeners(): void {
+  storeListeners.forEach(l => l());
+}
+
+// storageの変更（自分の書き込み・他端末からの変更いずれも）を購読する。
+export function subscribeToStore(listener: () => void): () => void {
+  storeListeners.add(listener);
+  return () => { storeListeners.delete(listener); };
+}
+
+export function isStoreReady(): boolean {
+  return recordsReady && mastersReady;
+}
+
+// ログイン確認後に一度だけ呼ぶ。
+export function startStoreSync(): void {
+  if (listening) return;
+  listening = true;
+  onSnapshot(collection(db, RECORDS_COL), snap => {
+    recordsCache = snap.docs.map(d => d.data() as BaccaratRecord);
+    recordsReady = true;
+    notifyStoreListeners();
+  });
+  onSnapshot(doc(db, MASTERS_DOC_PATH), snap => {
+    const raw = (snap.exists() ? snap.data() : {}) as Partial<BaccaratMasters>;
+    mastersCache = {
+      dealers: sortMasterList(raw.dealers ?? []),
+      shuffles: sortMasterList(raw.shuffles ?? []),
+      tables: sortMasterList(raw.tables ?? []),
+      customers: sortMasterList(raw.customers ?? []),
+    };
+    mastersReady = true;
+    notifyStoreListeners();
+  });
+}
 
 // ── Records ──────────────────────────────────────────────────
 export function getRecords(): BaccaratRecord[] {
-  try {
-    const d = localStorage.getItem(RECORDS_KEY);
-    return d ? JSON.parse(d) : [];
-  } catch { return []; }
+  return recordsCache;
 }
 
 export function saveRecord(record: BaccaratRecord): void {
-  const records = getRecords();
-  records.push(record);
-  localStorage.setItem(RECORDS_KEY, JSON.stringify(records));
+  void setDoc(doc(db, RECORDS_COL, record.id), record);
 }
 
 export function saveRecords(newRecords: BaccaratRecord[]): void {
-  localStorage.setItem(RECORDS_KEY, JSON.stringify([...getRecords(), ...newRecords]));
+  for (const r of newRecords) void setDoc(doc(db, RECORDS_COL, r.id), r);
 }
 
 export function deleteRecord(id: string): void {
-  localStorage.setItem(RECORDS_KEY, JSON.stringify(getRecords().filter(r => r.id !== id)));
+  void deleteDoc(doc(db, RECORDS_COL, id));
 }
 
 export function updateRecordMemo(id: string, memo: string): void {
-  const records = getRecords();
-  const idx = records.findIndex(r => r.id === id);
-  if (idx === -1) return;
-  records[idx] = { ...records[idx], memo: memo.trim() || undefined };
-  localStorage.setItem(RECORDS_KEY, JSON.stringify(records));
+  const record = recordsCache.find(r => r.id === id);
+  if (!record) return;
+  void setDoc(doc(db, RECORDS_COL, id), { ...record, memo: memo.trim() || undefined });
 }
 
 export function updateRecord(record: BaccaratRecord): void {
-  const records = getRecords();
-  const idx = records.findIndex(r => r.id === record.id);
-  if (idx === -1) return;
-  records[idx] = record;
-  localStorage.setItem(RECORDS_KEY, JSON.stringify(records));
+  void setDoc(doc(db, RECORDS_COL, record.id), record);
 }
 
 // ── Masters ──────────────────────────────────────────────────
@@ -51,35 +90,21 @@ function sortMasterList(values: string[]): string[] {
 }
 
 export function getMasters(): BaccaratMasters {
-  try {
-    const d = localStorage.getItem(MASTERS_KEY);
-    const raw: BaccaratMasters = d ? { ...DEFAULT_MASTERS, ...JSON.parse(d) } : { ...DEFAULT_MASTERS };
-    return {
-      dealers: sortMasterList(raw.dealers),
-      shuffles: sortMasterList(raw.shuffles),
-      tables: sortMasterList(raw.tables),
-      customers: sortMasterList(raw.customers),
-    };
-  } catch { return { ...DEFAULT_MASTERS }; }
+  return mastersCache;
 }
 
 export function setMasters(masters: BaccaratMasters): void {
-  localStorage.setItem(MASTERS_KEY, JSON.stringify(masters));
+  void setDoc(doc(db, MASTERS_DOC_PATH), masters);
 }
 
 export function addMasterItem(kind: MasterKind, value: string): void {
   const v = value.trim();
-  if (!v) return;
-  const masters = getMasters();
-  if (masters[kind].includes(v)) return;
-  masters[kind] = [...masters[kind], v];
-  localStorage.setItem(MASTERS_KEY, JSON.stringify(masters));
+  if (!v || mastersCache[kind].includes(v)) return;
+  void setDoc(doc(db, MASTERS_DOC_PATH), { ...mastersCache, [kind]: [...mastersCache[kind], v] });
 }
 
 export function removeMasterItem(kind: MasterKind, value: string): void {
-  const masters = getMasters();
-  masters[kind] = masters[kind].filter(v => v !== value);
-  localStorage.setItem(MASTERS_KEY, JSON.stringify(masters));
+  void setDoc(doc(db, MASTERS_DOC_PATH), { ...mastersCache, [kind]: mastersCache[kind].filter(v => v !== value) });
 }
 
 // ── Backup / Restore ────────────────────────────────────────────
@@ -101,8 +126,13 @@ export function exportBackup(): void {
 export function restoreBackup(json: string): void {
   const data = JSON.parse(json);
   if (!Array.isArray(data.records)) throw new Error('invalid backup');
-  localStorage.setItem(RECORDS_KEY, JSON.stringify(data.records));
-  if (data.masters) localStorage.setItem(MASTERS_KEY, JSON.stringify({ ...DEFAULT_MASTERS, ...data.masters }));
+  const existingIds = new Set(recordsCache.map(r => r.id));
+  const newIds = new Set(data.records.map((r: BaccaratRecord) => r.id));
+  const batch = writeBatch(db);
+  for (const r of data.records as BaccaratRecord[]) batch.set(doc(db, RECORDS_COL, r.id), r);
+  for (const id of existingIds) if (!newIds.has(id)) batch.delete(doc(db, RECORDS_COL, id));
+  if (data.masters) batch.set(doc(db, MASTERS_DOC_PATH), { ...DEFAULT_MASTERS, ...data.masters });
+  void batch.commit();
 }
 
 function triggerDownload(content: string, filename: string, mime: string): void {
@@ -370,19 +400,15 @@ export function reflowDay(date: string, anchorId: string): void {
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   const anchorIdx = dayRecords.findIndex(r => r.id === anchorId);
   if (anchorIdx === -1) return;
-  let changed = false;
   for (let i = anchorIdx + 1; i < dayRecords.length; i++) {
     const prev = dayRecords[i - 1];
     const cur = dayRecords[i];
     if (cur.startAmount !== prev.endAmount) {
       cur.startAmount = prev.endAmount;
       cur.profit = cur.endAmount - cur.startAmount;
-      changed = true;
+      void setDoc(doc(db, RECORDS_COL, cur.id), cur);
     }
   }
-  if (!changed) return;
-  const byId = new Map(dayRecords.map(r => [r.id, r]));
-  localStorage.setItem(RECORDS_KEY, JSON.stringify(all.map(r => byId.get(r.id) ?? r)));
 }
 
 // 特定の記録群（期間で絞り込み済み）内での内訳。ディーラー／シャッフルとは掛け合わせない。

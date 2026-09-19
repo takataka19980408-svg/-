@@ -2,9 +2,12 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import './baccarat/index.css';
 import { BaccaratApp } from './baccarat/BaccaratApp';
+import { BaccaratAuthGate } from './baccarat/BaccaratAuthGate';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BaccaratApp />
+    <BaccaratAuthGate>
+      <BaccaratApp />
+    </BaccaratAuthGate>
   </StrictMode>,
 );

@@ -1,10 +1,12 @@
 import { useRef, useState } from 'react';
+import { signOut } from 'firebase/auth';
 import type { MasterKind } from '../types';
 import { MASTER_LABELS } from '../types';
 import {
   getMasters, addMasterItem, removeMasterItem,
   getBackupJson, exportBackup, restoreBackup,
 } from '../storage';
+import { auth } from '../firebase';
 import { GOLD, GOLDB, RED, REDB, CARD, BDR, TEXT, SUB, BRUSH, FELTD, NAV_SAFE_BOTTOM } from '../theme';
 
 interface Props {
@@ -229,6 +231,13 @@ export function BaccaratMastersScreen({ onDataChange }: Props) {
         {KINDS.map(kind => (
           <MasterList key={kind} kind={kind} values={masters[kind]} onChange={refresh} />
         ))}
+
+        <button onClick={() => signOut(auth)} style={{
+          width: '100%', padding: '12px', borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: BRUSH,
+          background: 'transparent', border: `1px solid ${BDR}`, color: SUB, cursor: 'pointer',
+        }}>
+          ログアウト
+        </button>
       </div>
 
       {toast && (
