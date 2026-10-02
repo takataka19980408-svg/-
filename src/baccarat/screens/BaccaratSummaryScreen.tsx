@@ -12,7 +12,6 @@ import { CustomerDetail } from '../components/CustomerDetail';
 import { DealerDetail } from '../components/DealerDetail';
 import { ShuffleDetail } from '../components/ShuffleDetail';
 import { PeriodDetail } from '../components/PeriodDetail';
-import { CustomerDealerCrossTab } from '../components/CustomerDealerCrossTab';
 import { BarChart } from '../components/BarChart';
 import { GOLD, GOLDB, REDB, CARD, BDR, TEXT, SUB, BRUSH, FELTD, NAV_SAFE_BOTTOM } from '../theme';
 
@@ -107,7 +106,6 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
   const [selectedDealer, setSelectedDealer] = useState<AggregateItem | null>(null);
   const [selectedShuffle, setSelectedShuffle] = useState<AggregateItem | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<{ kind: PeriodTab; item: AggregateItem } | null>(null);
-  const [showCrossTab, setShowCrossTab] = useState(false);
   const [customerSearch, setCustomerSearch] = useState('');
   void refreshKey;
 
@@ -140,8 +138,6 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
             records={RECORDS_FOR_PERIOD[selectedPeriod.kind](selectedPeriod.item.label)}
             onBack={() => setSelectedPeriod(null)}
           />
-        ) : showCrossTab ? (
-          <CustomerDealerCrossTab onBack={() => setShowCrossTab(false)} />
         ) : (
           <>
             <div style={{
@@ -162,16 +158,6 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
                 </span>
               </div>
             </div>
-
-            <button
-              onClick={() => setShowCrossTab(true)}
-              style={{
-                width: '100%', padding: '10px', borderRadius: 8, marginBottom: 14, fontSize: 12, fontWeight: 700,
-                fontFamily: BRUSH, background: 'transparent', border: `1px solid ${BDR}`, color: SUB, cursor: 'pointer',
-              }}
-            >
-              客×ディーラー表（曜日別）を見る
-            </button>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6, marginBottom: 14 }}>
               {TABS.map(t => (
