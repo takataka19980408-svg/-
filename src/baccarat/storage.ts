@@ -516,6 +516,57 @@ export function getWeekdaySummaryForRecords(records: BaccaratRecord[]): Aggregat
     (a, b) => WEEKDAY_LABELS.indexOf(a.label) - WEEKDAY_LABELS.indexOf(b.label));
 }
 
+// ── 客×ディーラーの掛け合わせ表（曜日別） ─────────────────────
+// 曜日ごとに「客」×「ディーラー」のマス目で店収支を集計する（閲覧専用）。
+// 1記録で客・ディーラーとも複数のことがあるため、客個人の収支
+// （getCustomerProfitForRecord）をさらにディーラー人数で千円単位按分し、
+// 該当する客×ディーラーの組み合わせすべてに同じ値を計上する
+// （getCustomerSummaryForDealerと同じ考え方）。
+export interface CrossTabCell {
+  customer: string;
+  dealer: string;
+  count: number;
+  profit: number; // 店収支（客個人×ディーラー配分後）
+}
+
+export interface WeekdayCrossTab {
+  weekday: string;
+  customers: string[];
+  dealers: string[];
+  cells: CrossTabCell[];
+}
+
+export function getCustomerDealerCrossTabByWeekday(records: BaccaratRecord[] = recordsCache): WeekdayCrossTab[] {
+  const byWeekday = new Map<string, Map<string, { count: number; profit: number }>>();
+  for (const r of records) {
+    const customerIds = r.customerIds ?? [];
+    if (customerIds.length === 0 || r.dealerIds.length === 0) continue;
+    const weekday = getWeekdayKey(r.date);
+    const wdMap = byWeekday.get(weekday) ?? new Map<string, { count: number; profit: number }>();
+    for (const c of customerIds) {
+      const shares = splitProfitByThousands(getCustomerProfitForRecord(r, c), r.dealerIds.length);
+      r.dealerIds.forEach((d, i) => {
+        const key = `${c}\u0000${d}`;
+        const e = wdMap.get(key) ?? { count: 0, profit: 0 };
+        e.count += 1;
+        e.profit += shares[i];
+        wdMap.set(key, e);
+      });
+    }
+    byWeekday.set(weekday, wdMap);
+  }
+  return WEEKDAY_LABELS.filter(w => byWeekday.has(w)).map(weekday => {
+    const map = byWeekday.get(weekday)!;
+    const cells: CrossTabCell[] = Array.from(map.entries()).map(([key, e]) => {
+      const [customer, dealer] = key.split('\u0000');
+      return { customer, dealer, count: e.count, profit: e.profit };
+    });
+    const customers = Array.from(new Set(cells.map(c => c.customer))).sort(masterCollator.compare);
+    const dealers = Array.from(new Set(cells.map(c => c.dealer))).sort(masterCollator.compare);
+    return { weekday, customers, dealers, cells };
+  });
+}
+
 // 客別詳細画面のディーラー別／シャッフル別内訳用。店収支ではなく、その客
 // 個人の収支（getCustomerProfitForRecordの合計、店から見た符号のまま）で
 // 集計する。表示側で符号反転（invert）して使う。
