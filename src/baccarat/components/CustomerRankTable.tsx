@@ -1,12 +1,24 @@
-import { Fragment } from 'react';
-import { getCustomerRankTable } from '../storage';
+import { Fragment, useState } from 'react';
+import { getCustomerRankTable, getRecords, getRecordsForLastWeek, getRecordsForLastMonth } from '../storage';
 import type { CustomerRankEntry } from '../storage';
+import type { BaccaratRecord } from '../types';
 import { useSwipeBack } from '../hooks/useSwipeBack';
 import { GOLD, GOLDB, REDB, CARD, BDR, TEXT, SUB, BRUSH, DIGIT_FONT } from '../theme';
 
 interface Props {
   onBack: () => void;
 }
+
+type RankPeriod = 'week' | 'month' | 'total';
+
+// 早見表の中の3ページ（期間タブ）。週・月は「今日から遡ってn日」の
+// ローリング集計、トータルは全期間。週・月だけ客の表示順をシュート数が
+// 多い順にする（直近で頻繁に来ている客をすぐ探せるようにするため）。
+const PERIODS: { id: RankPeriod; label: string; recordsFn: () => BaccaratRecord[]; orderByCount: boolean }[] = [
+  { id: 'week',  label: '1週間',   recordsFn: getRecordsForLastWeek,  orderByCount: true },
+  { id: 'month', label: '1ヶ月',   recordsFn: getRecordsForLastMonth, orderByCount: true },
+  { id: 'total', label: 'トータル', recordsFn: getRecords,             orderByCount: false },
+];
 
 function RankCell({ entry, groupEnd }: { entry: CustomerRankEntry | undefined; groupEnd: boolean }) {
   const borderRight = groupEnd ? `1px solid ${BDR}` : 'none';
@@ -28,7 +40,9 @@ function RankCell({ entry, groupEnd }: { entry: CustomerRankEntry | undefined; g
 
 export function CustomerRankTable({ onBack }: Props) {
   const swipeStyle = useSwipeBack(onBack);
-  const { codes, rows } = getCustomerRankTable();
+  const [period, setPeriod] = useState<RankPeriod>('week');
+  const activePeriod = PERIODS.find(p => p.id === period) ?? PERIODS[0];
+  const { codes, rows } = getCustomerRankTable(activePeriod.recordsFn(), activePeriod.orderByCount);
 
   return (
     <div style={swipeStyle}>
@@ -57,6 +71,23 @@ export function CustomerRankTable({ onBack }: Props) {
           <span style={{ color: REDB, fontFamily: DIGIT_FONT, fontWeight: 800 }}>5</span>
           <span style={{ color: SUB, fontFamily: BRUSH }}>店が負け（客が勝ち）に近い</span>
         </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+        {PERIODS.map(p => (
+          <button
+            key={p.id}
+            onClick={() => setPeriod(p.id)}
+            style={{
+              flex: 1, padding: '8px 0', borderRadius: 6, fontSize: 12, fontWeight: 700, fontFamily: BRUSH,
+              background: period === p.id ? `${GOLD}18` : 'transparent',
+              border: `1px solid ${period === p.id ? GOLD : BDR}`,
+              color: period === p.id ? GOLDB : SUB, cursor: 'pointer',
+            }}
+          >
+            {p.label}
+          </button>
+        ))}
       </div>
 
       {rows.length === 0 ? (
@@ -124,6 +155,9 @@ export function CustomerRankTable({ onBack }: Props) {
                     borderBottom: `1px solid ${BDR}`, whiteSpace: 'nowrap', textAlign: 'left',
                   }}>
                     {row.customer}
+                    <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 400, color: SUB, fontFamily: DIGIT_FONT }}>
+                      ({row.count})
+                    </span>
                   </th>
                   {codes.map(code => (
                     <Fragment key={code}>

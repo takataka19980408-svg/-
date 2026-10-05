@@ -324,6 +324,7 @@ export interface CustomerRankEntry {
 
 export interface CustomerRankRow {
   customer: string;
+  count: number; // この集計範囲での来店（シュート）回数
   shuffleRanks: Record<string, CustomerRankEntry>;
   dealerRanks: Record<string, CustomerRankEntry>;
 }
@@ -338,8 +339,13 @@ function rankByProfit(map: Map<string, { profit: number; count: number }>): Reco
   return result;
 }
 
-export function getCustomerRankTable(): { codes: string[]; rows: CustomerRankRow[] } {
-  const records = getRecords();
+// records: 集計対象の範囲（1週間／1ヶ月／トータルなど呼び出し側で絞り込む）。
+// orderByCount: trueなら客の表示順をシュート数の多い順にする（1週間・1ヶ月
+// ページ用）。falseなら五十音/符丁順（トータルページ用）。
+export function getCustomerRankTable(
+  records: BaccaratRecord[],
+  orderByCount = false,
+): { codes: string[]; rows: CustomerRankRow[] } {
   const masters = getMasters();
   const codes = sortMasterList(Array.from(new Set([...masters.shuffles, ...masters.dealers])));
 
@@ -375,12 +381,41 @@ export function getCustomerRankTable(): { codes: string[]; rows: CustomerRankRow
 
     rows.push({
       customer: customerId,
+      count: customerRecords.length,
       shuffleRanks: rankByProfit(shuffleMap),
       dealerRanks: rankByProfit(dealerMap),
     });
   }
 
+  if (orderByCount) {
+    rows.sort((a, b) => b.count - a.count);
+  }
+
   return { codes, rows };
+}
+
+function shiftDateString(dateStr: string, deltaDays: number): string {
+  const d = new Date(`${dateStr}T00:00:00`);
+  d.setDate(d.getDate() + deltaDays);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+// 直近n日（today()を含む）の記録。カレンダー週/月ではなく、常に「今日から
+// 遡ってn日分」のローリング集計（早見表の1週間・1ヶ月ページ用）。
+function getRecordsForLastDays(days: number): BaccaratRecord[] {
+  const cutoff = shiftDateString(today(), -(days - 1));
+  return getRecords().filter(r => r.date >= cutoff);
+}
+
+export function getRecordsForLastWeek(): BaccaratRecord[] {
+  return getRecordsForLastDays(7);
+}
+
+export function getRecordsForLastMonth(): BaccaratRecord[] {
+  return getRecordsForLastDays(30);
 }
 
 // ── 日付ベースの集計（年別／月別／週別／曜日別） ─────────────
