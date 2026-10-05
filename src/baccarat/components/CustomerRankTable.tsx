@@ -41,8 +41,12 @@ function RankCell({ entry, groupEnd }: { entry: CustomerRankEntry | undefined; g
 export function CustomerRankTable({ onBack }: Props) {
   const swipeStyle = useSwipeBack(onBack);
   const [period, setPeriod] = useState<RankPeriod>('week');
+  const [search, setSearch] = useState('');
   const activePeriod = PERIODS.find(p => p.id === period) ?? PERIODS[0];
   const { codes, rows } = getCustomerRankTable(activePeriod.recordsFn(), activePeriod.orderByCount);
+  const visibleRows = search.trim()
+    ? rows.filter(r => r.customer.toLowerCase().includes(search.trim().toLowerCase()))
+    : rows;
 
   return (
     <div style={swipeStyle}>
@@ -90,8 +94,22 @@ export function CustomerRankTable({ onBack }: Props) {
         ))}
       </div>
 
+      <input
+        type="text"
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        placeholder="客IDで検索"
+        style={{
+          width: '100%', padding: '9px 12px', marginBottom: 14,
+          background: '#0a0f0c', border: `1px solid ${BDR}`, borderRadius: 6,
+          fontSize: 13, color: TEXT, fontFamily: BRUSH, outline: 'none', boxSizing: 'border-box',
+        }}
+      />
+
       {rows.length === 0 ? (
         <div style={{ textAlign: 'center', color: SUB, fontFamily: BRUSH, fontSize: 13, padding: '30px 0' }}>データがありません</div>
+      ) : visibleRows.length === 0 ? (
+        <div style={{ textAlign: 'center', color: SUB, fontFamily: BRUSH, fontSize: 13, padding: '30px 0' }}>該当する客が見つかりません</div>
       ) : (
         <div style={{ overflowX: 'auto', border: `1px solid ${BDR}`, borderRadius: 10 }}>
           <table style={{ borderCollapse: 'collapse', fontSize: 12, minWidth: '100%' }}>
@@ -130,24 +148,24 @@ export function CustomerRankTable({ onBack }: Props) {
                   <Fragment key={code}>
                     <th style={{
                       position: 'sticky', top: 29, zIndex: 2, background: '#121D17', color: SUB,
-                      fontFamily: BRUSH, fontWeight: 700, fontSize: 10, padding: '2px 6px 7px',
+                      fontFamily: DIGIT_FONT, fontWeight: 700, fontSize: 10, padding: '2px 6px 7px',
                       borderBottom: `1px solid ${BDR}`, textAlign: 'center', whiteSpace: 'nowrap',
                     }}>
-                      シャ
+                      S
                     </th>
                     <th style={{
                       position: 'sticky', top: 29, zIndex: 2, background: '#121D17', color: SUB,
-                      fontFamily: BRUSH, fontWeight: 700, fontSize: 10, padding: '2px 6px 7px',
+                      fontFamily: DIGIT_FONT, fontWeight: 700, fontSize: 10, padding: '2px 6px 7px',
                       borderBottom: `1px solid ${BDR}`, borderRight: `1px solid ${BDR}`, textAlign: 'center', whiteSpace: 'nowrap',
                     }}>
-                      ま
+                      D
                     </th>
                   </Fragment>
                 ))}
               </tr>
             </thead>
             <tbody>
-              {rows.map((row, i) => (
+              {visibleRows.map((row, i) => (
                 <tr key={row.customer} style={{ background: i % 2 === 0 ? CARD : '#121D17' }}>
                   <th style={{
                     position: 'sticky', left: 0, zIndex: 1, background: i % 2 === 0 ? CARD : '#121D17', color: TEXT,
