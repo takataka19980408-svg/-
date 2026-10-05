@@ -31,7 +31,7 @@ function RankCell({ entry, groupEnd }: { entry: CustomerRankEntry | undefined; g
   return (
     <td style={{
       padding: '7px 4px', borderBottom: `1px solid ${BDR}`, borderRight, textAlign: 'center',
-      fontFamily: BRUSH, fontWeight: 800, fontSize: 14, fontVariantNumeric: 'tabular-nums', color,
+      fontFamily: BRUSH, fontWeight: 700, fontSize: 13, color,
     }}>
       {entry.rank}
     </td>
