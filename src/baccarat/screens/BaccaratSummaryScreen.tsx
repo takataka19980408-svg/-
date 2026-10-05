@@ -12,6 +12,7 @@ import { CustomerDetail } from '../components/CustomerDetail';
 import { DealerDetail } from '../components/DealerDetail';
 import { ShuffleDetail } from '../components/ShuffleDetail';
 import { PeriodDetail } from '../components/PeriodDetail';
+import { CustomerRankTable } from '../components/CustomerRankTable';
 import { BarChart } from '../components/BarChart';
 import { GOLD, GOLDB, REDB, CARD, BDR, TEXT, SUB, BRUSH, FELTD, NAV_SAFE_BOTTOM } from '../theme';
 
@@ -106,6 +107,7 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
   const [selectedDealer, setSelectedDealer] = useState<AggregateItem | null>(null);
   const [selectedShuffle, setSelectedShuffle] = useState<AggregateItem | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<{ kind: PeriodTab; item: AggregateItem } | null>(null);
+  const [showRankTable, setShowRankTable] = useState(false);
   const [customerSearch, setCustomerSearch] = useState('');
   void refreshKey;
 
@@ -125,7 +127,9 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '16px', paddingBottom: `calc(${NAV_SAFE_BOTTOM} + 16px)` }}>
-        {selectedCustomer ? (
+        {showRankTable ? (
+          <CustomerRankTable onBack={() => setShowRankTable(false)} />
+        ) : selectedCustomer ? (
           <CustomerDetail customer={selectedCustomer} onBack={() => setSelectedCustomer(null)} />
         ) : selectedDealer ? (
           <DealerDetail dealer={selectedDealer} onBack={() => setSelectedDealer(null)} />
@@ -200,17 +204,28 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
 
             {tab === 'customer' ? (
               <>
-                <input
-                  type="text"
-                  value={customerSearch}
-                  onChange={e => setCustomerSearch(e.target.value)}
-                  placeholder="客IDで検索"
-                  style={{
-                    width: '100%', padding: '9px 12px', marginBottom: 10,
-                    background: '#0a0f0c', border: `1px solid ${BDR}`, borderRadius: 6,
-                    fontSize: 13, color: TEXT, fontFamily: BRUSH, outline: 'none', boxSizing: 'border-box',
-                  }}
-                />
+                <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+                  <input
+                    type="text"
+                    value={customerSearch}
+                    onChange={e => setCustomerSearch(e.target.value)}
+                    placeholder="客IDで検索"
+                    style={{
+                      flex: 1, padding: '9px 12px',
+                      background: '#0a0f0c', border: `1px solid ${BDR}`, borderRadius: 6,
+                      fontSize: 13, color: TEXT, fontFamily: BRUSH, outline: 'none', boxSizing: 'border-box',
+                    }}
+                  />
+                  <button
+                    onClick={() => setShowRankTable(true)}
+                    style={{
+                      flexShrink: 0, padding: '0 14px', borderRadius: 6, fontSize: 12, fontWeight: 700, fontFamily: BRUSH,
+                      background: 'transparent', border: `1px solid ${GOLD}`, color: GOLDB, cursor: 'pointer', whiteSpace: 'nowrap',
+                    }}
+                  >
+                    早見表
+                  </button>
+                </div>
                 <BarChart items={visibleItems} onSelect={setSelectedCustomer} invert />
                 <List items={visibleItems} onSelect={setSelectedCustomer} invert />
               </>

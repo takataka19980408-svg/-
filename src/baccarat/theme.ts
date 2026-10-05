@@ -9,6 +9,9 @@ export const BDR    = '#1E2B24';
 export const TEXT   = '#EDE3C0';
 export const SUB    = '#5A6B62';
 export const BRUSH  = '"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif';
+// 細かい数字（順位・マス目の数値など）を見やすくするための書体。明朝体より
+// 視認性が高いゴシック体で、早見表のような密度の高い表組みで使う。
+export const DIGIT_FONT = '"Zen Kaku Gothic New","Hiragino Sans",sans-serif';
 export const NAV_H  = 60;
 // ボトムナビ自体はセーフエリア分の余白を追加で持つため、ナビの上に
 // 固定配置する要素はこちらでナビの実高さ分だけ浮かせる。

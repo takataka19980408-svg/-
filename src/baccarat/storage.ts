@@ -311,6 +311,78 @@ export function getDealerProfitForRecord(r: BaccaratRecord, dealerId: string): n
   return splitProfitByThousands(profit, r.dealerIds.length)[idx];
 }
 
+// ── 客別 勝敗ランキング早見表（客ごとに、各シャッフル・各ディーラーとの
+// 対戦における店収支を1〜5位でランク付けする。符丁（B/C/D/E/G等）がシャッフ
+// ルとディーラーの両方の記号として共用されている運用を前提に、両軸で同じ
+// 符丁の一覧を使う。順位は符号付きの店収支で決めるため、1位が最も店の勝ち
+// （黒字）、5位に近いほど店の負け（赤字）に近づく ─────────────
+export interface CustomerRankEntry {
+  rank: number;
+  profit: number;
+  count: number;
+}
+
+export interface CustomerRankRow {
+  customer: string;
+  shuffleRanks: Record<string, CustomerRankEntry>;
+  dealerRanks: Record<string, CustomerRankEntry>;
+}
+
+function rankByProfit(map: Map<string, { profit: number; count: number }>): Record<string, CustomerRankEntry> {
+  const result: Record<string, CustomerRankEntry> = {};
+  Array.from(map.entries())
+    .sort((a, b) => b[1].profit - a[1].profit)
+    .forEach(([code, v], i) => {
+      result[code] = { rank: i + 1, profit: v.profit, count: v.count };
+    });
+  return result;
+}
+
+export function getCustomerRankTable(): { codes: string[]; rows: CustomerRankRow[] } {
+  const records = getRecords();
+  const masters = getMasters();
+  const codes = sortMasterList(Array.from(new Set([...masters.shuffles, ...masters.dealers])));
+
+  const rows: CustomerRankRow[] = [];
+  for (const customerId of sortMasterList(masters.customers)) {
+    const customerRecords = records.filter(r => (r.customerIds ?? []).includes(customerId));
+    if (customerRecords.length === 0) continue;
+
+    const shuffleMap = new Map<string, { profit: number; count: number }>();
+    const dealerMap = new Map<string, { profit: number; count: number }>();
+
+    for (const r of customerRecords) {
+      const custProfit = getCustomerProfitForRecord(r, customerId);
+
+      if (r.shuffle) {
+        const e = shuffleMap.get(r.shuffle) ?? { profit: 0, count: 0 };
+        e.profit += custProfit;
+        e.count += 1;
+        shuffleMap.set(r.shuffle, e);
+      }
+
+      const n = r.dealerIds.length;
+      if (n > 0) {
+        const shares = n > 1 ? splitProfitByThousands(custProfit, n) : [custProfit];
+        r.dealerIds.forEach((dealerId, i) => {
+          const e = dealerMap.get(dealerId) ?? { profit: 0, count: 0 };
+          e.profit += shares[i];
+          e.count += 1;
+          dealerMap.set(dealerId, e);
+        });
+      }
+    }
+
+    rows.push({
+      customer: customerId,
+      shuffleRanks: rankByProfit(shuffleMap),
+      dealerRanks: rankByProfit(dealerMap),
+    });
+  }
+
+  return { codes, rows };
+}
+
 // ── 日付ベースの集計（年別／月別／週別／曜日別） ─────────────
 function getYearKey(date: string): string {
   return date.slice(0, 4) + '年';
