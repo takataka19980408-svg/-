@@ -3,7 +3,7 @@ import { getCustomerRankTable, getRecords, getRecordsForLastWeek, getRecordsForL
 import type { CustomerRankEntry } from '../storage';
 import type { BaccaratRecord } from '../types';
 import { useSwipeBack } from '../hooks/useSwipeBack';
-import { GOLD, GOLDB, REDB, CARD, BDR, TEXT, SUB, BRUSH, DIGIT_FONT } from '../theme';
+import { GOLD, GOLDB, REDB, CARD, BDR, TEXT, SUB, BRUSH } from '../theme';
 
 interface Props {
   onBack: () => void;
@@ -31,7 +31,7 @@ function RankCell({ entry, groupEnd }: { entry: CustomerRankEntry | undefined; g
   return (
     <td style={{
       padding: '7px 4px', borderBottom: `1px solid ${BDR}`, borderRight, textAlign: 'center',
-      fontFamily: DIGIT_FONT, fontWeight: 800, fontSize: 14, fontVariantNumeric: 'tabular-nums', color,
+      fontFamily: BRUSH, fontWeight: 800, fontSize: 14, fontVariantNumeric: 'tabular-nums', color,
     }}>
       {entry.rank}
     </td>
@@ -70,9 +70,9 @@ export function CustomerRankTable({ onBack }: Props) {
           客ごとに、各符丁を「シャッフルとして見たときの店収支順位」「ディーラーとして見たときの店収支順位」で1〜5位に並べています。
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, fontSize: 11 }}>
-          <span style={{ color: GOLDB, fontFamily: DIGIT_FONT, fontWeight: 800 }}>1</span>
+          <span style={{ color: GOLDB, fontFamily: BRUSH, fontWeight: 800 }}>1</span>
           <span style={{ color: SUB, fontFamily: BRUSH }}>店が勝ち（客が負け）に近い</span>
-          <span style={{ color: REDB, fontFamily: DIGIT_FONT, fontWeight: 800 }}>5</span>
+          <span style={{ color: REDB, fontFamily: BRUSH, fontWeight: 800 }}>5</span>
           <span style={{ color: SUB, fontFamily: BRUSH }}>店が負け（客が勝ち）に近い</span>
         </div>
       </div>
@@ -148,14 +148,14 @@ export function CustomerRankTable({ onBack }: Props) {
                   <Fragment key={code}>
                     <th style={{
                       position: 'sticky', top: 29, zIndex: 2, background: '#121D17', color: SUB,
-                      fontFamily: DIGIT_FONT, fontWeight: 700, fontSize: 10, padding: '2px 6px 7px',
+                      fontFamily: BRUSH, fontWeight: 700, fontSize: 10, padding: '2px 6px 7px',
                       borderBottom: `1px solid ${BDR}`, textAlign: 'center', whiteSpace: 'nowrap',
                     }}>
                       S
                     </th>
                     <th style={{
                       position: 'sticky', top: 29, zIndex: 2, background: '#121D17', color: SUB,
-                      fontFamily: DIGIT_FONT, fontWeight: 700, fontSize: 10, padding: '2px 6px 7px',
+                      fontFamily: BRUSH, fontWeight: 700, fontSize: 10, padding: '2px 6px 7px',
                       borderBottom: `1px solid ${BDR}`, borderRight: `1px solid ${BDR}`, textAlign: 'center', whiteSpace: 'nowrap',
                     }}>
                       D
@@ -173,7 +173,7 @@ export function CustomerRankTable({ onBack }: Props) {
                     borderBottom: `1px solid ${BDR}`, whiteSpace: 'nowrap', textAlign: 'left',
                   }}>
                     {row.customer}
-                    <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 400, color: SUB, fontFamily: DIGIT_FONT }}>
+                    <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 400, color: SUB, fontFamily: BRUSH }}>
                       ({row.count})
                     </span>
                   </th>
