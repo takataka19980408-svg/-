@@ -44,9 +44,14 @@ export function CustomerRankTable({ onBack }: Props) {
   const [search, setSearch] = useState('');
   const activePeriod = PERIODS.find(p => p.id === period) ?? PERIODS[0];
   const { codes, rows } = getCustomerRankTable(activePeriod.recordsFn(), activePeriod.orderByCount);
-  const visibleRows = search.trim()
-    ? rows.filter(r => r.customer.toLowerCase().includes(search.trim().toLowerCase()))
-    : rows;
+  // スペースや読点区切りで複数の客IDを入力すると、該当する客を入力順に
+  // 並べて表示する（複数客を横に並べて見比べたいという要望に対応）。
+  const searchTerms = search.split(/[\s,、，]+/).map(t => t.trim().toLowerCase()).filter(Boolean);
+  const visibleRows = searchTerms.length === 0
+    ? rows
+    : searchTerms
+        .flatMap(term => rows.filter(r => r.customer.toLowerCase().includes(term)))
+        .filter((r, i, arr) => arr.findIndex(x => x.customer === r.customer) === i);
 
   return (
     <div style={swipeStyle}>
@@ -98,7 +103,7 @@ export function CustomerRankTable({ onBack }: Props) {
         type="text"
         value={search}
         onChange={e => setSearch(e.target.value)}
-        placeholder="客IDで検索"
+        placeholder="客IDで検索（スペース区切りで複数指定可）"
         style={{
           width: '100%', padding: '9px 12px', marginBottom: 14,
           background: '#0a0f0c', border: `1px solid ${BDR}`, borderRadius: 6,
