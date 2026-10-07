@@ -114,8 +114,13 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
   const thisMonth = getThisMonthSummary();
   const isScopedTab = (SCOPED_TABS as Tab[]).includes(tab);
   const items = isScopedTab ? SCOPED_SUMMARY_FNS[tab as ScopedTab][scope]() : PERIOD_SUMMARY_FNS[tab as PeriodTab]();
-  const visibleItems = tab === 'customer' && customerSearch.trim()
-    ? items.filter(it => it.label.toLowerCase().includes(customerSearch.trim().toLowerCase()))
+  // スペースや読点（、，）区切りで複数の客IDを入力すると、該当する客を
+  // 入力した順に並べて表示する（早見表の検索と同じ挙動）。
+  const customerSearchTerms = customerSearch.split(/[\s,、，]+/).map(t => t.trim().toLowerCase()).filter(Boolean);
+  const visibleItems = tab === 'customer' && customerSearchTerms.length > 0
+    ? customerSearchTerms
+        .flatMap(term => items.filter(it => it.label.toLowerCase().includes(term)))
+        .filter((it, i, arr) => arr.findIndex(x => x.label === it.label) === i)
     : items;
 
   return (
@@ -209,7 +214,7 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
                     type="text"
                     value={customerSearch}
                     onChange={e => setCustomerSearch(e.target.value)}
-                    placeholder="客IDで検索"
+                    placeholder="客IDで検索（スペース区切りで複数指定可）"
                     style={{
                       flex: 1, padding: '9px 12px',
                       background: '#0a0f0c', border: `1px solid ${BDR}`, borderRadius: 6,
