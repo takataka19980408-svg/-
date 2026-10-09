@@ -12,9 +12,10 @@ import { GOLD, GOLDB, REDB, CARD, BDR, TEXT, SUB, BRUSH } from '../theme';
 interface Props {
   dealer: AggregateItem;
   onBack: () => void;
+  onSelectCustomer: (customer: AggregateItem) => void;
 }
 
-export function DealerDetail({ dealer, onBack }: Props) {
+export function DealerDetail({ dealer, onBack, onSelectCustomer }: Props) {
   const swipeStyle = useSwipeBack(onBack);
   const [weekdayFilter, setWeekdayFilter] = useState<string | null>(null);
   const historyRef = useRef<HTMLDivElement>(null);
@@ -68,7 +69,13 @@ export function DealerDetail({ dealer, onBack }: Props) {
         </div>
       </div>
 
-      <BreakdownList title="客別内訳" items={customerItems} showChart invert />
+      <BreakdownList
+        title="客別内訳" items={customerItems} showChart invert
+        onSelect={label => {
+          const item = customerItems.find(it => it.label === label);
+          if (item) onSelectCustomer(item);
+        }}
+      />
       <BreakdownList title="シャッフル別内訳" items={shuffleItems} showChart />
       <BreakdownList
         title="曜日別内訳" items={weekdayItems} selected={weekdayFilter}

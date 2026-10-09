@@ -107,6 +107,9 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
   const [selectedDealer, setSelectedDealer] = useState<AggregateItem | null>(null);
   const [selectedShuffle, setSelectedShuffle] = useState<AggregateItem | null>(null);
   const [selectedPeriod, setSelectedPeriod] = useState<{ kind: PeriodTab; item: AggregateItem } | null>(null);
+  // ディーラー別/シャッフル別の詳細画面内で客別内訳から客をタップしたとき用。
+  // selectedDealer/selectedShuffleはそのまま残しておき、戻ったら元の画面に戻る。
+  const [drilledCustomer, setDrilledCustomer] = useState<AggregateItem | null>(null);
   const [showRankTable, setShowRankTable] = useState(false);
   const [customerSearch, setCustomerSearch] = useState('');
   void refreshKey;
@@ -132,14 +135,16 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '16px', paddingBottom: `calc(${NAV_SAFE_BOTTOM} + 16px)` }}>
-        {showRankTable ? (
+        {drilledCustomer ? (
+          <CustomerDetail customer={drilledCustomer} onBack={() => setDrilledCustomer(null)} />
+        ) : showRankTable ? (
           <CustomerRankTable onBack={() => setShowRankTable(false)} />
         ) : selectedCustomer ? (
           <CustomerDetail customer={selectedCustomer} onBack={() => setSelectedCustomer(null)} />
         ) : selectedDealer ? (
-          <DealerDetail dealer={selectedDealer} onBack={() => setSelectedDealer(null)} />
+          <DealerDetail dealer={selectedDealer} onBack={() => setSelectedDealer(null)} onSelectCustomer={setDrilledCustomer} />
         ) : selectedShuffle ? (
-          <ShuffleDetail shuffle={selectedShuffle} onBack={() => setSelectedShuffle(null)} />
+          <ShuffleDetail shuffle={selectedShuffle} onBack={() => setSelectedShuffle(null)} onSelectCustomer={setDrilledCustomer} />
         ) : selectedPeriod ? (
           <PeriodDetail
             kind={selectedPeriod.kind}
