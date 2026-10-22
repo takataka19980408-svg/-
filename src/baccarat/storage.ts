@@ -497,15 +497,12 @@ export function getDaySummary(): AggregateItem[] {
   return aggregateBy(getRecords(), r => [getDayKey(r.date)], (a, b) => b.label.localeCompare(a.label));
 }
 
-// 日別タブの「曜日別」で、曜日カードをタップして日一覧を絞り込むために使う
-// （日別の集計はdayKey＝"2026年10月20日"形式のラベルなので、それだけでは
-// 曜日が分からない。元の記録から日付→曜日の対応表を作る）。
-export function getDayKeyToWeekdayMap(): Map<string, string> {
-  const map = new Map<string, string>();
-  for (const r of getRecords()) {
-    map.set(getDayKey(r.date), getWeekdayKey(r.date));
-  }
-  return map;
+// 日別タブの「曜日別」をタップしたときの詳細画面用（全期間のうち、その
+// 曜日に該当する記録すべて）。
+export function getRecordsForWeekday(weekdayKey: string): BaccaratRecord[] {
+  return getRecords()
+    .filter(r => getWeekdayKey(r.date) === weekdayKey)
+    .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt));
 }
 
 // ── 年／月／日の期間ごとの個別記録（期間の来店履歴・内訳表用） ──

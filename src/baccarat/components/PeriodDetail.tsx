@@ -11,7 +11,7 @@ import { DayGroupHeader } from './DayGroupHeader';
 import { useSwipeBack } from '../hooks/useSwipeBack';
 import { GOLD, GOLDB, REDB, CARD, BDR, TEXT, SUB, BRUSH } from '../theme';
 
-type PeriodKind = 'year' | 'month' | 'day';
+type PeriodKind = 'year' | 'month' | 'day' | 'weekday';
 
 interface Props {
   kind: PeriodKind;
@@ -40,7 +40,9 @@ export function PeriodDetail({ kind, period, records, onBack }: Props) {
   const customerItems = getCustomerSummaryForRecords(records);
   const dealerItems = getDealerSummaryForRecords(records);
   const shuffleItems = getShuffleSummaryForRecords(records);
-  const weekdayItems = kind === 'day' ? null : getWeekdaySummaryForRecords(records);
+  // 曜日の詳細画面自体や日別詳細では、その内訳を見せても意味がない
+  // （前者は中身が全部同じ曜日、後者はそもそも1日しかない）ため省略する。
+  const weekdayItems = kind === 'day' || kind === 'weekday' ? null : getWeekdaySummaryForRecords(records);
   const dayGroups = groupRecordsByDay(records);
 
   return (
