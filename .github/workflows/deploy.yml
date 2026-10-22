@@ -2,7 +2,7 @@ name: Deploy ゼニ帳 to GitHub Pages
 
 on:
   push:
-    branches: [claude/zeni-cho-app-design-by6y8z]
+    branches: [claude/gambling-excel-tool-6vb0id]
   workflow_dispatch:
 
 permissions:
@@ -17,9 +17,6 @@ concurrency:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4

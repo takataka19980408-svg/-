@@ -1,9 +1,41 @@
-import { defineConfig } from 'vite'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
+// vite-plugin-pwa injects its manifest link + SW registration into every
+// HTML entry it sees, with no per-entry opt-out. baccarat/index.html already
+// declares its own manifest/SW manually, so strip whatever the plugin added
+// there to keep it fully independent from ゼニ帳's PWA registration. Runs as
+// writeBundle (after files are on disk) since the plugin's own injection
+// happens too late in the pipeline for a transformIndexHtml hook to catch.
+function stripPwaInjectionFromBaccarat(): Plugin {
+  return {
+    name: 'strip-pwa-injection-from-baccarat',
+    apply: 'build',
+    writeBundle() {
+      const outFile = resolve(__dirname, 'dist/baccarat/index.html');
+      if (!existsSync(outFile)) return;
+      const html = readFileSync(outFile, 'utf-8');
+      const stripped = html
+        .replace(/<link rel="manifest" href="\/-\/manifest\.webmanifest"[^>]*>/g, '')
+        .replace(/<script[^>]*id="vite-plugin-pwa:[^"]*"[^>]*>[\s\S]*?<\/script>/g, '');
+      if (stripped !== html) writeFileSync(outFile, stripped);
+    },
+  };
+}
+
 export default defineConfig({
   base: '/-/',
+  build: {
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        baccarat: resolve(__dirname, 'baccarat/index.html'),
+      },
+    },
+  },
   plugins: [
     react(),
     VitePWA({
@@ -29,6 +61,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        globIgnores: ['baccarat/**', '**/baccarat-*'],
+        navigateFallbackDenylist: [/^\/-\/baccarat\//],
         runtimeCaching: [
           {
             // Google Fonts stylesheet
@@ -52,5 +86,6 @@ export default defineConfig({
         ],
       },
     }),
+    stripPwaInjectionFromBaccarat(),
   ],
 })
