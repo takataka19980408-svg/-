@@ -5,6 +5,7 @@ import {
   getYearSummary, getMonthSummary, getDaySummary,
   getRecordsForYear, getRecordsForMonth, getRecordsForDay, getRecordsForThisMonth,
   getThisMonthSummary, formatYen,
+  getRecords, getWeekdaySummaryForRecords, getDayKeyToWeekdayMap,
 } from '../storage';
 import type { AggregateItem } from '../storage';
 import type { BaccaratRecord } from '../types';
@@ -14,6 +15,7 @@ import { ShuffleDetail } from '../components/ShuffleDetail';
 import { PeriodDetail } from '../components/PeriodDetail';
 import { CustomerRankTable } from '../components/CustomerRankTable';
 import { BarChart } from '../components/BarChart';
+import { BreakdownList } from '../components/BreakdownList';
 import { GOLD, GOLDB, REDB, CARD, BDR, TEXT, SUB, BRUSH, FELTD, NAV_SAFE_BOTTOM } from '../theme';
 
 interface Props {
@@ -112,6 +114,7 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
   const [drilledCustomer, setDrilledCustomer] = useState<AggregateItem | null>(null);
   const [showRankTable, setShowRankTable] = useState(false);
   const [customerSearch, setCustomerSearch] = useState('');
+  const [dayWeekdayFilter, setDayWeekdayFilter] = useState<string | null>(null);
   void refreshKey;
 
   const thisMonth = getThisMonthSummary();
@@ -120,11 +123,15 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
   // スペースや読点（、，）区切りで複数の客IDを入力すると、該当する客を
   // 入力した順に並べて表示する（早見表の検索と同じ挙動）。
   const customerSearchTerms = customerSearch.split(/[\s,、，]+/).map(t => t.trim().toLowerCase()).filter(Boolean);
+  const weekdaySummary = tab === 'day' ? getWeekdaySummaryForRecords(getRecords()) : [];
+  const dayKeyToWeekday = tab === 'day' ? getDayKeyToWeekdayMap() : null;
   const visibleItems = tab === 'customer' && customerSearchTerms.length > 0
     ? customerSearchTerms
         .flatMap(term => items.filter(it => it.label.toLowerCase().includes(term)))
         .filter((it, i, arr) => arr.findIndex(x => x.label === it.label) === i)
-    : items;
+    : tab === 'day' && dayWeekdayFilter && dayKeyToWeekday
+      ? items.filter(it => dayKeyToWeekday.get(it.label) === dayWeekdayFilter)
+      : items;
 
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#07100C' }}>
@@ -177,7 +184,7 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
               {TABS.map(t => (
                 <button
                   key={t.id}
-                  onClick={() => setTab(t.id)}
+                  onClick={() => { setTab(t.id); if (t.id !== 'day') setDayWeekdayFilter(null); }}
                   style={{
                     padding: '9px 0', borderRadius: 6, fontSize: 12, fontWeight: 700, fontFamily: BRUSH,
                     background: tab === t.id ? `${GOLD}18` : 'transparent',
@@ -252,9 +259,15 @@ export function BaccaratSummaryScreen({ refreshKey }: Props) {
             ) : (
               <>
                 {tab === 'day' && (
-                  <BarChart items={items} onSelect={it => setSelectedPeriod({ kind: tab, item: it })} />
+                  <BreakdownList
+                    title="曜日別" items={weekdaySummary} selected={dayWeekdayFilter}
+                    onSelect={label => setDayWeekdayFilter(cur => (cur === label ? null : label))}
+                  />
                 )}
-                <List items={items} onSelect={it => setSelectedPeriod({ kind: tab as PeriodTab, item: it })} showCustomerCount />
+                {tab === 'day' && (
+                  <BarChart items={visibleItems} onSelect={it => setSelectedPeriod({ kind: tab, item: it })} />
+                )}
+                <List items={visibleItems} onSelect={it => setSelectedPeriod({ kind: tab as PeriodTab, item: it })} showCustomerCount />
               </>
             )}
           </>
