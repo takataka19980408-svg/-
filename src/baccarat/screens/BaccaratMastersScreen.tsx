@@ -191,6 +191,7 @@ export function BaccaratMastersScreen({ onDataChange }: Props) {
 
   const canShare = typeof navigator !== 'undefined' && 'share' in navigator && 'canShare' in navigator;
 
+  /* 一旦非表示のためコメントアウト
   const handleExport = async () => {
     // Inside a capability-enabled artifact view, real file downloads and
     // Web Share aren't available — offer the data via the downloads
@@ -239,6 +240,7 @@ export function BaccaratMastersScreen({ onDataChange }: Props) {
       exportXLSX();
     }
   };
+  */
 
   const handleShareBackup = async () => {
     const { json, filename } = getBackupJson();
@@ -289,13 +291,6 @@ export function BaccaratMastersScreen({ onDataChange }: Props) {
             エクセルはサマリー・入力ログ・ディーラー別・シャッフル方式別・客別来店履歴の5シート構成です。
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={handleExport} style={{
-              flex: 1, padding: '13px 8px', borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: BRUSH,
-              background: `linear-gradient(135deg,#1D6F42 0%,#2E9E5B 100%)`,
-              border: `1px solid #2E9E5B88`, color: '#EAFBF1', cursor: 'pointer', letterSpacing: '0.05em',
-            }}>
-              {canShare ? '📤 ' : '💾 '}エクセル{canShare ? '送信' : '保存'}
-            </button>
             <button onClick={handleShareBackup} style={{
               flex: 1, padding: '13px 8px', borderRadius: 8, fontSize: 13, fontWeight: 700, fontFamily: BRUSH,
               background: `linear-gradient(135deg,${GOLD}18,${GOLD}0A)`,
